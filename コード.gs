@@ -486,3 +486,28 @@ function getAdvancedAnalyticsData(sheetName) {
     return JSON.stringify(result);
   } catch (err) { return { error: "GAS実行エラー: " + err.toString() }; }
 }
+
+/**
+ * デバッグ用: 指定したユーザーの週次データ・24週ブロック判定を直接確認する
+ */
+function debugUserChurn(sheetName, uidQuery) {
+  try {
+    var raw = getAdvancedAnalyticsData(sheetName);
+    var result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (result.error) return result;
+    var matches = result.usersChurn.filter(function(u) { return u.uid.indexOf(uidQuery) !== -1; });
+    return matches.map(function(u) {
+      var blocks = [];
+      for (var b = 0; b < 12; b++) {
+        var w1 = b * 2, w2 = b * 2 + 1;
+        var d1 = u.data[w1] || 0, d2 = u.data[w2] || 0;
+        blocks.push(d1 + d2);
+      }
+      return {
+        uid: u.uid, groupType: u.groupType, groupName: u.groupName,
+        accountAgeDays: u.accountAgeDays,
+        data: u.data, scores: u.scores, blocks: blocks
+      };
+    });
+  } catch (err) { return { error: "debugUserChurn エラー: " + err.toString() }; }
+}
