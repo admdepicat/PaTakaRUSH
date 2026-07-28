@@ -1,0 +1,234 @@
+<!-- パネル 2: 継続利用分析 -->
+<div id="panel-retention" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+  <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+    <h2 class="text-lg font-bold text-gray-800">経過日数による利用継続率</h2>
+    <div class="flex items-center gap-2">
+      <label for="intervalSelect" class="text-sm font-bold text-gray-700">継続の判定基準:</label>
+      <select id="intervalSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none" onchange="loadData()">
+        <option value="7" selected>7日 (週1回以上)</option>
+        <option value="14">14日 (2週に1回以上)</option>
+        <option value="30">30日 (月1回以上)</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="space-y-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-center font-bold text-gray-700 mb-2">👥 全体 (Total)</h3>
+        <div class="chart-container w-full">
+          <canvas id="retentionChartTotal"></canvas>
+        </div>
+      </div>
+      
+      <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-inner flex flex-col justify-center h-full">
+        <h3 class="text-center font-bold text-gray-700 mb-4">📊 管理グループ別 詳細内訳</h3>
+        <table class="w-full text-sm text-left">
+          <thead>
+            <tr class="border-b border-gray-300 text-gray-600">
+              <th class="py-2 font-bold w-1/4">グループ</th>
+              <th class="py-2 font-bold w-3/8">対象者数 (ユーザー)</th>
+              <th class="py-2 font-bold w-3/8">データ件数 (稼働日)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-200">
+              <td class="py-4 font-bold text-blue-600">
+                <span class="inline-flex items-center justify-center w-5 h-5 bg-blue-500 text-white rounded text-sm font-bold mr-1">✓</span> 管理あり
+              </td>
+              <td class="py-4">
+                <div class="font-bold text-gray-800 mb-1"><span id="m_uc_total" class="text-blue-600 text-lg">0</span> 名</div>
+                <div class="text-xs text-gray-500 space-y-0.5">
+                  <div><span class="text-blue-600 font-bold">男:</span> <span id="m_uc_m" class="font-bold text-gray-700">0</span></div>
+                  <div><span class="text-rose-600 font-bold">女:</span> <span id="m_uc_f" class="font-bold text-gray-700">0</span></div>
+                  <div>未: <span id="m_uc_o" class="font-bold text-gray-700">0</span></div>
+                </div>
+              </td>
+              <td class="py-4">
+                <div class="font-bold text-gray-800 mb-1"><span id="m_dc_total" class="text-emerald-600 text-lg">0</span> 件</div>
+                <div class="text-xs text-gray-500 space-y-0.5">
+                  <div><span class="text-blue-600 font-bold">男:</span> <span id="m_dc_m" class="font-bold text-gray-700">0</span></div>
+                  <div><span class="text-rose-600 font-bold">女:</span> <span id="m_dc_f" class="font-bold text-gray-700">0</span></div>
+                  <div>未: <span id="m_dc_o" class="font-bold text-gray-700">0</span></div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-4 font-bold text-rose-600">
+                <span class="inline-flex items-center justify-center w-5 h-5 bg-rose-500 text-white rounded text-sm font-bold mr-1">-</span> 管理なし
+              </td>
+              <td class="py-4">
+                <div class="font-bold text-gray-800 mb-1"><span id="u_uc_total" class="text-blue-600 text-lg">0</span> 名</div>
+                <div class="text-xs text-gray-500 space-y-0.5">
+                  <div><span class="text-blue-600 font-bold">男:</span> <span id="u_uc_m" class="font-bold text-gray-700">0</span></div>
+                  <div><span class="text-rose-600 font-bold">女:</span> <span id="u_uc_f" class="font-bold text-gray-700">0</span></div>
+                  <div>未: <span id="u_uc_o" class="font-bold text-gray-700">0</span></div>
+                </div>
+              </td>
+              <td class="py-4">
+                <div class="font-bold text-gray-800 mb-1"><span id="u_dc_total" class="text-emerald-600 text-lg">0</span> 件</div>
+                <div class="text-xs text-gray-500 space-y-0.5">
+                  <div><span class="text-blue-600 font-bold">男:</span> <span id="u_dc_m" class="font-bold text-gray-700">0</span></div>
+                  <div><span class="text-rose-600 font-bold">女:</span> <span id="u_dc_f" class="font-bold text-gray-700">0</span></div>
+                  <div>未: <span id="u_dc_o" class="font-bold text-gray-700">0</span></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="text-center font-bold text-blue-600 mb-2">
+          <span class="inline-flex items-center justify-center w-4 h-4 bg-blue-500 text-white rounded text-xs font-bold mr-1">✓</span> 管理あり
+        </h3>
+        <div class="chart-container w-full">
+          <canvas id="retentionChartManaged"></canvas>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-center font-bold text-rose-600 mb-2">
+          <span class="inline-flex items-center justify-center w-4 h-4 bg-rose-500 text-white rounded text-xs font-bold mr-1">-</span> 管理なし
+        </h3>
+        <div class="chart-container w-full">
+          <canvas id="retentionChartUnmanaged"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+        <h3 class="text-lg font-bold text-gray-800">🏢 管理グループ別 継続利用分析</h3>
+        <div class="flex items-center gap-2">
+          <label for="subGroupSelect" class="text-sm font-bold text-gray-700">グループ選択:</label>
+          <select id="subGroupSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none" onchange="renderSubGroupChart()"></select>
+        </div>
+      </div>
+      <div class="text-sm font-medium text-gray-600 mb-2">
+        対象者数: <span id="subGroupUserCount" class="font-bold text-blue-600">0</span> 名
+        <span class="ml-4">最初の判定期間の厳格な継続率: <span id="subGroupStrictRate" class="font-bold text-emerald-600">0</span>%</span>
+      </div>
+      <div class="chart-container w-full max-w-4xl mx-auto mt-4">
+        <canvas id="retentionChartSubGroup"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function renderRetentionChart(targetData) {
+    // テーブル内の詳細件数の更新
+    const r_m = rawData['managed'];
+    document.getElementById('m_uc_m').innerText = (r_m.userCounts ? r_m.userCounts.male : 0).toLocaleString();
+    document.getElementById('m_uc_f').innerText = (r_m.userCounts ? r_m.userCounts.female : 0).toLocaleString();
+    document.getElementById('m_uc_o').innerText = (r_m.userCounts ? r_m.userCounts.other : 0).toLocaleString();
+    document.getElementById('m_uc_total').innerText = r_m.userCount.toLocaleString();
+
+    const m_dc_m = r_m.scatter.male.length; const m_dc_f = r_m.scatter.female.length; const m_dc_o = r_m.scatter.other.length;
+    document.getElementById('m_dc_m').innerText = m_dc_m.toLocaleString();
+    document.getElementById('m_dc_f').innerText = m_dc_f.toLocaleString();
+    document.getElementById('m_dc_o').innerText = m_dc_o.toLocaleString();
+    document.getElementById('m_dc_total').innerText = (m_dc_m + m_dc_f + m_dc_o).toLocaleString();
+
+    const r_u = rawData['unmanaged'];
+    document.getElementById('u_uc_m').innerText = (r_u.userCounts ? r_u.userCounts.male : 0).toLocaleString();
+    document.getElementById('u_uc_f').innerText = (r_u.userCounts ? r_u.userCounts.female : 0).toLocaleString();
+    document.getElementById('u_uc_o').innerText = (r_u.userCounts ? r_u.userCounts.other : 0).toLocaleString();
+    document.getElementById('u_uc_total').innerText = r_u.userCount.toLocaleString();
+
+    const u_dc_m = r_u.scatter.male.length; const u_dc_f = r_u.scatter.female.length; const u_dc_o = r_u.scatter.other.length;
+    document.getElementById('u_dc_m').innerText = u_dc_m.toLocaleString();
+    document.getElementById('u_dc_f').innerText = u_dc_f.toLocaleString();
+    document.getElementById('u_dc_o').innerText = u_dc_o.toLocaleString();
+    document.getElementById('u_dc_total').innerText = (u_dc_m + u_dc_f + u_dc_o).toLocaleString();
+
+    if (charts.retentionTotal) charts.retentionTotal.destroy();
+    if (charts.retentionManaged) charts.retentionManaged.destroy();
+    if (charts.retentionUnmanaged) charts.retentionUnmanaged.destroy();
+    
+    const intervalVal = parseInt(document.getElementById('intervalSelect').value);
+
+    function createRetentionChart(canvasId, dataKey) {
+      const dataObj = rawData[dataKey];
+      const dataBroad = dataObj.retention.daily.map(d => ({ x: d.x, y: d.broad }));
+      const dataStrict = dataObj.retention.daily.map(d => ({ x: d.x, y: d.strict }));
+
+      return new Chart(document.getElementById(canvasId), {
+        type: 'line',
+        data: {
+          datasets: [
+            { label: '緩やかな継続率', data: dataBroad, borderColor: '#94a3b8', backgroundColor: 'transparent', borderDash: [5, 5], fill: false, tension: 0.3, pointRadius: 2 },
+            { label: '厳格な継続率', data: dataStrict, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, pointRadius: 2 }
+          ]
+        },
+        options: {
+          responsive: true, 
+          maintainAspectRatio: true, 
+          aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9,
+          scales: { x: { type: 'linear', title: { display: true, text: '経過日数' }, ticks: { stepSize: intervalVal } }, y: { min: 0, max: 100, title: { display: true, text: '継続率 (%)' } } },
+          plugins: { tooltip: { mode: 'index', intersect: false } }
+        }
+      });
+    }
+
+    charts.retentionTotal = createRetentionChart('retentionChartTotal', 'total');
+    charts.retentionManaged = createRetentionChart('retentionChartManaged', 'managed');
+    charts.retentionUnmanaged = createRetentionChart('retentionChartUnmanaged', 'unmanaged');
+
+    const subGroupSelect = document.getElementById('subGroupSelect');
+    subGroupSelect.innerHTML = '';
+    
+    if (rawData.groupRanking && rawData.groupRanking.length > 0) {
+      rawData.groupRanking.forEach((grp, index) => {
+         const opt = document.createElement('option');
+         opt.value = grp.name;
+         opt.text = `${index + 1}位: ${grp.name} (厳格継続率: ${grp.strictRate}% / ${grp.userCount}名)`;
+         subGroupSelect.appendChild(opt);
+      });
+      renderSubGroupChart();
+    } else {
+      const opt = document.createElement('option');
+      opt.value = ''; opt.text = '管理ありのグループがありません';
+      subGroupSelect.appendChild(opt);
+      if (charts.retentionSubGroup) charts.retentionSubGroup.destroy();
+    }
+  }
+
+  function renderSubGroupChart() {
+    if (!rawData || !rawData.groups) return;
+    const gName = document.getElementById('subGroupSelect').value;
+    if (!gName || !rawData.groups[gName]) return;
+    
+    const groupData = rawData.groups[gName];
+    
+    document.getElementById('subGroupUserCount').innerText = groupData.userCount.toLocaleString();
+    let strictRate = 0;
+    if (groupData.retention.daily.length > 1) strictRate = groupData.retention.daily[1].strict;
+    document.getElementById('subGroupStrictRate').innerText = strictRate;
+
+    if (charts.retentionSubGroup) charts.retentionSubGroup.destroy();
+    
+    const intervalVal = parseInt(document.getElementById('intervalSelect').value);
+    const dataBroad = groupData.retention.daily.map(d => ({ x: d.x, y: d.broad }));
+    const dataStrict = groupData.retention.daily.map(d => ({ x: d.x, y: d.strict }));
+
+    charts.retentionSubGroup = new Chart(document.getElementById('retentionChartSubGroup'), {
+      type: 'line',
+      data: {
+        datasets: [
+          { label: '緩やかな継続率', data: dataBroad, borderColor: '#94a3b8', backgroundColor: 'transparent', borderDash: [5, 5], fill: false, tension: 0.3, pointRadius: 2 },
+          { label: '厳格な継続率', data: dataStrict, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, pointRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true, 
+        maintainAspectRatio: true, 
+        aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9,
+        scales: { x: { type: 'linear', title: { display: true, text: '経過日数' }, ticks: { stepSize: intervalVal } }, y: { min: 0, max: 100, title: { display: true, text: '継続率 (%)' } } },
+        plugins: { tooltip: { mode: 'index', intersect: false } }
+      }
+    });
+  }
+</script>

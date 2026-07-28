@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { 
+        font-family: sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        display: flex; 
+        flex-direction: column; 
+        height: 100vh; 
+        background-color: #f0f2f5;
+      }
+      .tabs { 
+        display: flex; 
+        background-color: #1a73e8; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 10;
+      }
+      .tab-button { 
+        background-color: transparent; 
+        color: rgba(255, 255, 255, 0.7); 
+        border: none; 
+        padding: 15px 25px; 
+        font-size: 16px; 
+        cursor: pointer; 
+        transition: 0.3s;
+        border-bottom: 3px solid transparent;
+        font-weight: 500;
+        outline: none;
+      }
+      .tab-button:hover { 
+        color: white; 
+        background-color: rgba(255,255,255,0.1);
+      }
+      .tab-button.active { 
+        color: white;
+        border-bottom: 3px solid white; 
+        font-weight: bold; 
+      }
+      /* 各画面を埋め込むためのエリア */
+      iframe { 
+        border: none; 
+        width: 100%; 
+        flex-grow: 1; 
+        background-color: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- タブメニュー -->
+    <div class="tabs">
+      <button class="tab-button active" onclick="changeTab('dialog', this)">📝 データ整理</button>
+      <button class="tab-button" onclick="changeTab('dashboard', this)">📊 データ分析</button>
+    </div>
+    
+    <!-- コンテンツ表示エリア -->
+    <iframe id="contentFrame" src=""></iframe>
+
+    <script>
+      // GAS側からこのWebアプリのURLを取得
+      var appUrl = "<?!= getScriptUrl() ?>";
+      
+      // タブ切り替え関数
+      function changeTab(page, btn) {
+        // iframeの読み込み先URLを変更（URLパラメータで画面を出し分ける）
+        document.getElementById('contentFrame').src = appUrl + "?page=" + page;
+        
+        // タブの見た目（active状態）を切り替え
+        var tabs = document.getElementsByClassName('tab-button');
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].classList.remove('active');
+        }
+        btn.classList.add('active');
+      }
+      
+      // 画面読み込み時に「データ整理（dialog）」を初期表示
+      window.onload = function() {
+        document.getElementById('contentFrame').src = appUrl + "?page=dialog";
+      }
+    </script>
+  </body>
+</html>

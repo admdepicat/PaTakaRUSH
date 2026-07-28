@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>高度分析ダッシュボード</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f8fafc; font-family: sans-serif; }
+    /* グラフの高さを固定せず、幅100%で比率に任せる */
+    .chart-container { position: relative; width: 100%; }
+    .tab-btn { transition: all 0.2s; border-bottom: 4px solid transparent; }
+    .tab-active { border-bottom-color: #2563eb; color: #1e40af; font-weight: 800; background-color: #eff6ff; }
+  </style>
+</head>
+<body class="p-2 md:p-6">
+  <div class="max-w-7xl mx-auto space-y-4">
+    
+    <!-- コントローラー部分 -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div class="flex flex-col md:flex-row gap-4 w-full">
+        <!-- シート選択 -->
+        <select id="sheetSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 outline-none" onchange="loadData()">
+          <option value="">シートを読み込んでいます...</option>
+        </select>
+        
+        <!-- 代表スコアの切り替えプルダウン -->
+        <select id="scoreTypeSelect" class="bg-indigo-50 border border-indigo-300 text-indigo-900 font-bold text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full md:w-48 p-2.5 outline-none" onchange="loadData()" disabled>
+          <option value="max" selected>🌟 1日の最高</option>
+          <option value="avg">📊 1日の平均</option>
+        </select>
+
+        <!-- アスペクト比切り替えスイッチ -->
+        <select id="aspectRatioSelect" class="bg-emerald-50 border border-emerald-300 text-emerald-900 font-bold text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full md:w-32 p-2.5 outline-none" onchange="renderCharts()" disabled>
+          <option value="16/9" selected>📺 16:9</option>
+          <option value="4/3">🖥️ 4:3</option>
+        </select>
+
+        <!-- 群選択プルダウン -->
+        <select id="groupSelect" class="bg-blue-50 border border-blue-300 text-blue-900 font-bold text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full md:w-64 p-2.5 outline-none" onchange="renderCharts()" disabled>
+          <option value="total">👥 全体 (Total)</option>
+          <option value="managed">[ ✓ ] 管理あり</option>
+          <option value="unmanaged">[ - ] 管理なし</option>
+        </select>
+      </div>
+      <div id="loading" class="text-blue-600 font-bold text-sm hidden whitespace-nowrap">⏳ 集計中...</div>
+    </div>
+
+    <div id="errorMsg" class="text-red-600 font-bold text-center"></div>
+
+    <!-- タブメニュー -->
+    <div id="dashboardContent" class="hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex text-sm md:text-base mb-4 flex-wrap">
+        <button onclick="showTab('dist')" id="tab-dist" class="tab-btn flex-1 py-3 tab-active min-w-[120px]">年齢別分布</button>
+        <!-- 新設：パタカラ分析タブ -->
+        <button onclick="showTab('pataka')" id="tab-pataka" class="tab-btn flex-1 py-3 min-w-[120px]">パタカラ分析</button>
+        <button onclick="showTab('churn')" id="tab-churn" class="tab-btn flex-1 py-3 min-w-[120px]">離脱率(利用頻度)</button>
+      </div>
+
+      <!-- 共通: ユーザー数およびデータ件数表示 -->
+      <div class="bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-200 mb-4 overflow-x-auto">
+        <table class="w-full text-left whitespace-nowrap min-w-max">
+          <tbody>
+            <tr class="border-b border-gray-100">
+              <td class="py-4 pr-4 text-gray-700 font-bold w-48">
+                <div class="flex items-center gap-2"><span class="text-xl">👥</span> 対象者数</div>
+              </td>
+              <td class="py-4 px-2 text-right w-24">
+                <span id="userCountDisplay" class="text-blue-600 text-2xl font-extrabold tracking-wide">0</span> 
+              </td>
+              <td class="py-4 pl-2 pr-4 text-left w-12 text-gray-600 font-bold">名</td>
+              <td class="py-4 pl-4 border-l border-gray-200 text-sm font-medium text-gray-500">
+                <span class="inline-block w-28"><span class="text-blue-600 font-bold">男性</span> <span id="userCountMale" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+                <span class="inline-block w-28"><span class="text-rose-600 font-bold">女性</span> <span id="userCountFemale" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+                <span class="inline-block w-28"><span class="text-gray-500 font-bold">未回答</span> <span id="userCountOther" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+              </td>
+              <td class="py-4 pl-4 border-l border-gray-200 text-sm font-medium text-gray-500">
+                <span class="inline-block w-32"><span class="text-purple-600 font-bold">✓ 管理あり</span> <span id="userCountManaged" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+                <span class="inline-block w-32"><span class="text-orange-500 font-bold">- 管理なし</span> <span id="userCountUnmanaged" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+              </td>
+            </tr>
+            <tr>
+              <td class="py-4 pr-4 text-gray-700 font-bold w-48">
+                <div class="flex items-center gap-2"><span class="text-xl">📄</span> データ件数合計</div>
+              </td>
+              <td class="py-4 px-2 text-right w-24">
+                <span id="countTotal" class="text-emerald-600 text-2xl font-extrabold tracking-wide">0</span> 
+              </td>
+              <td class="py-4 pl-2 pr-4 text-left w-12 text-gray-600 font-bold">件</td>
+              <td class="py-4 pl-4 border-l border-gray-200 text-sm font-medium text-gray-500">
+                <span class="inline-block w-28"><span class="text-blue-600 font-bold">男性</span> <span id="countMale" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+                <span class="inline-block w-28"><span class="text-rose-600 font-bold">女性</span> <span id="countFemale" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+                <span class="inline-block w-28"><span class="text-gray-500 font-bold">未回答</span> <span id="countOther" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+              </td>
+              <td class="py-4 pl-4 border-l border-gray-200 text-sm font-medium text-gray-500">
+                <span class="inline-block w-32"><span class="text-purple-600 font-bold">✓ 管理あり</span> <span id="dataCountManaged" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+                <span class="inline-block w-32"><span class="text-orange-500 font-bold">- 管理なし</span> <span id="dataCountUnmanaged" class="text-gray-800 font-bold text-base ml-1">0</span></span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分割された各パネルの読み込み -->
+      <?!= include('dashboard_dist'); ?>
+      <?!= include('dashboard_pataka'); ?> <!-- 新規追加テンプレート -->
+      <?!= include('dashboard_churn'); ?>
+
+    </div>
+  </div>
+
+  <script>
+    let rawData = null;
+    let charts = { scatter: null, patakaScatter: null, patakaBoxPlot: null, impact: null, churn: null };
+    let additionalScatters = {};
+    let scatterCounter = 0;
+    let isFirstLoad = true;
+
+    Chart.defaults.font.family = 'sans-serif';
+
+    window.onload = function() {
+      google.script.run.withSuccessHandler(function(names) {
+        const select = document.getElementById('sheetSelect');
+        select.innerHTML = '<option value="">分析対象の抽出DBシートを選択...</option>';
+        names.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name; opt.text = name;
+          if (name.includes('抽出DB')) opt.selected = true;
+          select.appendChild(opt);
+        });
+        if (select.value) loadData();
+      }).getSheetList();
+    };
+
+    // 子ファイルのグラフ描画時にグローバルなアスペクト比を取得するための関数
+    function getGlobalAspectRatio() {
+      const el = document.getElementById('aspectRatioSelect');
+      return el && el.value === '4/3' ? 4 / 3 : 16 / 9;
+    }
+
+    function loadData() {
+      const sheetName = document.getElementById('sheetSelect').value;
+      if (!sheetName) return;
+
+      const scoreType = document.getElementById('scoreTypeSelect') ? document.getElementById('scoreTypeSelect').value : 'max';
+
+      document.getElementById('loading').classList.remove('hidden');
+      document.getElementById('dashboardContent').classList.add('hidden');
+      document.getElementById('errorMsg').innerText = '';
+      
+      document.getElementById('groupSelect').disabled = true;
+      document.getElementById('scoreTypeSelect').disabled = true;
+      if (document.getElementById('aspectRatioSelect')) document.getElementById('aspectRatioSelect').disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          document.getElementById('loading').classList.add('hidden');
+          
+          let parsedData = data;
+          if (typeof data === 'string') {
+              try {
+                  parsedData = JSON.parse(data);
+              } catch(e) {
+                  document.getElementById('errorMsg').innerText = 'データの解析に失敗しました。';
+                  return;
+              }
+          }
+          
+          if (parsedData && parsedData.error) {
+            document.getElementById('errorMsg').innerText = parsedData.error;
+            document.getElementById('scoreTypeSelect').disabled = false;
+            if (document.getElementById('aspectRatioSelect')) document.getElementById('aspectRatioSelect').disabled = false;
+            return;
+          }
+          
+          rawData = parsedData; 
+          document.getElementById('dashboardContent').classList.remove('hidden');
+          document.getElementById('groupSelect').disabled = false;
+          document.getElementById('scoreTypeSelect').disabled = false;
+          if (document.getElementById('aspectRatioSelect')) document.getElementById('aspectRatioSelect').disabled = false;
+          
+          renderCharts();
+
+          if (isFirstLoad) {
+            google.script.run.withSuccessHandler(function(pinnedData) {
+              if (pinnedData && pinnedData.length > 0 && typeof addScatterChart === 'function') {
+                Object.keys(additionalScatters).forEach(id => removeScatterChart(id, true));
+                pinnedData.forEach(config => addScatterChart(config));
+              }
+            }).loadPinnedCharts();
+            isFirstLoad = false;
+          }
+        })
+        .withFailureHandler(function(err) {
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('errorMsg').innerText = 'エラー: ' + err.message;
+          document.getElementById('scoreTypeSelect').disabled = false;
+          if (document.getElementById('aspectRatioSelect')) document.getElementById('aspectRatioSelect').disabled = false;
+        })
+        .getAdvancedAnalyticsData(sheetName);
+    }
+
+    function showTab(tabId) {
+      ['dist', 'pataka', 'churn'].forEach(id => {
+        const btn = document.getElementById('tab-' + id);
+        const pnl = document.getElementById('panel-' + id);
+        if(btn) btn.classList.remove('tab-active');
+        if(pnl) pnl.classList.add('hidden');
+      });
+      const tgtBtn = document.getElementById('tab-' + tabId);
+      const tgtPnl = document.getElementById('panel-' + tabId);
+      if(tgtBtn) tgtBtn.classList.add('tab-active');
+      if(tgtPnl) tgtPnl.classList.remove('hidden');
+    }
+
+    function renderCharts() {
+      if (!rawData) return;
+      const groupKey = document.getElementById('groupSelect').value;
+      const targetData = rawData[groupKey];
+
+      const countM = targetData.scatter.male.length;
+      const countF = targetData.scatter.female.length;
+      const countO = targetData.scatter.other.length;
+      
+      // 合計と男女別人数
+      document.getElementById('userCountDisplay').innerText = targetData.userCount.toLocaleString();
+      document.getElementById('userCountMale').innerText = (targetData.userCounts ? targetData.userCounts.male : 0).toLocaleString();
+      document.getElementById('userCountFemale').innerText = (targetData.userCounts ? targetData.userCounts.female : 0).toLocaleString();
+      document.getElementById('userCountOther').innerText = (targetData.userCounts ? targetData.userCounts.other : 0).toLocaleString();
+
+      // 合計と男女別データ件数
+      document.getElementById('countTotal').innerText = (countM + countF + countO).toLocaleString();
+      document.getElementById('countMale').innerText = countM.toLocaleString();
+      document.getElementById('countFemale').innerText = countF.toLocaleString();
+      document.getElementById('countOther').innerText = countO.toLocaleString();
+
+      // 管理あり・管理なしの内訳を計算して表示
+      let mUserCount = 0, uUserCount = 0;
+      let mDataCount = 0, uDataCount = 0;
+
+      if (groupKey === 'total') {
+        mUserCount = rawData.managed ? rawData.managed.userCount : 0;
+        uUserCount = rawData.unmanaged ? rawData.unmanaged.userCount : 0;
+        
+        let mM = rawData.managed ? rawData.managed.scatter.male.length : 0;
+        let mF = rawData.managed ? rawData.managed.scatter.female.length : 0;
+        let mO = rawData.managed ? rawData.managed.scatter.other.length : 0;
+        mDataCount = mM + mF + mO;
+        
+        let uM = rawData.unmanaged ? rawData.unmanaged.scatter.male.length : 0;
+        let uF = rawData.unmanaged ? rawData.unmanaged.scatter.female.length : 0;
+        let uO = rawData.unmanaged ? rawData.unmanaged.scatter.other.length : 0;
+        uDataCount = uM + uF + uO;
+      } else if (groupKey === 'managed') {
+        mUserCount = targetData.userCount;
+        uUserCount = 0;
+        mDataCount = countM + countF + countO;
+        uDataCount = 0;
+      } else if (groupKey === 'unmanaged') {
+        mUserCount = 0;
+        uUserCount = targetData.userCount;
+        mDataCount = 0;
+        uDataCount = countM + countF + countO;
+      } else {
+        // 特定のグループが選択された場合は「管理あり」に該当
+        mUserCount = targetData.userCount;
+        uUserCount = 0;
+        mDataCount = countM + countF + countO;
+        uDataCount = 0;
+      }
+      
+      document.getElementById('userCountManaged').innerText = mUserCount.toLocaleString();
+      document.getElementById('userCountUnmanaged').innerText = uUserCount.toLocaleString();
+      document.getElementById('dataCountManaged').innerText = mDataCount.toLocaleString();
+      document.getElementById('dataCountUnmanaged').innerText = uDataCount.toLocaleString();
+
+      if (typeof renderDistChart === 'function') renderDistChart(targetData);
+      if (typeof renderPatakaChart === 'function') renderPatakaChart(); // パタカラ分析描画
+      if (typeof renderChurnChart === 'function') renderChurnChart();
+    }
+  </script>
+</body>
+</html>

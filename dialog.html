@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Excelファイルをブラウザで読み込むための外部ライブラリ（SheetJS） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+      body { font-family: sans-serif; padding: 10px 20px; color: #333; background-color: #fafbfc; }
+      h3 { font-size: 15px; margin-top: 20px; margin-bottom: 5px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; color: #1a73e8; font-weight: bold; }
+      .desc { font-size: 12px; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+      .section { margin-bottom: 25px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+      .group-container { max-height: 140px; overflow-y: auto; border: 1px solid #cbd5e1; padding: 10px; border-radius: 4px; background-color: #f8fafc; }
+      label { display: block; margin-bottom: 5px; font-size: 13px; cursor: pointer; color: #334155; }
+      .inline-input { margin-bottom: 8px; display: flex; align-items: center; gap: 5px; font-size: 13px; color: #334155; }
+      input[type="number"] { width: 75px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-size: 13px; }
+      input[type="number"]:focus { border-color: #1a73e8; }
+      select { padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; background-color: white; outline: none; font-size: 13px; }
+      select:focus { border-color: #1a73e8; }
+      .btn-container { text-align: center; margin-top: 30px; }
+      button { padding: 12px 20px; background-color: #1a73e8; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: bold; width: 100%; transition: background-color 0.2s; }
+      button:hover { background-color: #1557b0; }
+      button:disabled { background-color: #cccccc; cursor: not-allowed; }
+      #status { margin-top: 15px; text-align: center; font-size: 13px; font-weight: bold; }
+      
+      #dropZone {
+        border: 2px dashed #1a73e8; border-radius: 8px; padding: 30px 15px; text-align: center;
+        background-color: #f8fafd; cursor: pointer; transition: background-color 0.2s, border-color 0.2s;
+        margin-bottom: 5px;
+      }
+      #dropZone.dragover { background-color: #e8f0fe; border-color: #1557b0; }
+      #dropZone p { margin: 0 0 5px 0; color: #1a73e8; font-weight: bold; font-size: 14px; }
+      #dropZone span { font-size: 12px; color: #64748b; }
+      #dataFile { display: none; }
+      #fileNameDisplay { font-size: 13px; font-weight: bold; color: #0f9d58; margin-top: 5px; }
+
+      /* 一括設定用モダンカードスタイル */
+      .master-metric-panel {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 620px;
+        margin-top: 12px;
+      }
+      .panel-title {
+        font-weight: bold;
+        color: #0f172a;
+        margin-bottom: 12px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 1px dashed #cbd5e1;
+        padding-bottom: 8px;
+      }
+      .metric-badge {
+        font-size: 11px;
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      .metric-selection-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 12px;
+        border-radius: 6px;
+        margin-top: 8px;
+      }
+      .metric-selection-grid label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: bold;
+        color: #334155;
+        margin-bottom: 0;
+      }
+      .metric-selection-grid input[type="checkbox"] {
+        cursor: pointer;
+        width: 15px;
+        height: 15px;
+        accent-color: #1a73e8;
+      }
+    </style>
+  </head>
+  <body>
+    <form id="filterForm" onsubmit="event.preventDefault(); submitForm();">
+      
+      <div class="section">
+        <h3>対象ファイルのアップロード</h3>
+        <p class="desc">処理を行いたいCSVまたはExcelファイルを選択またはドラッグ＆ドロップしてください。</p>
+        
+        <div id="dropZone" onclick="document.getElementById('dataFile').click();">
+          <p>ここをクリックしてファイルを選択</p>
+          <span>または、ここにCSV・Excelファイルをドラッグ＆ドロップ</span>
+        </div>
+        <input type="file" id="dataFile" accept=".csv, .xlsx, .xls" onchange="handleFileSelect(this.files)">
+        <div id="fileNameDisplay"></div>
+      </div>
+
+      <div class="section">
+        <h3>1. 連携グループの排除</h3>
+        <p class="desc">チェックを入れたグループのデータをデータベースから【排除】します。（※選択は自動保存されます）</p>
+        <div id="groupList" class="group-container">
+          ファイルを選択すると、ここにグループが表示されます。
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>2. 年齢の排除</h3>
+        <p class="desc">指定した年齢範囲のデータを【排除】します。（空白の場合は無視）</p>
+        <div class="inline-input">
+          <input type="number" id="ageMinVal" placeholder="例: 3"> 歳
+          <select id="ageMinType">
+            <option value="lessThan">未満 (指定した年齢を含まない)</option>
+            <option value="lessThanOrEqual">以下 (指定した年齢を含む)</option>
+          </select>
+          を排除
+        </div>
+        <div class="inline-input">
+          <input type="number" id="ageMaxVal" placeholder="例: 100"> 歳
+          <select id="ageMaxType">
+            <option value="greaterThanOrEqual">以上 (指定した年齢を含む)</option>
+            <option value="greaterThan">より上 (指定した年齢を含まない)</option>
+          </select>
+          を排除
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>3. 口腔機能指標(回/秒)の一括排除</h3>
+        <p class="desc">指定した範囲に合致するデータをデータベースから【排除】します。（空白の場合は無視）</p>
+        <p class="desc" style="color: #2563eb; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+          <span>💡</span> 範囲を入力し、対象にする指標のみにチェックを入れてください。秒間発音回数（N〜Q列）を基準に正確に排除します。
+        </p>
+        
+        <div class="master-metric-panel">
+          <div class="panel-title">
+            <span>⚙️ 一括排除基準の設定</span>
+            <span class="metric-badge">パタカラ一括条件</span>
+          </div>
+
+          <div class="inline-input" style="margin-bottom: 12px;">
+            <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">下限値による排除:</span>
+            <input type="number" step="0.1" id="masterMinVal" placeholder="例: 0.2" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
+            <select id="masterMinType" style="font-weight: bold; color: #475569;">
+              <option value="lessThan" selected>未満 (指定値を含まない)</option>
+              <option value="lessThanOrEqual">以下 (指定値を含む)</option>
+            </select>
+            を排除
+          </div>
+
+          <div class="inline-input" style="margin-bottom: 16px;">
+            <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">上限値による排除:</span>
+            <input type="number" step="0.1" id="masterMaxVal" placeholder="例: 10.0" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
+            <select id="masterMaxType" style="font-weight: bold; color: #475569;">
+              <option value="greaterThanOrEqual" selected>以上 (指定値を含む)</option>
+              <option value="greaterThan">より上 (指定値を含まない)</option>
+            </select>
+            を排除
+          </div>
+
+          <!-- 対象指標の選択チェックボックス -->
+          <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
+            <span style="font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px;">✔️ 排除の対象にする指標（複数選択可）:</span>
+            <div class="metric-selection-grid">
+              <label><input type="checkbox" id="chkA4" checked> 4文字平均</label>
+              <label><input type="checkbox" id="chkA3" checked> 3文字平均</label>
+              <label><input type="checkbox" id="chkP"> パ</label>
+              <label><input type="checkbox" id="chkT"> タ</label>
+              <label><input type="checkbox" id="chkK"> カ</label>
+              <label><input type="checkbox" id="chkR"> ラ</label>
+            </div>
+            <p class="desc" style="margin-top: 8px; margin-bottom: 0; font-size: 11px;">※データ激減を防ぐため、デフォルトでは「4文字平均」と「3文字平均」のみ選択されています。必要に応じて「パ・タ・カ・ラ」もオンにしてください。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-container">
+        <button type="submit" id="submitBtn" disabled>条件を適用して新しいタブを作成</button>
+      </div>
+      <div id="status"></div>
+    </form>
+
+    <script>
+      var currentFileData = null;
+      var currentFileName = "";
+      var dropZone = document.getElementById('dropZone');
+
+      dropZone.addEventListener('dragover', function(e) { e.stopPropagation(); e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; dropZone.classList.add('dragover'); }, false);
+      dropZone.addEventListener('dragleave', function(e) { e.stopPropagation(); e.preventDefault(); dropZone.classList.remove('dragover'); }, false);
+      dropZone.addEventListener('drop', function(e) { e.stopPropagation(); e.preventDefault(); dropZone.classList.remove('dragover'); var files = e.dataTransfer.files; if(files.length > 0) handleFileSelect(files); }, false);
+
+      function handleFileSelect(files) {
+        if (!files || !files.length) files = document.getElementById('dataFile').files;
+        var btn = document.getElementById('submitBtn');
+        var container = document.getElementById('groupList');
+        var nameDisplay = document.getElementById('fileNameDisplay');
+        if (!files || files.length === 0) { btn.disabled = true; container.innerHTML = 'ファイルを選択すると、ここにグループが表示されます。'; nameDisplay.innerText = ''; return; }
+        var file = files[0];
+        currentFileName = file.name;
+        nameDisplay.innerText = '選択中のファイル: ' + currentFileName;
+        btn.disabled = true; container.innerHTML = 'ファイルを読み込み中...';
+        var ext = currentFileName.split('.').pop().toLowerCase();
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          try {
+            var data = new Uint8Array(e.target.result);
+            var workbook = XLSX.read(data, {type: 'array'});
+            var targetSheetName = workbook.SheetNames[0];
+            if (ext === 'xlsx' || ext === 'xls') {
+                targetSheetName = "検査履歴";
+                if (!workbook.SheetNames.includes(targetSheetName)) { container.innerHTML = '<span style="color:#d32f2f;">エラー: エクセルファイル内に「検査履歴」シートが見つかりません。</span>'; return; }
+            }
+            var worksheet = workbook.Sheets[targetSheetName];
+            var jsonArray = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: "", raw: false, dateNF: 'yyyy/mm/dd hh:mm:ss'});
+            currentFileData = JSON.stringify(jsonArray);
+            sendDataToGAS(container, btn);
+          } catch (err) { container.innerHTML = '<span style="color:#d32f2f;">失敗: ' + err.message + '</span>'; }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      function sendDataToGAS(container, btn) {
+        google.script.run
+          .withSuccessHandler(function(data) { populateGroups(data); if (!data.error) btn.disabled = false; })
+          .withFailureHandler(function(err) { container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + err.message + '</span>'; })
+          .getFilterDataFromUploadedFile(currentFileData);
+      }
+
+      function populateGroups(data) {
+        var container = document.getElementById('groupList');
+        container.innerHTML = '';
+        if (data.error) { container.innerHTML = '<span style="color:#d32f2f;">' + data.error + '</span>'; return; }
+        google.script.run.withSuccessHandler(function(savedList) {
+          var list = savedList || [];
+          data.groups.forEach(function(group) {
+            var label = document.createElement('label');
+            var checkbox = document.createElement('input');
+            checkbox.type = 'checkbox'; checkbox.name = 'excludeGroups'; checkbox.value = group;
+            if (list.indexOf(group) !== -1) checkbox.checked = true;
+            checkbox.onchange = function() { saveCurrentExcludedGroups(); };
+            label.appendChild(checkbox); label.appendChild(document.createTextNode(' ' + group));
+            container.appendChild(label);
+          });
+        }).loadExcludedGroups();
+      }
+
+      function saveCurrentExcludedGroups() {
+        var excludeGroups = []; var checkboxes = document.getElementsByName('excludeGroups');
+        for (var i = 0; i < checkboxes.length; i++) { if (checkboxes[i].checked) excludeGroups.push(checkboxes[i].value); }
+        google.script.run.saveExcludedGroups(excludeGroups);
+      }
+
+      function copyUrl(url) {
+        var temp = document.createElement("textarea"); temp.value = url; document.body.appendChild(temp); temp.select(); document.execCommand("copy"); document.body.removeChild(temp);
+        var btn = document.getElementById("copyBtn"); if (btn) { btn.innerHTML = "✅ コピーしました"; setTimeout(function() { btn.innerHTML = "📋 URLをコピー"; }, 2500); }
+      }
+
+      function submitForm() {
+        var btn = document.getElementById('submitBtn'); var status = document.getElementById('status');
+        btn.disabled = true; status.innerHTML = '抽出DBを作成中...'; status.style.color = '#1a73e8';
+        var minVal = document.getElementById('masterMinVal').value; var minType = document.getElementById('masterMinType').value;
+        var maxVal = document.getElementById('masterMaxVal').value; var maxType = document.getElementById('masterMaxType').value;
+        var formObject = {
+          fileData: currentFileData, fileName: currentFileName, excludeGroups: [],
+          ageMinVal: document.getElementById('ageMinVal').value, ageMinType: document.getElementById('ageMinType').value,
+          ageMaxVal: document.getElementById('ageMaxVal').value, ageMaxType: document.getElementById('ageMaxType').value,
+          a4MinVal: document.getElementById('chkA4').checked ? minVal : "", a4MinType: minType, a4MaxVal: document.getElementById('chkA4').checked ? maxVal : "", a4MaxType: maxType,
+          a3MinVal: document.getElementById('chkA3').checked ? minVal : "", a3MinType: minType, a3MaxVal: document.getElementById('chkA3').checked ? maxVal : "", a3MaxType: maxType,
+          pMinVal: document.getElementById('chkP').checked ? minVal : "", pMinType: minType, pMaxVal: document.getElementById('chkP').checked ? maxVal : "", pMaxType: maxType,
+          tMinVal: document.getElementById('chkT').checked ? minVal : "", tMinType: minType, tMaxVal: document.getElementById('chkT').checked ? maxVal : "", tMaxType: maxType,
+          kMinVal: document.getElementById('chkK').checked ? minVal : "", kMinType: minType, kMaxVal: document.getElementById('chkK').checked ? maxVal : "", kMaxType: maxType,
+          rMinVal: document.getElementById('chkR').checked ? minVal : "", rMinType: minType, rMaxVal: document.getElementById('chkR').checked ? maxVal : "", rMaxType: maxType
+        };
+        var checkboxes = document.getElementsByName('excludeGroups');
+        for (var i = 0; i < checkboxes.length; i++) { if (checkboxes[i].checked) formObject.excludeGroups.push(checkboxes[i].value); }
+        google.script.run.withSuccessHandler(function(result) {
+             if (result.error) { status.innerHTML = result.error; status.style.color = '#d32f2f'; btn.disabled = false; return; }
+             status.innerHTML = result.message + '<div style="margin-top: 15px;"><a href="' + result.url + '" target="_blank" style="color: #1a73e8; font-weight: bold; text-decoration: none;">🔗 スプレッドシートを開く</a></div>';
+             status.style.color = '#0f9d58'; btn.innerHTML = '完了';
+          }).withFailureHandler(function(error) { status.innerHTML = 'エラー: ' + error.message; status.style.color = '#d32f2f'; btn.disabled = false; })
+          .processUploadedData(formObject);
+      }
+    </script>
+  </body>
+</html>

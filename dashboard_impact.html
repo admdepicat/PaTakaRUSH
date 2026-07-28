@@ -1,0 +1,36 @@
+<!-- パネル 3: スコア改善効果 -->
+<div id="panel-impact" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+  <h2 class="text-lg font-bold text-gray-800 mb-4">利用期間別の4文字平均スコア改善効果</h2>
+  <div class="chart-container w-full max-w-4xl mx-auto mt-4">
+    <canvas id="impactChart"></canvas>
+  </div>
+</div>
+
+<script>
+  function renderImpactChart(targetData) {
+    if (charts.impact) charts.impact.destroy();
+    const imp = targetData.impact;
+    
+    charts.impact = new Chart(document.getElementById('impactChart'), {
+      type: 'bar',
+      data: {
+        labels: ['短期 (1週未満)', '中期 (1~12週)', '長期 (12週以上)'],
+        datasets: [
+          { label: '初回スコア', data: [imp.short.firstAvg, imp.medium.firstAvg, imp.long.firstAvg], backgroundColor: '#93c5fd' },
+          { label: '最終スコア', data: [imp.short.lastAvg, imp.medium.lastAvg, imp.long.lastAvg], backgroundColor: '#2563eb' }
+        ]
+      },
+      options: {
+        responsive: true, 
+        maintainAspectRatio: true, 
+        aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9, // 動的にアスペクト比を取得
+        plugins: { tooltip: { callbacks: { afterLabel: function(ctx) {
+          const keys = ['short', 'medium', 'long'];
+          const diff = imp[keys[ctx.dataIndex]].improvement;
+          return '改善度: ' + (diff > 0 ? '+' : '') + diff + ' 回/秒';
+        }}}},
+        scales: { y: { min: 0, title: { display: true, text: '4文字平均' } } }
+      }
+    });
+  }
+</script>
