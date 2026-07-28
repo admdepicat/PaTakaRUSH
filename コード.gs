@@ -495,7 +495,7 @@ function debugUserChurn(sheetName, uidQuery) {
     var raw = getAdvancedAnalyticsData(sheetName);
     var result = typeof raw === 'string' ? JSON.parse(raw) : raw;
     if (result.error) return result;
-    var matches = result.usersChurn.filter(function(u) { return u.uid.indexOf(uidQuery) !== -1; });
+    var matches = result.usersChurn.filter(function(u) { return String(u.uid).indexOf(uidQuery) !== -1; });
     return matches.map(function(u) {
       var blocks = [];
       for (var b = 0; b < 12; b++) {
@@ -510,4 +510,20 @@ function debugUserChurn(sheetName, uidQuery) {
       };
     });
   } catch (err) { return { error: "debugUserChurn エラー: " + err.toString() }; }
+}
+
+/**
+ * デバッグ用: uid(ニックネーム)が文字列型でないユーザーが何件あるか確認する
+ */
+function debugNonStringUids(sheetName) {
+  try {
+    var raw = getAdvancedAnalyticsData(sheetName);
+    var result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (result.error) return result;
+    var total = result.usersChurn.length;
+    var offenders = result.usersChurn
+      .map(function(u, i) { return { index: i, uid: u.uid, type: typeof u.uid }; })
+      .filter(function(x) { return x.type !== 'string'; });
+    return { totalUsers: total, nonStringCount: offenders.length, offenders: offenders };
+  } catch (err) { return { error: "debugNonStringUids エラー: " + err.toString() }; }
 }
