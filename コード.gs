@@ -423,13 +423,14 @@ function getAdvancedAnalyticsData(sheetName) {
         var lastRecord = user.records[user.records.length - 1];
         var lastMidnight = new Date(lastRecord.date.getFullYear(), lastRecord.date.getMonth(), lastRecord.date.getDate()).getTime();
         var accountAgeDays = Math.round((lastMidnight - firstMidnight) / (1000 * 60 * 60 * 24));
-        var weeklyDays = {}; var weeklyScoreMap = {};
+        var weeklyDaySets = {}; var weeklyScoreMap = {};
         user.records.forEach(function(rec) {
           var recMidnight = new Date(rec.date.getFullYear(), rec.date.getMonth(), rec.date.getDate()).getTime();
           var relDay = Math.round((recMidnight - firstMidnight) / (1000 * 60 * 60 * 24));
           var w = Math.floor(relDay / 7);
           if (w < 24) {
-            weeklyDays[w] = (weeklyDays[w] || 0) + 1;
+            if (!weeklyDaySets[w]) weeklyDaySets[w] = new Set();
+            weeklyDaySets[w].add(relDay);
             if (!weeklyScoreMap[w]) weeklyScoreMap[w] = [];
             weeklyScoreMap[w].push(rec.a4);
           }
@@ -437,7 +438,7 @@ function getAdvancedAnalyticsData(sheetName) {
         var dataArr = []; var scoresArr = [];
         for (var w = 0; w < 24; w++) {
           if (accountAgeDays >= w * 7) {
-            dataArr.push(weeklyDays[w] || 0);
+            dataArr.push(weeklyDaySets[w] ? weeklyDaySets[w].size : 0);
             var wScores = weeklyScoreMap[w];
             if (wScores && wScores.length > 0) {
               var sum = wScores.reduce(function(a, b){ return a + b; }, 0);
