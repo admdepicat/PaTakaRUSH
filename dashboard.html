@@ -122,10 +122,14 @@
       google.script.run.withSuccessHandler(function(names) {
         const select = document.getElementById('sheetSelect');
         select.innerHTML = '<option value="">分析対象の抽出DBシートを選択...</option>';
+        let dbSheetSelected = false;
         names.forEach(name => {
           const opt = document.createElement('option');
           opt.value = name; opt.text = name;
-          if (name.includes('抽出DB')) opt.selected = true;
+          if (!dbSheetSelected && name.includes('抽出DB')) {
+            opt.selected = true;
+            dbSheetSelected = true;
+          }
           select.appendChild(opt);
         });
         if (select.value) loadData();
