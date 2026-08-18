@@ -67,8 +67,8 @@
         <span class="text-gray-500 mr-1 w-10" data-i18n="indicator">指標:</span>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="checkbox" id="topIndMedian" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
-          <span class="text-gray-700" data-i18n="p50">50%タイル(中央値)</span>
-          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5"/></svg>
+          <span class="text-gray-700" data-i18n="lmsPercentiles">パーセンタイル曲線 (LMS法: 3/10/25/50/75/90/97%ile)</span>
+          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="3.5"/></svg>
         </label>
 
         <span class="text-gray-300 mx-1">|</span>
@@ -85,7 +85,7 @@
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
     <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
     <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。</span><br>
-    <span data-i18n="descTopMedianSmooth">※中央値を滑らかな成長曲線のような線で表示しています（近似曲線・平均値は非表示）。</span>
+    <span data-i18n="descTopMedianSmooth">※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole &amp; Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、3・10・25・50・75・90・97パーセンタイルの7本の曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。</span>
   </p>
 
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
@@ -361,13 +361,14 @@
       total: "全体", male: "男性", female: "女性", other: "未回答", indNone: "生の散布点",
       periodLabel: "期間:", periodAll: "全期間", period1w: "1週間", period2w: "2週間",
       yMax: "Y軸最大値:", auto: "自動", indicator: "指標:", mean: "平均値", curveLabel: "近似曲線",
-      p75: "75%タイル", p50: "50%タイル(中央値)", p25: "25%タイル", bgBars: "人数(背景棒)",
+      p97: "97%タイル", p90: "90%タイル", p75: "75%タイル", p50: "50%タイル(中央値)", p25: "25%タイル", p10: "10%タイル", p3: "3%タイル", bgBars: "人数(背景棒)",
       descScatter1: "各ユーザーの年齢と代表スコアの分布を表示しています。",
       descScatter2: "※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。",
       descScatter3: "※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。",
       descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図もこの期間に連動します。",
       descScatter5: "※「指標」の近似曲線・平均値・中央値は自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
-      descTopMedianSmooth: "※各年齢の中央値に対し、前後3歳分を三角カーネルで加重平均する平滑化処理（身長・体重の成長曲線と同様の考え方）を適用したうえで、成長曲線のような滑らかな線として表示しています（近似曲線・平均値は非表示）。",
+      lmsPercentiles: "パーセンタイル曲線 (LMS法: 3/10/25/50/75/90/97%ile)",
+      descTopMedianSmooth: "※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole & Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、3・10・25・50・75・90・97パーセンタイルの7本の曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。",
       descCompare1: "全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。",
       descCompare2: "※「指標」で近似曲線・平均値・中央値のいずれかを選ぶと、その折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねます（色は性別）。",
       descCompare3: "※「生の散布点」を選ぶと、指標を計算せず生データの点を期間ごとに点の形（●全期間 / ▲2週間 / ◆1週間）で見分けて重ねます。",
@@ -390,13 +391,14 @@
       total: "Total", male: "Male", female: "Female", other: "Other", indNone: "Raw points",
       periodLabel: "Period:", periodAll: "All time", period1w: "1 Week", period2w: "2 Weeks",
       yMax: "Y-Axis Max:", auto: "Auto", indicator: "Metrics:", mean: "Mean", curveLabel: "Trend Curve",
-      p75: "75th Pct", p50: "Median", p25: "25th Pct", bgBars: "User Count (Bars)",
+      p97: "97th Pct", p90: "90th Pct", p75: "75th Pct", p50: "Median", p25: "25th Pct", p10: "10th Pct", p3: "3rd Pct", bgBars: "User Count (Bars)",
       descScatter1: "Shows the distribution of age and representative scores for each user.",
       descScatter2: "* Background bars (right axis) show unique user counts per age.",
       descScatter3: "* Representative score links to the Daily Max/Avg toggle above.",
       descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows this period too.",
       descScatter5: "* You can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
-      descTopMedianSmooth: "* Each age's median is smoothed using a triangular-kernel weighted average across the neighboring 3 years (similar to the method behind height/weight growth charts), then drawn as a smooth, growth-curve-style line (trend curve and mean are hidden).",
+      lmsPercentiles: "Percentile Curves (LMS method: 3/10/25/50/75/90/97%ile)",
+      descTopMedianSmooth: "* Using the same LMS method (Cole & Green, 1992) behind WHO/CDC height-weight growth charts, L (skewness), M (median), and S (coefficient of variation) are estimated per age and used to draw the 3rd, 10th, 25th, 50th, 75th, 90th, and 97th percentile curves (the 50th/median line is bolded; the trend curve and mean are hidden).",
       descCompare1: "Overlays the all-time, 2-week, and 1-week representative values on one chart for comparison.",
       descCompare2: "* Selecting the trend curve, mean, or median under \"Metrics\" draws that line once per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash), colored by gender.",
       descCompare3: "* Selecting \"Raw points\" skips the indicator calculation and overlays the raw data points instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week).",
@@ -666,26 +668,39 @@
       if (targets.includes('female') || targets.includes('total')) newDatasets.push({ type: 'scatter', label: t('female'), data: femaleData, backgroundColor: 'rgba(225, 29, 72, 0.5)', borderColor: 'rgba(225, 29, 72, 0.8)', pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y' });
       if (targets.includes('total')) newDatasets.push({ type: 'scatter', label: t('other'), data: otherData, backgroundColor: 'rgba(156, 163, 175, 0.5)', borderColor: 'rgba(156, 163, 175, 0.8)', pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y' });
 
-      // --- 3. 中央値 (加重移動平均で値自体を平滑化してから、成長曲線のような滑らかな線として描画) ---
-      const showMedian = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
+      // --- 3. LMS法によるパーセンタイル曲線 (3/10/25/50/75/90/97パーセンタイル、50パーセンタイルを太線で強調) ---
+      const showPercentiles = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
+      const PCT_LIST = [3, 10, 25, 50, 75, 90, 97];
+      const PCT_STYLE = {
+        3:  { width: 1,   dash: [2, 2], opacity: 0.4 },
+        10: { width: 1.2, dash: [6, 3], opacity: 0.5 },
+        25: { width: 1.5, dash: [],     opacity: 0.65 },
+        50: { width: 3.5, dash: [],     opacity: 1 },
+        75: { width: 1.5, dash: [],     opacity: 0.65 },
+        90: { width: 1.2, dash: [6, 3], opacity: 0.5 },
+        97: { width: 1,   dash: [2, 2], opacity: 0.4 }
+      };
+      const PCT_LABEL_KEY = { 3: 'p3', 10: 'p10', 25: 'p25', 50: 'p50', 75: 'p75', 90: 'p90', 97: 'p97' };
 
-      if (showMedian) {
+      if (showPercentiles) {
         targets.forEach(tKey => {
             let dataArray = [];
             if (tKey === 'total') dataArray = allScatterData;
             else if (tKey === 'male') dataArray = maleData;
             else if (tKey === 'female') dataArray = femaleData;
 
-            const lineData = getLineData(dataArray);
-            const points = smoothMedianCurve(lineData.p50, 3);
-            if (points && points.length > 0) {
+            const curves = computeLmsPercentileCurves(dataArray, PCT_LIST);
+            PCT_LIST.forEach(p => {
+                const points = curves[p];
+                if (!points || points.length === 0) return;
+                const style = PCT_STYLE[p];
                 newDatasets.push({
-                    type: 'line', label: `${targetStyles[tKey].label} ${t('p50')}`, data: points,
-                    borderColor: targetStyles[tKey].color, backgroundColor: 'transparent', borderWidth: 2.5,
-                    pointRadius: 0, fill: false, tension: 0.3, cubicInterpolationMode: 'monotone',
-                    pointStyle: 'line', order: 0, yAxisID: 'y'
+                    type: 'line', label: `${targetStyles[tKey].label} ${t(PCT_LABEL_KEY[p])}`, data: points,
+                    borderColor: hexToRgba(targetStyles[tKey].color, style.opacity), backgroundColor: 'transparent', borderWidth: style.width,
+                    borderDash: style.dash, pointRadius: 0, fill: false, tension: 0.3, cubicInterpolationMode: 'monotone',
+                    pointStyle: 'line', order: p === 50 ? -1 : 0, yAxisID: 'y'
                 });
-            }
+            });
         });
       }
 
@@ -799,6 +814,163 @@
           });
           return { x: p.x, y: weightSum > 0 ? valueSum / weightSum : p.y };
       });
+  }
+
+  // ===== LMS法 (Cole & Green, 1992) によるパーセンタイル曲線推定 =====
+  // WHO/厚労省の成長曲線と同じ考え方：各年齢についてL(歪度)・M(中央値)・S(変動係数)を推定し、
+  // Box-Cox変換により歪んだ分布を正規分布に近づけたうえで任意のパーセンタイル値を算出する。
+  const LMS_Z = { 3: -1.8808, 10: -1.2816, 25: -0.6745, 50: 0, 75: 0.6745, 90: 1.2816, 97: 1.8808 };
+
+  function hexToRgba(hex, opacity) {
+      const m = /^#([0-9a-f]{6})$/i.exec(hex);
+      if (!m) return hex;
+      const int = parseInt(m[1], 16);
+      const r = (int >> 16) & 255, g = (int >> 8) & 255, b = int & 255;
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+  }
+
+  function boxCoxTransform(x, L) {
+      if (Math.abs(L) < 1e-6) return Math.log(x);
+      return (Math.pow(x, L) - 1) / L;
+  }
+
+  function weightedMean(pairs) {
+      const totalW = pairs.reduce((s, d) => s + d[1], 0);
+      if (totalW <= 0) return 0;
+      return pairs.reduce((s, d) => s + d[0] * d[1], 0) / totalW;
+  }
+
+  function weightedPercentile(pairs, p) {
+      if (!pairs.length) return null;
+      const sorted = pairs.slice().sort((a, b) => a[0] - b[0]);
+      const totalW = sorted.reduce((s, d) => s + d[1], 0);
+      if (totalW <= 0) return null;
+      const target = p * totalW;
+      let cum = 0;
+      for (let i = 0; i < sorted.length; i++) {
+          const prevCum = cum;
+          cum += sorted[i][1];
+          if (cum >= target) {
+              if (i === 0) return sorted[0][0];
+              const frac = (target - prevCum) / ((cum - prevCum) || 1);
+              return sorted[i - 1][0] + frac * (sorted[i][0] - sorted[i - 1][0]);
+          }
+      }
+      return sorted[sorted.length - 1][0];
+  }
+
+  function weightedSkewness(pairs, mean) {
+      const totalW = pairs.reduce((s, d) => s + d[1], 0);
+      if (totalW <= 0) return 0;
+      let m2 = 0, m3 = 0;
+      pairs.forEach(d => { const diff = d[0] - mean; m2 += d[1] * diff * diff; m3 += d[1] * diff * diff * diff; });
+      m2 /= totalW; m3 /= totalW;
+      const sd = Math.sqrt(m2);
+      return sd > 0 ? m3 / (sd * sd * sd) : 0;
+  }
+
+  function weightedStdev(pairs, mean) {
+      const totalW = pairs.reduce((s, d) => s + d[1], 0);
+      if (totalW <= 0) return 0;
+      let m2 = 0;
+      pairs.forEach(d => { const diff = d[0] - mean; m2 += d[1] * diff * diff; });
+      return Math.sqrt(m2 / totalW);
+  }
+
+  // Box-Cox変換後の加重歪度がゼロになるLを二分探索で求め、そのLでのM・Sを推定する
+  function estimateLMS(pairs) {
+      const totalW = pairs.reduce((s, d) => s + d[1], 0);
+      if (totalW <= 0) return null;
+      const M = weightedPercentile(pairs, 0.5);
+      if (!M || M <= 0) return null;
+
+      const skewAtL = (L) => {
+          const transformed = pairs.map(d => [boxCoxTransform(d[0] / M, L), d[1]]);
+          return weightedSkewness(transformed, weightedMean(transformed));
+      };
+
+      let lo = -3, hi = 3, sLo = skewAtL(lo), sHi = skewAtL(hi), L = 1;
+      if (isFinite(sLo) && isFinite(sHi) && sLo * sHi < 0) {
+          for (let i = 0; i < 40; i++) {
+              const mid = (lo + hi) / 2;
+              const sMid = skewAtL(mid);
+              if (!isFinite(sMid)) break;
+              if (Math.abs(sMid) < 1e-6) { L = mid; break; }
+              if (sLo * sMid < 0) { hi = mid; } else { lo = mid; sLo = sMid; }
+              L = mid;
+          }
+      } else {
+          // 歪度の符号が範囲内で変わらない場合は、|歪度|が最小となるLを採用する
+          let bestAbs = Infinity;
+          for (let Lc = -3; Lc <= 3; Lc += 0.1) {
+              const s = skewAtL(Lc);
+              if (isFinite(s) && Math.abs(s) < bestAbs) { bestAbs = Math.abs(s); L = Lc; }
+          }
+      }
+
+      const transformedAtL = pairs.map(d => [boxCoxTransform(d[0] / M, L), d[1]]);
+      const S = weightedStdev(transformedAtL, weightedMean(transformedAtL));
+      return { L: L, M: M, S: S > 0 ? S : 0.01 };
+  }
+
+  function lmsPercentileValue(L, M, S, Z) {
+      if (!isFinite(L) || !isFinite(M) || !isFinite(S)) return null;
+      if (Math.abs(L) < 1e-6) return M * Math.exp(S * Z);
+      const base = 1 + L * S * Z;
+      if (base <= 0) return null;
+      return M * Math.pow(base, 1 / L);
+  }
+
+  // 年齢ごとにLMSパラメータ(L,M,S)を推定し(近傍±5歳をカーネル加重して安定化)、
+  // さらにL,M,Sそれぞれの曲線を年齢方向に平滑化したうえで、指定パーセンタイルの曲線群を返す
+  function computeLmsPercentileCurves(dataArray, percentileList) {
+      const result = {};
+      percentileList.forEach(p => { result[p] = []; });
+      if (!dataArray || dataArray.length === 0) return result;
+
+      const ages = Array.from(new Set(dataArray.filter(d => d && d.x !== undefined).map(d => Math.round(d.x)))).sort((a, b) => a - b);
+      const bandwidth = 5; // 年齢方向のカーネル幅（サンプル確保のため近傍±5歳を利用）
+      const MIN_WEIGHTED_N = 8; // 推定の安定性を確保する最低有効サンプル数
+
+      const rawL = [], rawM = [], rawS = [];
+      ages.forEach(age => {
+          const pairs = [];
+          let weightedN = 0;
+          dataArray.forEach(d => {
+              if (!d || d.x === undefined || d.y === undefined || d.y <= 0) return;
+              const dist = Math.abs(Math.round(d.x) - age);
+              if (dist <= bandwidth) {
+                  const w = 1 - dist / (bandwidth + 1);
+                  pairs.push([d.y, w]);
+                  weightedN += w;
+              }
+          });
+          if (weightedN < MIN_WEIGHTED_N) return;
+          const lms = estimateLMS(pairs);
+          if (!lms) return;
+          rawL.push({ x: age, y: lms.L });
+          rawM.push({ x: age, y: lms.M });
+          rawS.push({ x: age, y: lms.S });
+      });
+
+      const smoothL = smoothMedianCurve(rawL, 2);
+      const smoothM = smoothMedianCurve(rawM, 2);
+      const smoothS = smoothMedianCurve(rawS, 2);
+
+      const Lmap = {}, Mmap = {}, Smap = {};
+      smoothL.forEach(d => { Lmap[d.x] = d.y; });
+      smoothM.forEach(d => { Mmap[d.x] = d.y; });
+      smoothS.forEach(d => { Smap[d.x] = d.y; });
+
+      Object.keys(Lmap).map(Number).sort((a, b) => a - b).forEach(age => {
+          const L = Lmap[age], M = Mmap[age], S = Smap[age];
+          percentileList.forEach(p => {
+              const val = lmsPercentileValue(L, M, S, LMS_Z[p]);
+              if (val !== null && isFinite(val)) result[p].push({ x: age, y: val });
+          });
+      });
+
+      return result;
   }
 
   const TARGET_STYLES = {
