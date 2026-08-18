@@ -13,7 +13,7 @@
 
   <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
-      <h2 class="text-lg font-bold text-gray-800" data-i18n="scatterTitle">年齢と4文字平均の相関 (散布図)</h2>
+      <h2 class="text-lg font-bold text-gray-800" data-i18n="scatterTitle">年齢と4文字平均の相関 (詳細散布図)</h2>
       <button onclick="downloadMainScatterCSV()" class="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2 w-fit">
         <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
         <span data-i18n="csvBtn">CSV出力</span>
@@ -42,19 +42,16 @@
         <span class="text-gray-300 mx-1">|</span>
         <span class="text-gray-500 mr-1" data-i18n="periodLabel">期間:</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkPeriodAll" onchange="onPeriodCheckboxChange(this)" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <input type="radio" name="detailPeriod" id="detailPeriodAll" onchange="updateMainScatterChart(); renderBoxPlot();" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
           <span class="text-gray-700" data-i18n="periodAll">全期間</span>
-          <span class="inline-block w-2 h-2 bg-gray-500 ml-0.5 rounded-full"></span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkPeriod2w" onchange="onPeriodCheckboxChange(this)" class="w-4 h-4 cursor-pointer accent-gray-600">
+          <input type="radio" name="detailPeriod" id="detailPeriod2w" onchange="updateMainScatterChart(); renderBoxPlot();" class="w-4 h-4 cursor-pointer accent-gray-600">
           <span class="text-gray-700" data-i18n="period2w">2週間</span>
-          <span class="inline-block w-2 h-2 bg-gray-500 ml-0.5" style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkPeriod1w" onchange="onPeriodCheckboxChange(this)" class="w-4 h-4 cursor-pointer accent-gray-600">
+          <input type="radio" name="detailPeriod" id="detailPeriod1w" onchange="updateMainScatterChart(); renderBoxPlot();" class="w-4 h-4 cursor-pointer accent-gray-600">
           <span class="text-gray-700" data-i18n="period1w">1週間</span>
-          <span class="inline-block w-2 h-2 bg-gray-500 ml-0.5" style="transform: rotate(45deg);"></span>
         </label>
 
         <span class="text-gray-300 mx-1">|</span>
@@ -93,15 +90,103 @@
     <span data-i18n="descScatter1">各ユーザーの年齢と代表スコアの分布を表示しています。</span><br>
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
     <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
-    <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図は、チェックした期間のうち先頭（全期間 &gt; 2週間 &gt; 1週間の順）のものに連動します。</span><br>
-    <span data-i18n="descScatter5">※単一期間の表示中は、「指標」の近似曲線・平均値・中央値を自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。</span><br>
-    <span data-i18n="descScatter6">※「期間」を2つ以上チェックすると比較表示になります。この場合「指標」は優先順位（近似曲線 &gt; 平均値 &gt; 中央値）で選ばれた1つだけを、期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。指標を何も選んでいない場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。</span>
+    <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図もこの期間に連動します。</span><br>
+    <span data-i18n="descScatter5">※「指標」の近似曲線・平均値・中央値は自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。</span>
   </p>
 
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
     <canvas id="scatterChart"></canvas>
   </div>
-  
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- ============================================== -->
+  <!-- パネル 1b: 期間比較グラフ -->
+  <!-- ============================================== -->
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
+      <h2 class="text-lg font-bold text-gray-800" data-i18n="compareTitle">年齢と4文字平均の相関 (期間比較グラフ)</h2>
+      <button onclick="downloadCompareScatterCSV()" class="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2 w-fit">
+        <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+        <span data-i18n="csvBtn">CSV出力</span>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 w-full xl:w-auto overflow-x-auto">
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10" data-i18n="target">対象:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="cmpTargetTotal" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+          <span class="text-emerald-600" data-i18n="total">全体</span>
+          <span class="inline-block w-4 h-1.5 bg-[#059669] ml-0.5 rounded-sm"></span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="cmpTargetMale" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
+          <span class="text-blue-600" data-i18n="male">男性</span>
+          <span class="inline-block w-4 h-1.5 bg-[#2563eb] ml-0.5 rounded-sm"></span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="cmpTargetFemale" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
+          <span class="text-rose-600" data-i18n="female">女性</span>
+          <span class="inline-block w-4 h-1.5 bg-[#e11d48] ml-0.5 rounded-sm"></span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="text-gray-500 mr-1" data-i18n="periodLabel">期間:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="cmpPeriodAll" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <span class="text-gray-700" data-i18n="periodAll">全期間</span>
+          <span class="inline-block w-2 h-2 bg-gray-500 ml-0.5 rounded-full"></span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="cmpPeriod2w" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <span class="text-gray-700" data-i18n="period2w">2週間</span>
+          <span class="inline-block w-2 h-2 bg-gray-500 ml-0.5" style="clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="cmpPeriod1w" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+          <span class="text-gray-700" data-i18n="period1w">1週間</span>
+          <span class="inline-block w-2 h-2 bg-gray-500 ml-0.5" style="transform: rotate(45deg);"></span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="flex items-center gap-1 whitespace-nowrap">
+          <span class="text-gray-500" data-i18n="yMax">Y軸最大値:</span>
+          <input type="number" id="cmpYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderCompareScatterChart()" min="1" step="1">
+        </span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10" data-i18n="indicator">指標:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="cmpIndicatorMode" id="cmpIndCurve" value="curve" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+          <span class="text-gray-700" data-i18n="curveLabel">近似曲線</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="cmpIndicatorMode" id="cmpIndMean" value="mean" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+          <span class="text-gray-700" data-i18n="mean">平均値</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="cmpIndicatorMode" id="cmpIndMedian" value="p50" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+          <span class="text-gray-700" data-i18n="p50">50%タイル(中央値)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="cmpIndicatorMode" id="cmpIndNone" value="none" onchange="renderCompareScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+          <span class="text-gray-700" data-i18n="indNone">生の散布点</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-6">
+    <span data-i18n="descCompare1">全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。</span><br>
+    <span data-i18n="descCompare2">※「指標」で近似曲線・平均値・中央値のいずれかを選ぶと、その折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねます（色は性別）。</span><br>
+    <span data-i18n="descCompare3">※「生の散布点」を選ぶと、指標を計算せず生データの点を期間ごとに点の形（●全期間 / ▲2週間 / ◆1週間）で見分けて重ねます。</span>
+  </p>
+
+  <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
+    <canvas id="compareScatterChart"></canvas>
+  </div>
+
   <hr class="my-8 border-gray-200">
 
   <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
@@ -166,17 +251,19 @@
 
   const distI18n = {
     ja: {
-      scatterTitle: "年齢と4文字平均の相関 (散布図)", csvBtn: "CSV出力", target: "対象:",
-      total: "全体", male: "男性", female: "女性", other: "未回答",
+      scatterTitle: "年齢と4文字平均の相関 (詳細散布図)", compareTitle: "年齢と4文字平均の相関 (期間比較グラフ)", csvBtn: "CSV出力", target: "対象:",
+      total: "全体", male: "男性", female: "女性", other: "未回答", indNone: "生の散布点",
       periodLabel: "期間:", periodAll: "全期間", period1w: "1週間", period2w: "2週間",
       yMax: "Y軸最大値:", auto: "自動", indicator: "指標:", mean: "平均値", curveLabel: "近似曲線",
       p75: "75%タイル", p50: "50%タイル(中央値)", p25: "25%タイル", bgBars: "人数(背景棒)",
       descScatter1: "各ユーザーの年齢と代表スコアの分布を表示しています。",
       descScatter2: "※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。",
       descScatter3: "※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。",
-      descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図は、チェックした期間のうち先頭（全期間 > 2週間 > 1週間の順）のものに連動します。",
-      descScatter5: "※単一期間の表示中は、「指標」の近似曲線・平均値・中央値を自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
-      descScatter6: "※「期間」を2つ以上チェックすると比較表示になります。この場合「指標」は優先順位（近似曲線 > 平均値 > 中央値）で選ばれた1つだけを、期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。指標を何も選んでいない場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。",
+      descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図もこの期間に連動します。",
+      descScatter5: "※「指標」の近似曲線・平均値・中央値は自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
+      descCompare1: "全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。",
+      descCompare2: "※「指標」で近似曲線・平均値・中央値のいずれかを選ぶと、その折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねます（色は性別）。",
+      descCompare3: "※「生の散布点」を選ぶと、指標を計算せず生データの点を期間ごとに点の形（●全期間 / ▲2週間 / ◆1週間）で見分けて重ねます。",
       boxPlotTitle: "年齢グループ別 スコア分布 (箱ひげ図)", ageStep: "年齢の刻み幅:", ageUnit: "歳",
       descBox1: "上の散布図と同じ対象者について、指定した年齢の刻み幅ごとにスコアの分布を全体および男女別で比較表示しています。",
       descBox2: "箱の中の「×」マーク：", descBox3: "箱の上下の端：", descBox3a: "25%タイル値 と 75%タイル値",
@@ -191,17 +278,19 @@
       showWhiskers: "ヒゲを表示", showMeanTrend: "平均値の推移線を表示", showMedianTrend: "中央値の推移線を表示"
     },
     en: {
-      scatterTitle: "Correlation: Age & 4-Letter Avg (Scatter)", csvBtn: "Export CSV", target: "Target:",
-      total: "Total", male: "Male", female: "Female", other: "Other",
+      scatterTitle: "Correlation: Age & 4-Letter Avg (Detail Scatter)", compareTitle: "Correlation: Age & 4-Letter Avg (Period Comparison)", csvBtn: "Export CSV", target: "Target:",
+      total: "Total", male: "Male", female: "Female", other: "Other", indNone: "Raw points",
       periodLabel: "Period:", periodAll: "All time", period1w: "1 Week", period2w: "2 Weeks",
       yMax: "Y-Axis Max:", auto: "Auto", indicator: "Metrics:", mean: "Mean", curveLabel: "Trend Curve",
       p75: "75th Pct", p50: "Median", p25: "25th Pct", bgBars: "User Count (Bars)",
       descScatter1: "Shows the distribution of age and representative scores for each user.",
       descScatter2: "* Background bars (right axis) show unique user counts per age.",
       descScatter3: "* Representative score links to the Daily Max/Avg toggle above.",
-      descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows the first checked period (order: All time > 2 Weeks > 1 Week).",
-      descScatter5: "* While viewing a single period, you can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
-      descScatter6: "* Checking 2 or more periods switches to comparison mode. In that mode only one \"Metrics\" choice is used, by priority (trend curve > mean > median), drawn as one line per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash). If no metric is selected, raw scatter points are shown instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week). For clarity, background bars are automatically hidden while comparing.",
+      descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows this period too.",
+      descScatter5: "* You can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
+      descCompare1: "Overlays the all-time, 2-week, and 1-week representative values on one chart for comparison.",
+      descCompare2: "* Selecting the trend curve, mean, or median under \"Metrics\" draws that line once per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash), colored by gender.",
+      descCompare3: "* Selecting \"Raw points\" skips the indicator calculation and overlays the raw data points instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week).",
       boxPlotTitle: "Score Dist by Age Group (Box Plot)", ageStep: "Age Step:", ageUnit: "yrs",
       descBox1: "Compares score distributions by gender across age groups using the same dataset.",
       descBox2: "'x' in Box:", descBox3: "Box Edges:", descBox3a: "25th & 75th Pct",
@@ -269,6 +358,7 @@
     // メイングラフの再描画
     if (currentDistData) {
       updateMainScatterChart();
+      renderCompareScatterChart();
       renderBoxPlot();
     }
   }
@@ -359,38 +449,36 @@
       
       currentDistData = targetData;
       updateMainScatterChart();
+      renderCompareScatterChart();
 
       if (typeof additionalScatters !== 'undefined') {
         Object.keys(additionalScatters).forEach(id => { applyScatterChart(id); });
       }
-      renderBoxPlot(); 
-      
+      renderBoxPlot();
+
     } catch (error) {
       console.error(error);
     }
   }
 
-  // 表示順(全期間 > 2週間 > 1週間)で、チェックされている期間のキー一覧を返す
-  const PERIOD_ORDER = ['all', '2w', '1w'];
-  const PERIOD_CHECKBOX_ID = { all: 'chkPeriodAll', '2w': 'chkPeriod2w', '1w': 'chkPeriod1w' };
   const PERIOD_POINT_STYLE = { all: 'circle', '2w': 'triangle', '1w': 'rectRot' };
   const PERIOD_LABEL_KEY = { all: 'periodAll', '2w': 'period2w', '1w': 'period1w' };
 
-  function getCheckedPeriods() {
-    return PERIOD_ORDER.filter(p => {
-      const el = document.getElementById(PERIOD_CHECKBOX_ID[p]);
-      return el && el.checked;
-    });
+  // 詳細散布図(単一期間)パネルで選択中の期間を返す
+  function getDetailPeriod() {
+    if (document.getElementById('detailPeriod2w') && document.getElementById('detailPeriod2w').checked) return '2w';
+    if (document.getElementById('detailPeriod1w') && document.getElementById('detailPeriod1w').checked) return '1w';
+    return 'all';
   }
 
-  // 期間チェックボックスは最低1つ選択された状態を維持する（全解除を防ぐ）
-  function onPeriodCheckboxChange(changedEl) {
-    if (getCheckedPeriods().length === 0) {
-      changedEl.checked = true;
-      return;
-    }
-    updateMainScatterChart();
-    renderBoxPlot();
+  // 期間比較グラフパネルでチェックされている期間一覧を返す(表示順: 全期間 > 2週間 > 1週間)
+  const CMP_PERIOD_ORDER = ['all', '2w', '1w'];
+  const CMP_PERIOD_CHECKBOX_ID = { all: 'cmpPeriodAll', '2w': 'cmpPeriod2w', '1w': 'cmpPeriod1w' };
+  function getCheckedComparePeriods() {
+    return CMP_PERIOD_ORDER.filter(p => {
+      const el = document.getElementById(CMP_PERIOD_CHECKBOX_ID[p]);
+      return el && el.checked;
+    });
   }
 
   // 指定した期間・グループに応じた散布図データを返す
@@ -431,15 +519,142 @@
     return result;
   }
 
+  // 「指標」の年齢別の平均値/中央値の折れ線データを計算する（詳細散布図・期間比較グラフ共通）
+  function getLineData(dataArray) {
+      if (!dataArray) return { mean: [], p50: [] };
+      const ageMap = {};
+      dataArray.forEach(d => {
+          if (d && d.x !== undefined && d.y !== undefined) {
+              const age = Math.round(d.x);
+              if (!ageMap[age]) ageMap[age] = [];
+              ageMap[age].push(d.y);
+          }
+      });
+      const sortedAges = Object.keys(ageMap).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
+      const meanData = []; const p50Data = [];
+
+      sortedAges.forEach(age => {
+          const scores = ageMap[age];
+          if (scores && scores.length > 0) {
+              const stats = calculateStats(scores);
+              if (stats.mean !== '-') meanData.push({x: age, y: parseFloat(stats.mean)});
+              if (stats.p50 !== '-') p50Data.push({x: age, y: parseFloat(stats.p50)});
+          }
+      });
+
+      // 平滑化処理（smoothCurveByAge）を完全に撤廃し、各年齢の絶対的な値をそのまま出力する
+      return { mean: meanData, p50: p50Data };
+  }
+
+  const TARGET_STYLES = {
+    total: { color: '#059669', bg: 'rgba(5, 150, 105, 0.5)', border: 'rgba(5, 150, 105, 0.8)', labelKey: 'total' },
+    male: { color: '#2563eb', bg: 'rgba(37, 99, 235, 0.5)', border: 'rgba(37, 99, 235, 0.8)', labelKey: 'male' },
+    female: { color: '#e11d48', bg: 'rgba(225, 29, 72, 0.5)', border: 'rgba(225, 29, 72, 0.8)', labelKey: 'female' },
+    other: { color: '#6b7280', bg: 'rgba(156, 163, 175, 0.5)', border: 'rgba(156, 163, 175, 0.8)', labelKey: 'other' }
+  };
+
+  // ===== 期間比較グラフ (全期間/2週間/1週間を重ねて比較) =====
+  function renderCompareScatterChart() {
+    try {
+      if (!rawData) return;
+      const groupSelect = document.getElementById('groupSelect');
+      if (!groupSelect) return;
+
+      const periods = getCheckedComparePeriods();
+
+      let hiddenStates = {};
+      if (charts.scatterCompare && charts.scatterCompare.data && charts.scatterCompare.data.datasets) {
+        charts.scatterCompare.data.datasets.forEach((ds, index) => {
+          const meta = charts.scatterCompare.getDatasetMeta(index);
+          if (meta.hidden === true || ds.hidden === true) hiddenStates[ds.label] = true;
+        });
+      }
+
+      const cmpYMaxStr = document.getElementById('cmpYMax') ? document.getElementById('cmpYMax').value : '';
+      const cmpYMax = cmpYMaxStr ? parseInt(cmpYMaxStr, 10) : undefined;
+
+      const targets = [];
+      if (document.getElementById('cmpTargetTotal') && document.getElementById('cmpTargetTotal').checked) targets.push('total');
+      if (document.getElementById('cmpTargetMale') && document.getElementById('cmpTargetMale').checked) targets.push('male');
+      if (document.getElementById('cmpTargetFemale') && document.getElementById('cmpTargetFemale').checked) targets.push('female');
+
+      const cmpIndicatorEl = document.querySelector('input[name="cmpIndicatorMode"]:checked');
+      const compareIndicator = cmpIndicatorEl ? cmpIndicatorEl.value : 'curve'; // 'curve' | 'mean' | 'p50' | 'none'
+
+      const newDatasets = [];
+      const PERIOD_DASH = { all: [], '2w': [8, 4], '1w': [2, 2] };
+
+      if (compareIndicator !== 'none') {
+        periods.forEach(period => {
+          const targetData = getEffectiveScatterData(period);
+          const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
+          const dash = PERIOD_DASH[period];
+
+          const seriesDefs = [];
+          if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
+          if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
+          if (targets.includes('total')) seriesDefs.push(['total', [...(targetData.male||[]), ...(targetData.female||[]), ...(targetData.other||[])]]);
+
+          seriesDefs.forEach(([key, data]) => {
+            const style = TARGET_STYLES[key];
+            let lineData;
+            if (compareIndicator === 'curve') lineData = getPolynomialCurve(data);
+            else lineData = getLineData(data)[compareIndicator]; // 'mean' | 'p50'
+
+            if (!lineData || lineData.length === 0) return;
+            newDatasets.push({
+              type: 'line', label: t(style.labelKey) + periodLabel, data: lineData,
+              borderColor: style.color, backgroundColor: 'transparent', borderDash: dash,
+              borderWidth: 2.2, pointRadius: 0, fill: false, tension: compareIndicator === 'curve' ? 0.4 : 0,
+              pointStyle: 'line', order: 2, yAxisID: 'y'
+            });
+          });
+        });
+      } else {
+        periods.forEach(period => {
+          const targetData = getEffectiveScatterData(period);
+          const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
+          const pointStyle = PERIOD_POINT_STYLE[period];
+
+          const seriesDefs = [];
+          if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
+          if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
+          if (targets.includes('total')) seriesDefs.push(['other', targetData.other || []]);
+
+          seriesDefs.forEach(([key, data]) => {
+            const style = TARGET_STYLES[key];
+            newDatasets.push({
+              type: 'scatter', label: t(style.labelKey) + periodLabel, data: data,
+              backgroundColor: style.bg, borderColor: style.border,
+              pointRadius: 2, pointHoverRadius: 5, pointStyle: pointStyle, order: 1, yAxisID: 'y'
+            });
+          });
+        });
+      }
+
+      newDatasets.forEach(ds => { if (hiddenStates[ds.label] === true) ds.hidden = true; });
+      renderScatterChartInstance('compareScatterChart', 'scatterCompare', newDatasets, cmpYMax);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function downloadCompareScatterCSV() {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupName = groupSelect ? groupSelect.options[groupSelect.selectedIndex].text.replace(/\[.*\]\s*/, '') : 'Data';
+    const periods = getCheckedComparePeriods();
+    const periodSuffix = periods.length > 0 ? `_${periods.join('+')}` : '';
+    downloadCSV(charts.scatterCompare, `Age_Score_Compare_${groupName}${periodSuffix}`);
+  }
+
+  // ===== 詳細散布図 (単一期間: 近似曲線/指標線/背景棒つき) =====
   function updateMainScatterChart() {
     try {
       if (!rawData) return;
       const groupSelect = document.getElementById('groupSelect');
       if (!groupSelect) return;
 
-      const periods = getCheckedPeriods();
-      if (periods.length === 0) return;
-      const isCompare = periods.length > 1;
+      const period = getDetailPeriod();
 
       // ===== 既存の「凡例による非表示状態」を保存する =====
       let hiddenStates = {};
@@ -460,7 +675,7 @@
       if (document.getElementById('chkTargetMale') && document.getElementById('chkTargetMale').checked) targets.push('male');
       if (document.getElementById('chkTargetFemale') && document.getElementById('chkTargetFemale').checked) targets.push('female');
 
-      // 「指標」は近似曲線/平均値/中央値を自由に組み合わせて同時表示できる（単一期間モードのみ）
+      // 「指標」は近似曲線/平均値/中央値を自由に組み合わせて同時表示できる
       const selectedIndicators = [];
       if (document.getElementById('indCurve') && document.getElementById('indCurve').checked) selectedIndicators.push('curve');
       if (document.getElementById('indMean') && document.getElementById('indMean').checked) selectedIndicators.push('mean');
@@ -469,104 +684,10 @@
       const showCurve = selectedIndicators.includes('curve');
       const indicators = selectedIndicators.filter(x => x === 'mean' || x === 'p50');
 
-      // 期間比較モードでは指標は1つだけ使う（優先順位: 近似曲線 > 平均値 > 中央値）。未選択なら生の散布点で比較。
-      const compareIndicator = selectedIndicators[0] || 'none';
-
       const newDatasets = [];
-      const targetStyles = {
-        total: { color: '#059669', bg: 'rgba(5, 150, 105, 0.5)', border: 'rgba(5, 150, 105, 0.8)', label: t('total') },
-        male: { color: '#2563eb', bg: 'rgba(37, 99, 235, 0.5)', border: 'rgba(37, 99, 235, 0.8)', label: t('male') },
-        female: { color: '#e11d48', bg: 'rgba(225, 29, 72, 0.5)', border: 'rgba(225, 29, 72, 0.8)', label: t('female') },
-        other: { color: '#6b7280', bg: 'rgba(156, 163, 175, 0.5)', border: 'rgba(156, 163, 175, 0.8)', label: t('other') }
-      };
+      const targetStyles = { total: { color: TARGET_STYLES.total.color, label: t('total') }, male: { color: TARGET_STYLES.male.color, label: t('male') }, female: { color: TARGET_STYLES.female.color, label: t('female') } };
 
-      function getLineData(dataArray) {
-          if (!dataArray) return { mean: [], p50: [] };
-          const ageMap = {};
-          dataArray.forEach(d => {
-              if (d && d.x !== undefined && d.y !== undefined) {
-                  const age = Math.round(d.x);
-                  if (!ageMap[age]) ageMap[age] = [];
-                  ageMap[age].push(d.y);
-              }
-          });
-          const sortedAges = Object.keys(ageMap).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
-          const meanData = []; const p50Data = [];
-
-          sortedAges.forEach(age => {
-              const scores = ageMap[age];
-              if (scores && scores.length > 0) {
-                  const stats = calculateStats(scores);
-                  if (stats.mean !== '-') meanData.push({x: age, y: parseFloat(stats.mean)});
-                  if (stats.p50 !== '-') p50Data.push({x: age, y: parseFloat(stats.p50)});
-              }
-          });
-
-          // 平滑化処理（smoothCurveByAge）を完全に撤廃し、各年齢の絶対的な値をそのまま出力する
-          return { mean: meanData, p50: p50Data };
-      }
-
-      // ===== 期間比較モード =====
-      // 指標(近似曲線/平均値/中央値)を選択中: その指標の折れ線を期間ごとに重ねて比較
-      // 「表示なし」選択中: 生の散布点を期間ごとに点の形を変えて比較
-      if (isCompare) {
-        const PERIOD_DASH = { all: [], '2w': [8, 4], '1w': [2, 2] };
-
-        if (compareIndicator !== 'none') {
-          periods.forEach(period => {
-            const targetData = getEffectiveScatterData(period);
-            const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
-            const dash = PERIOD_DASH[period];
-
-            const seriesDefs = [];
-            if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
-            if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
-            if (targets.includes('total')) seriesDefs.push(['total', [...(targetData.male||[]), ...(targetData.female||[]), ...(targetData.other||[])]]);
-
-            seriesDefs.forEach(([key, data]) => {
-              const style = targetStyles[key];
-              let lineData;
-              if (compareIndicator === 'curve') lineData = getPolynomialCurve(data);
-              else lineData = getLineData(data)[compareIndicator]; // 'mean' | 'p50'
-
-              if (!lineData || lineData.length === 0) return;
-              newDatasets.push({
-                type: 'line', label: style.label + periodLabel, data: lineData,
-                borderColor: style.color, backgroundColor: 'transparent', borderDash: dash,
-                borderWidth: 2.2, pointRadius: 0, fill: false, tension: compareIndicator === 'curve' ? 0.4 : 0,
-                pointStyle: 'line', order: 2, yAxisID: 'y'
-              });
-            });
-          });
-        } else {
-          periods.forEach(period => {
-            const targetData = getEffectiveScatterData(period);
-            const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
-            const pointStyle = PERIOD_POINT_STYLE[period];
-
-            const seriesDefs = [];
-            if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
-            if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
-            if (targets.includes('total')) seriesDefs.push(['other', targetData.other || []]);
-
-            seriesDefs.forEach(([key, data]) => {
-              const style = targetStyles[key];
-              newDatasets.push({
-                type: 'scatter', label: style.label + periodLabel, data: data,
-                backgroundColor: style.bg, borderColor: style.border,
-                pointRadius: 2, pointHoverRadius: 5, pointStyle: pointStyle, order: 1, yAxisID: 'y'
-              });
-            });
-          });
-        }
-
-        newDatasets.forEach(ds => { if (hiddenStates[ds.label] === true) ds.hidden = true; });
-        renderScatterChartInstance(newDatasets, mainYMax);
-        return;
-      }
-
-      // ===== 単一期間モード: 従来通り(近似曲線/指標線/背景棒つき) =====
-      const targetData = getEffectiveScatterData(periods[0]);
+      const targetData = getEffectiveScatterData(period);
       const maleData = targetData.male || [];
       const femaleData = targetData.female || [];
       const otherData = targetData.other || [];
@@ -655,18 +776,18 @@
           ds.hidden = true;
         }
       });
-      renderScatterChartInstance(newDatasets, mainYMax);
+      renderScatterChartInstance('scatterChart', 'scatter', newDatasets, mainYMax);
     } catch (error) {
       console.error(error);
     }
   }
 
-  function renderScatterChartInstance(newDatasets, mainYMax) {
-      const scatterChartEl = document.getElementById('scatterChart');
+  function renderScatterChartInstance(canvasId, chartKey, newDatasets, mainYMax) {
+      const scatterChartEl = document.getElementById(canvasId);
       if (!scatterChartEl) return;
 
-      if (!charts.scatter) {
-          charts.scatter = new Chart(scatterChartEl, {
+      if (!charts[chartKey]) {
+          charts[chartKey] = new Chart(scatterChartEl, {
               type: 'scatter',
               data: { datasets: newDatasets },
               options: {
@@ -747,45 +868,44 @@
               }
           });
       } else {
-          charts.scatter.data.datasets = newDatasets;
-          charts.scatter.options.scales.x.title.text = t('axisAge');
-          charts.scatter.options.scales.x.min = 0;
-          charts.scatter.options.scales.x.max = 100;
-          charts.scatter.options.scales.x.bounds = 'ticks'; // 更新時も余白削除を適用
-          charts.scatter.options.scales.x.offset = false;   // 更新時もオフセットなしを強制
-          charts.scatter.options.scales.x.stacked = false;
-          charts.scatter.options.scales.x.ticks.stepSize = 5;
-          charts.scatter.options.scales.x.ticks.callback = function(value) {
+          const chart = charts[chartKey];
+          chart.data.datasets = newDatasets;
+          chart.options.scales.x.title.text = t('axisAge');
+          chart.options.scales.x.min = 0;
+          chart.options.scales.x.max = 100;
+          chart.options.scales.x.bounds = 'ticks'; // 更新時も余白削除を適用
+          chart.options.scales.x.offset = false;   // 更新時もオフセットなしを強制
+          chart.options.scales.x.stacked = false;
+          chart.options.scales.x.ticks.stepSize = 5;
+          chart.options.scales.x.ticks.callback = function(value) {
               if (value % 5 === 0) return value;
               return null;
           };
-          charts.scatter.options.scales.x.grid.color = function(context) {
+          chart.options.scales.x.grid.color = function(context) {
               if (!context || !context.tick) return 'transparent'; // 安全ガード
               const val = context.tick.value;
               if (val % 10 === 0) return 'rgba(0, 0, 0, 0.15)';
               if (val % 5 === 0) return 'rgba(0, 0, 0, 0.06)';
               return 'transparent';
           };
-          charts.scatter.options.scales.x.grid.lineWidth = function(context) {
+          chart.options.scales.x.grid.lineWidth = function(context) {
               if (!context || !context.tick) return 0; // 安全ガード
               const val = context.tick.value;
               if (val % 10 === 0) return 1.2;
               if (val % 5 === 0) return 1;
               return 0;
           };
-          charts.scatter.options.scales.y.title.text = t('axisScore');
-          charts.scatter.options.scales.yCount.title.text = t('axisCount');
-          charts.scatter.options.scales.y.max = mainYMax;
-          charts.scatter.update();
+          chart.options.scales.y.title.text = t('axisScore');
+          chart.options.scales.yCount.title.text = t('axisCount');
+          chart.options.scales.y.max = mainYMax;
+          chart.update();
       }
   }
 
   function downloadMainScatterCSV() {
     const groupSelect = document.getElementById('groupSelect');
     const groupName = groupSelect ? groupSelect.options[groupSelect.selectedIndex].text.replace(/\[.*\]\s*/, '') : 'Data';
-    const periods = getCheckedPeriods();
-    const periodSuffix = periods.length > 0 ? `_${periods.join('+')}` : '';
-    downloadCSV(charts.scatter, `Age_Score_${groupName}${periodSuffix}`);
+    downloadCSV(charts.scatter, `Age_Score_${groupName}_${getDetailPeriod()}`);
   }
 
   function downloadAdditionalScatterCSV(id) {
@@ -1031,8 +1151,7 @@
        stepEl.value = step;
     }
 
-    const checkedPeriods = getCheckedPeriods();
-    const periodData = getEffectiveScatterData(checkedPeriods[0] || 'all');
+    const periodData = getEffectiveScatterData(getDetailPeriod());
     const maleData = periodData.male || [];
     const femaleData = periodData.female || [];
     const otherData = periodData.other || [];
