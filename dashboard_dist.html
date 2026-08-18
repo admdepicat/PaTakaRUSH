@@ -116,7 +116,7 @@
         <span class="text-sm font-bold text-gray-600" data-i18n="showMeanTrend">平均値の推移線を表示</span>
       </label>
       <label class="flex items-center gap-1.5 cursor-pointer">
-        <input type="checkbox" id="chkShowMedianTrend" onchange="renderBoxPlot()" class="w-4 h-4 cursor-pointer accent-indigo-600">
+        <input type="checkbox" id="chkShowMedianTrend" onchange="renderBoxPlot()" class="w-4 h-4 cursor-pointer accent-indigo-600" checked>
         <span class="text-sm font-bold text-gray-600" data-i18n="showMedianTrend">中央値の推移線を表示</span>
       </label>
     </div>
@@ -1014,7 +1014,7 @@
           const ctx = chart.ctx; const yAxis = chart.scales.y; const xAxis = chart.scales.x;
           const showWhiskers = document.getElementById('chkShowWhiskers') ? document.getElementById('chkShowWhiskers').checked : true;
           const showMeanTrend = document.getElementById('chkShowMeanTrend') ? document.getElementById('chkShowMeanTrend').checked : true;
-          const showMedianTrend = document.getElementById('chkShowMedianTrend') ? document.getElementById('chkShowMedianTrend').checked : false;
+          const showMedianTrend = document.getElementById('chkShowMedianTrend') ? document.getElementById('chkShowMedianTrend').checked : true;
 
           // 非表示（凡例クリック）になっていないアクティブなデータセットを取得
           const visibleDatasets = [];
