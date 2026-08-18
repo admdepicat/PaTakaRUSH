@@ -16,7 +16,7 @@
   <!-- ============================================== -->
   <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
-      <h2 class="text-lg font-bold text-gray-800" data-i18n="scatterTitle">年齢と4文字平均の相関 (詳細散布図)</h2>
+      <h2 class="text-lg font-bold text-gray-800" data-i18n="scatterTitleTop">新・年齢と4文字平均の相関 (詳細散布図)</h2>
       <button onclick="downloadTopScatterCSV()" class="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2 w-fit">
         <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
         <span data-i18n="csvBtn">CSV出力</span>
@@ -356,7 +356,7 @@
 
   const distI18n = {
     ja: {
-      scatterTitle: "年齢と4文字平均の相関 (詳細散布図)", compareTitle: "年齢と4文字平均の相関 (期間比較グラフ)", countCompareTitle: "年齢別 人数 (期間比較)", csvBtn: "CSV出力", target: "対象:",
+      scatterTitle: "年齢と4文字平均の相関 (詳細散布図)", scatterTitleTop: "新・年齢と4文字平均の相関 (詳細散布図)", compareTitle: "年齢と4文字平均の相関 (期間比較グラフ)", countCompareTitle: "年齢別 人数 (期間比較)", csvBtn: "CSV出力", target: "対象:",
       descCount1: "各年齢について、全期間・2週間・1週間それぞれのユニークユーザー数を並べて比較しています（性別を問わず対象者全員が集計対象です）。",
       total: "全体", male: "男性", female: "女性", other: "未回答", indNone: "生の散布点",
       periodLabel: "期間:", periodAll: "全期間", period1w: "1週間", period2w: "2週間",
@@ -386,7 +386,7 @@
       showWhiskers: "ヒゲを表示", showMeanTrend: "平均値の推移線を表示", showMedianTrend: "中央値の推移線を表示"
     },
     en: {
-      scatterTitle: "Correlation: Age & 4-Letter Avg (Detail Scatter)", compareTitle: "Correlation: Age & 4-Letter Avg (Period Comparison)", countCompareTitle: "User Count by Age (Period Comparison)", csvBtn: "Export CSV", target: "Target:",
+      scatterTitle: "Correlation: Age & 4-Letter Avg (Detail Scatter)", scatterTitleTop: "New: Correlation: Age & 4-Letter Avg (Detail Scatter)", compareTitle: "Correlation: Age & 4-Letter Avg (Period Comparison)", countCompareTitle: "User Count by Age (Period Comparison)", csvBtn: "Export CSV", target: "Target:",
       descCount1: "For each age, compares the unique user count across all-time, 2-week, and 1-week periods (all genders combined).",
       total: "Total", male: "Male", female: "Female", other: "Other", indNone: "Raw points",
       periodLabel: "Period:", periodAll: "All time", period1w: "1 Week", period2w: "2 Weeks",
@@ -672,13 +672,13 @@
       const showPercentiles = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
       const PCT_LIST = [3, 10, 25, 50, 75, 90, 97];
       const PCT_STYLE = {
-        3:  { width: 1,   dash: [2, 2], opacity: 0.4 },
-        10: { width: 1.2, dash: [6, 3], opacity: 0.5 },
-        25: { width: 1.5, dash: [],     opacity: 0.65 },
-        50: { width: 3.5, dash: [],     opacity: 1 },
-        75: { width: 1.5, dash: [],     opacity: 0.65 },
-        90: { width: 1.2, dash: [6, 3], opacity: 0.5 },
-        97: { width: 1,   dash: [2, 2], opacity: 0.4 }
+        3:  { width: 1.5, dash: [], opacity: 0.65 },
+        10: { width: 1.5, dash: [], opacity: 0.65 },
+        25: { width: 1.5, dash: [], opacity: 0.65 },
+        50: { width: 3.5, dash: [], opacity: 1 },
+        75: { width: 1.5, dash: [], opacity: 0.65 },
+        90: { width: 1.5, dash: [], opacity: 0.65 },
+        97: { width: 1.5, dash: [], opacity: 0.65 }
       };
       const PCT_LABEL_KEY = { 3: 'p3', 10: 'p10', 25: 'p25', 50: 'p50', 75: 'p75', 90: 'p90', 97: 'p97' };
 
