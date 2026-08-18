@@ -1101,7 +1101,12 @@
               
               // 中央値横線
               ctx.beginPath(); ctx.lineWidth = 2.5; ctx.moveTo(x - halfWidth, yMed); ctx.lineTo(x + halfWidth, yMed); ctx.stroke();
-              
+
+              // 中央値（黒丸）
+              ctx.beginPath(); ctx.fillStyle = '#111827';
+              const dotRadius = 2.5;
+              ctx.arc(x, yMed, dotRadius, 0, Math.PI * 2); ctx.fill();
+
               // 平均値（×マーク）
               ctx.beginPath(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#111827';
               const crossSize = 3.5;
