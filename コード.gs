@@ -446,7 +446,7 @@ function getAdvancedAnalyticsData(sheetName) {
             } else scoresArr.push(null);
           } else { dataArr.push(null); scoresArr.push(null); }
         }
-        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, data: dataArr, scores: scoresArr, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
+        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
       }
     });
 

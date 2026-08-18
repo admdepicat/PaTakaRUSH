@@ -40,6 +40,14 @@
         </label>
         
         <span class="text-gray-300 mx-1">|</span>
+        <span class="text-gray-500" data-i18n="periodLabel">期間:</span>
+        <select id="scatterPeriodSelect" class="p-1 border border-gray-300 rounded outline-none text-center font-bold text-indigo-700" onchange="updateMainScatterChart(); renderBoxPlot();">
+          <option value="all" data-i18n="periodAll">全期間</option>
+          <option value="1w" data-i18n="period1w">1週間</option>
+          <option value="2w" data-i18n="period2w">2週間</option>
+        </select>
+
+        <span class="text-gray-300 mx-1">|</span>
         <span class="text-gray-500" data-i18n="yMax">Y軸最大値:</span>
         <input type="number" id="mainYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderDistChart()" min="1" step="1">
       </div>
@@ -79,7 +87,8 @@
   <p class="text-sm text-gray-600 mb-6">
     <span data-i18n="descScatter1">各ユーザーの年齢と代表スコアの分布を表示しています。</span><br>
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
-    <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span>
+    <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
+    <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図も連動します。</span>
   </p>
 
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
@@ -143,11 +152,13 @@
     ja: {
       scatterTitle: "年齢と4文字平均の相関 (散布図)", csvBtn: "CSV出力", target: "対象:",
       total: "全体", male: "男性", female: "女性", other: "未回答",
+      periodLabel: "期間:", periodAll: "全期間", period1w: "1週間", period2w: "2週間",
       yMax: "Y軸最大値:", auto: "自動", indicator: "指標:", mean: "平均値",
       p75: "75%タイル", p50: "50%タイル(中央値)", p25: "25%タイル", bgBars: "人数(背景棒)",
       descScatter1: "各ユーザーの年齢と代表スコアの分布を表示しています。",
       descScatter2: "※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。",
       descScatter3: "※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。",
+      descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図も連動します。",
       boxPlotTitle: "年齢グループ別 スコア分布 (箱ひげ図)", ageStep: "年齢の刻み幅:", ageUnit: "歳",
       descBox1: "上の散布図と同じ対象者について、指定した年齢の刻み幅ごとにスコアの分布を全体および男女別で比較表示しています。",
       descBox2: "箱の中の「×」マーク：", descBox3: "箱の上下の端：", descBox3a: "25%タイル値 と 75%タイル値",
@@ -164,11 +175,13 @@
     en: {
       scatterTitle: "Correlation: Age & 4-Letter Avg (Scatter)", csvBtn: "Export CSV", target: "Target:",
       total: "Total", male: "Male", female: "Female", other: "Other",
+      periodLabel: "Period:", periodAll: "All time", period1w: "1 Week", period2w: "2 Weeks",
       yMax: "Y-Axis Max:", auto: "Auto", indicator: "Metrics:", mean: "Mean",
       p75: "75th Pct", p50: "Median", p25: "25th Pct", bgBars: "User Count (Bars)",
       descScatter1: "Shows the distribution of age and representative scores for each user.",
       descScatter2: "* Background bars (right axis) show unique user counts per age.",
       descScatter3: "* Representative score links to the Daily Max/Avg toggle above.",
+      descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows the same selection.",
       boxPlotTitle: "Score Dist by Age Group (Box Plot)", ageStep: "Age Step:", ageUnit: "yrs",
       descBox1: "Compares score distributions by gender across age groups using the same dataset.",
       descBox2: "'x' in Box:", descBox3: "Box Edges:", descBox3a: "25th & 75th Pct",
@@ -337,14 +350,54 @@
     }
   }
 
+  // 選択した期間(全期間/1週間/2週間)・グループに応じた散布図データを返す
+  // 「1週間」「2週間」は、各ユーザーの初回検査日からその日数以内に行われた検査の平均スコア
+  // (usersChurn の週次スコアを再利用。離脱率タブの週次集計と同じ基準)
+  function getEffectiveScatterData() {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupKey = groupSelect ? groupSelect.value : 'total';
+    const periodSelect = document.getElementById('scatterPeriodSelect');
+    const period = periodSelect ? periodSelect.value : 'all';
+
+    if (period === 'all') {
+      const targetData = rawData ? rawData[groupKey] : null;
+      return targetData && targetData.scatter ? targetData.scatter : { male: [], female: [], other: [] };
+    }
+
+    const result = { male: [], female: [], other: [] };
+    if (!rawData || !rawData.usersChurn) return result;
+    const weeksToUse = period === '1w' ? [0] : [0, 1];
+
+    rawData.usersChurn.forEach(u => {
+      let inGroup = false;
+      if (groupKey === 'total') inGroup = true;
+      else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
+      else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
+      else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
+      if (!inGroup) return;
+      if (!u.age || u.age <= 0) return;
+
+      const vals = weeksToUse.map(w => u.scores[w]).filter(v => v !== null && v !== undefined);
+      if (vals.length === 0) return;
+      const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+      const pt = { x: u.age, y: avg, uid: u.uid, a4: avg };
+      let genderKey = 'other';
+      if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
+      else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
+      result[genderKey].push(pt);
+    });
+    return result;
+  }
+
   function updateMainScatterChart() {
     try {
       if (!rawData) return;
       const groupSelect = document.getElementById('groupSelect');
       if (!groupSelect) return;
-      const targetData = rawData[groupSelect.value];
-      if (!targetData || !targetData.scatter) return;
-      
+      const targetData = getEffectiveScatterData();
+      if (!targetData) return;
+
       // ===== 既存の「凡例による非表示状態」を保存する =====
       let hiddenStates = {};
       if (charts.scatter && charts.scatter.data && charts.scatter.data.datasets) {
@@ -370,9 +423,9 @@
       if (document.getElementById('chkP50') && document.getElementById('chkP50').checked) indicators.push('p50');
       if (document.getElementById('chkP25') && document.getElementById('chkP25').checked) indicators.push('p25'); // 25%
 
-      const maleData = targetData.scatter.male || [];
-      const femaleData = targetData.scatter.female || [];
-      const otherData = targetData.scatter.other || [];
+      const maleData = targetData.male || [];
+      const femaleData = targetData.female || [];
+      const otherData = targetData.other || [];
       const allScatterData = [...maleData, ...femaleData, ...otherData];
 
       const newDatasets = [];
@@ -613,7 +666,9 @@
   function downloadMainScatterCSV() {
     const groupSelect = document.getElementById('groupSelect');
     const groupName = groupSelect ? groupSelect.options[groupSelect.selectedIndex].text.replace(/\[.*\]\s*/, '') : 'Data';
-    downloadCSV(charts.scatter, `Age_Score_${groupName}`);
+    const periodSelect = document.getElementById('scatterPeriodSelect');
+    const periodSuffix = periodSelect && periodSelect.value !== 'all' ? `_${periodSelect.value}` : '';
+    downloadCSV(charts.scatter, `Age_Score_${groupName}${periodSuffix}`);
   }
 
   function downloadAdditionalScatterCSV(id) {
@@ -859,9 +914,10 @@
        stepEl.value = step;
     }
 
-    const maleData = currentDistData.scatter.male || [];
-    const femaleData = currentDistData.scatter.female || [];
-    const otherData = currentDistData.scatter.other || [];
+    const periodData = getEffectiveScatterData();
+    const maleData = periodData.male || [];
+    const femaleData = periodData.female || [];
+    const otherData = periodData.other || [];
 
     // 固定年齢範囲 0 〜 100 歳に設定してグループを作成 (散布図と同期)
     const startAge = 0;
