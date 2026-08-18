@@ -70,13 +70,12 @@
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="indicatorMode" id="indMean" value="mean" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
           <span class="text-gray-700" data-i18n="mean">平均値</span>
-          <!-- 実線プレビューに変更 -->
-          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5"/></svg>
+          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5" stroke-dasharray="10,5"/></svg>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="indicatorMode" id="indMedian" value="p50" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
           <span class="text-gray-700" data-i18n="p50">50%タイル(中央値)</span>
-          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5" stroke-dasharray="10,5"/></svg>
+          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5"/></svg>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="indicatorMode" id="indNone" value="none" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
@@ -85,7 +84,7 @@
 
         <span class="text-gray-300 mx-1">|</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkBgBars" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+          <input type="checkbox" id="chkBgBars" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
           <span class="text-gray-700" data-i18n="bgBars">人数(背景棒)</span>
         </label>
       </div>
@@ -591,8 +590,8 @@
           return { mean: meanData, p50: p50Data };
       }
 
-      // 平均値（mean）の dash パターンを空の配列 [] に変更し、実線（ソリッドライン）として描画
-      const indicatorStyles = { mean: { dash: [], label: t('mean') }, p50: { dash: [10, 5], label: t('p50') } };
+      // 中央値(p50)を実線、平均値(mean)を破線として描画
+      const indicatorStyles = { mean: { dash: [10, 5], label: t('mean') }, p50: { dash: [], label: t('p50') } };
 
       targets.forEach(tKey => {
           let dataArray = [];
