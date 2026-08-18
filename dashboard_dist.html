@@ -58,8 +58,10 @@
         </label>
 
         <span class="text-gray-300 mx-1">|</span>
-        <span class="text-gray-500" data-i18n="yMax">Y軸最大値:</span>
-        <input type="number" id="mainYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderDistChart()" min="1" step="1">
+        <span class="flex items-center gap-1 whitespace-nowrap">
+          <span class="text-gray-500" data-i18n="yMax">Y軸最大値:</span>
+          <input type="number" id="mainYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderDistChart()" min="1" step="1">
+        </span>
       </div>
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="text-gray-500 mr-1 w-10" data-i18n="indicator">指標:</span>
@@ -601,9 +603,9 @@
 
         // 棒グラフ（Bar）を linear（数値）軸に描画する際、極細に潰れるのを防止するため barThickness を固定
         // さらに、X軸の stacked を解除しても棒同士だけを積上げ可能にするため stack: 'countStack' を指定
-        if (targets.includes('total')) newDatasets.push({ type: 'bar', label: t('other')+t('countLabel'), data: barOther, backgroundColor: 'rgba(107, 114, 128, 0.15)', borderColor: 'transparent', yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
-        if (targets.includes('female') || targets.includes('total')) newDatasets.push({ type: 'bar', label: t('female')+t('countLabel'), data: barFemale, backgroundColor: 'rgba(225, 29, 72, 0.15)', borderColor: 'transparent', yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
-        if (targets.includes('male') || targets.includes('total')) newDatasets.push({ type: 'bar', label: t('male')+t('countLabel'), data: barMale, backgroundColor: 'rgba(37, 99, 235, 0.15)', borderColor: 'transparent', yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('total')) newDatasets.push({ type: 'bar', label: t('other')+t('countLabel'), data: barOther, backgroundColor: 'rgba(107, 114, 128, 0.35)', borderColor: 'rgba(107, 114, 128, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('female') || targets.includes('total')) newDatasets.push({ type: 'bar', label: t('female')+t('countLabel'), data: barFemale, backgroundColor: 'rgba(225, 29, 72, 0.35)', borderColor: 'rgba(225, 29, 72, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('male') || targets.includes('total')) newDatasets.push({ type: 'bar', label: t('male')+t('countLabel'), data: barMale, backgroundColor: 'rgba(37, 99, 235, 0.35)', borderColor: 'rgba(37, 99, 235, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
       }
 
       // --- 2. 近似曲線と散布図 ---
