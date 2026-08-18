@@ -11,6 +11,92 @@
     </div>
   </div>
 
+  <!-- ============================================== -->
+  <!-- パネル 1-top: 年齢と4文字平均の相関 (中央値・成長曲線) -->
+  <!-- ============================================== -->
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
+    <div class="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
+      <h2 class="text-lg font-bold text-gray-800" data-i18n="scatterTitle">年齢と4文字平均の相関 (詳細散布図)</h2>
+      <button onclick="downloadTopScatterCSV()" class="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2 w-fit">
+        <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+        <span data-i18n="csvBtn">CSV出力</span>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 w-full xl:w-auto overflow-x-auto">
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10" data-i18n="target">対象:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="topChkTargetTotal" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+          <span class="text-emerald-600" data-i18n="total">全体</span>
+          <span class="inline-block w-4 h-1.5 bg-[#059669] ml-0.5 rounded-sm"></span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="topChkTargetMale" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
+          <span class="text-blue-600" data-i18n="male">男性</span>
+          <span class="inline-block w-4 h-1.5 bg-[#2563eb] ml-0.5 rounded-sm"></span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="topChkTargetFemale" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
+          <span class="text-rose-600" data-i18n="female">女性</span>
+          <span class="inline-block w-4 h-1.5 bg-[#e11d48] ml-0.5 rounded-sm"></span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="text-gray-500 mr-1" data-i18n="periodLabel">期間:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="topDetailPeriod" id="topDetailPeriodAll" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <span class="text-gray-700" data-i18n="periodAll">全期間</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="topDetailPeriod" id="topDetailPeriod2w" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+          <span class="text-gray-700" data-i18n="period2w">2週間</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="topDetailPeriod" id="topDetailPeriod1w" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+          <span class="text-gray-700" data-i18n="period1w">1週間</span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="flex items-center gap-1 whitespace-nowrap">
+          <span class="text-gray-500" data-i18n="yMax">Y軸最大値:</span>
+          <input type="number" id="topMainYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateTopScatterChart()" min="1" step="1">
+        </span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10" data-i18n="indicator">指標:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="topIndMedian" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+          <span class="text-gray-700" data-i18n="p50">50%タイル(中央値)</span>
+          <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5"/></svg>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="checkbox" id="topChkBgBars" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+          <span class="text-gray-700" data-i18n="bgBars">人数(背景棒)</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-6">
+    <span data-i18n="descScatter1">各ユーザーの年齢と代表スコアの分布を表示しています。</span><br>
+    <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
+    <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
+    <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。</span><br>
+    <span data-i18n="descTopMedianSmooth">※中央値を滑らかな成長曲線のような線で表示しています（近似曲線・平均値は非表示）。</span>
+  </p>
+
+  <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
+    <canvas id="topScatterChart"></canvas>
+  </div>
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- ============================================== -->
+  <!-- パネル 1a: 年齢と4文字平均の相関 (詳細散布図) -->
+  <!-- ============================================== -->
   <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
     <div class="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
       <h2 class="text-lg font-bold text-gray-800" data-i18n="scatterTitle">年齢と4文字平均の相関 (詳細散布図)</h2>
@@ -19,26 +105,26 @@
         <span data-i18n="csvBtn">CSV出力</span>
       </button>
     </div>
-    
+
     <div class="flex flex-col gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 w-full xl:w-auto overflow-x-auto">
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="text-gray-500 mr-1 w-10" data-i18n="target">対象:</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkTargetTotal" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked> 
+          <input type="checkbox" id="chkTargetTotal" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
           <span class="text-emerald-600" data-i18n="total">全体</span>
           <span class="inline-block w-4 h-1.5 bg-[#059669] ml-0.5 rounded-sm"></span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkTargetMale" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-blue-600"> 
+          <input type="checkbox" id="chkTargetMale" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
           <span class="text-blue-600" data-i18n="male">男性</span>
           <span class="inline-block w-4 h-1.5 bg-[#2563eb] ml-0.5 rounded-sm"></span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="checkbox" id="chkTargetFemale" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-rose-600"> 
+          <input type="checkbox" id="chkTargetFemale" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
           <span class="text-rose-600" data-i18n="female">女性</span>
           <span class="inline-block w-4 h-1.5 bg-[#e11d48] ml-0.5 rounded-sm"></span>
         </label>
-        
+
         <span class="text-gray-300 mx-1">|</span>
         <span class="text-gray-500 mr-1" data-i18n="periodLabel">期間:</span>
         <label class="flex items-center gap-1 cursor-pointer">
@@ -281,6 +367,7 @@
       descScatter3: "※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。",
       descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図もこの期間に連動します。",
       descScatter5: "※「指標」の近似曲線・平均値・中央値は自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
+      descTopMedianSmooth: "※中央値を滑らかな成長曲線のような線で表示しています（近似曲線・平均値は非表示）。",
       descCompare1: "全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。",
       descCompare2: "※「指標」で近似曲線・平均値・中央値のいずれかを選ぶと、その折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねます（色は性別）。",
       descCompare3: "※「生の散布点」を選ぶと、指標を計算せず生データの点を期間ごとに点の形（●全期間 / ▲2週間 / ◆1週間）で見分けて重ねます。",
@@ -309,6 +396,7 @@
       descScatter3: "* Representative score links to the Daily Max/Avg toggle above.",
       descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows this period too.",
       descScatter5: "* You can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
+      descTopMedianSmooth: "* The median is shown as a smooth, growth-curve-style line (trend curve and mean are hidden).",
       descCompare1: "Overlays the all-time, 2-week, and 1-week representative values on one chart for comparison.",
       descCompare2: "* Selecting the trend curve, mean, or median under \"Metrics\" draws that line once per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash), colored by gender.",
       descCompare3: "* Selecting \"Raw points\" skips the indicator calculation and overlays the raw data points instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week).",
@@ -378,6 +466,7 @@
 
     // メイングラフの再描画
     if (currentDistData) {
+      updateTopScatterChart();
       updateMainScatterChart();
       renderPeriodCountChart();
       renderCompareScatterChart();
@@ -470,6 +559,7 @@
       if (!targetData) return;
       
       currentDistData = targetData;
+      updateTopScatterChart();
       updateMainScatterChart();
       renderPeriodCountChart();
       renderCompareScatterChart();
@@ -492,6 +582,128 @@
     if (document.getElementById('detailPeriod2w') && document.getElementById('detailPeriod2w').checked) return '2w';
     if (document.getElementById('detailPeriod1w') && document.getElementById('detailPeriod1w').checked) return '1w';
     return 'all';
+  }
+
+  function getTopPeriod() {
+    if (document.getElementById('topDetailPeriod2w') && document.getElementById('topDetailPeriod2w').checked) return '2w';
+    if (document.getElementById('topDetailPeriod1w') && document.getElementById('topDetailPeriod1w').checked) return '1w';
+    return 'all';
+  }
+
+  // ===== 年齢と4文字平均の相関 (中央値・成長曲線): 詳細散布図と同じ対象/期間だが、指標は中央値の滑らかな線のみ =====
+  function updateTopScatterChart() {
+    try {
+      if (!rawData) return;
+      const groupSelect = document.getElementById('groupSelect');
+      if (!groupSelect) return;
+
+      const period = getTopPeriod();
+
+      let hiddenStates = {};
+      if (charts.topScatter && charts.topScatter.data && charts.topScatter.data.datasets) {
+        charts.topScatter.data.datasets.forEach((ds, index) => {
+          const meta = charts.topScatter.getDatasetMeta(index);
+          if (meta.hidden === true || ds.hidden === true) hiddenStates[ds.label] = true;
+        });
+      }
+
+      const topYMaxStr = document.getElementById('topMainYMax') ? document.getElementById('topMainYMax').value : '';
+      const topYMax = topYMaxStr ? parseInt(topYMaxStr, 10) : undefined;
+
+      const targets = [];
+      if (document.getElementById('topChkTargetTotal') && document.getElementById('topChkTargetTotal').checked) targets.push('total');
+      if (document.getElementById('topChkTargetMale') && document.getElementById('topChkTargetMale').checked) targets.push('male');
+      if (document.getElementById('topChkTargetFemale') && document.getElementById('topChkTargetFemale').checked) targets.push('female');
+
+      const newDatasets = [];
+      const targetStyles = { total: { color: TARGET_STYLES.total.color, label: t('total') }, male: { color: TARGET_STYLES.male.color, label: t('male') }, female: { color: TARGET_STYLES.female.color, label: t('female') } };
+
+      const targetData = getEffectiveScatterData(period);
+      const maleData = targetData.male || [];
+      const femaleData = targetData.female || [];
+      const otherData = targetData.other || [];
+      const allScatterData = [...maleData, ...femaleData, ...otherData];
+
+      // --- 1. 棒グラフ(人数)のデータ生成 ---
+      const showBgBars = document.getElementById('topChkBgBars') && document.getElementById('topChkBgBars').checked;
+
+      if (showBgBars) {
+        const getUniqueUsersCountByAge = (dataArray) => {
+          const counts = {};
+          const ageUserMap = {};
+          dataArray.forEach(d => {
+            if (d && d.x !== undefined && d.uid !== undefined) {
+              const age = Math.round(d.x);
+              if (!ageUserMap[age]) ageUserMap[age] = new Set();
+              ageUserMap[age].add(d.uid);
+            }
+          });
+          Object.keys(ageUserMap).forEach(age => { counts[age] = ageUserMap[age].size; });
+          return counts;
+        };
+
+        const ageCountsMale = getUniqueUsersCountByAge(maleData);
+        const ageCountsFemale = getUniqueUsersCountByAge(femaleData);
+        const ageCountsOther = getUniqueUsersCountByAge(otherData);
+
+        const allAgesSet = new Set([...Object.keys(ageCountsMale), ...Object.keys(ageCountsFemale), ...Object.keys(ageCountsOther)]);
+        const sortedAges = Array.from(allAgesSet).map(Number).sort((a,b)=>a-b);
+
+        const barMale = []; const barFemale = []; const barOther = [];
+        sortedAges.forEach(age => {
+            barMale.push({x: age, y: ageCountsMale[age] || 0});
+            barFemale.push({x: age, y: ageCountsFemale[age] || 0});
+            barOther.push({x: age, y: ageCountsOther[age] || 0});
+        });
+
+        if (targets.includes('total')) newDatasets.push({ type: 'bar', label: t('other')+t('countLabel'), data: barOther, backgroundColor: 'rgba(107, 114, 128, 0.35)', borderColor: 'rgba(107, 114, 128, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('female') || targets.includes('total')) newDatasets.push({ type: 'bar', label: t('female')+t('countLabel'), data: barFemale, backgroundColor: 'rgba(225, 29, 72, 0.35)', borderColor: 'rgba(225, 29, 72, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('male') || targets.includes('total')) newDatasets.push({ type: 'bar', label: t('male')+t('countLabel'), data: barMale, backgroundColor: 'rgba(37, 99, 235, 0.35)', borderColor: 'rgba(37, 99, 235, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+      }
+
+      // --- 2. 散布図 ---
+      if (targets.includes('male') || targets.includes('total')) newDatasets.push({ type: 'scatter', label: t('male'), data: maleData, backgroundColor: 'rgba(37, 99, 235, 0.5)', borderColor: 'rgba(37, 99, 235, 0.8)', pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y' });
+      if (targets.includes('female') || targets.includes('total')) newDatasets.push({ type: 'scatter', label: t('female'), data: femaleData, backgroundColor: 'rgba(225, 29, 72, 0.5)', borderColor: 'rgba(225, 29, 72, 0.8)', pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y' });
+      if (targets.includes('total')) newDatasets.push({ type: 'scatter', label: t('other'), data: otherData, backgroundColor: 'rgba(156, 163, 175, 0.5)', borderColor: 'rgba(156, 163, 175, 0.8)', pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y' });
+
+      // --- 3. 中央値 (成長曲線のように滑らかな線として描画) ---
+      const showMedian = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
+
+      if (showMedian) {
+        targets.forEach(tKey => {
+            let dataArray = [];
+            if (tKey === 'total') dataArray = allScatterData;
+            else if (tKey === 'male') dataArray = maleData;
+            else if (tKey === 'female') dataArray = femaleData;
+
+            const lineData = getLineData(dataArray);
+            const points = lineData.p50;
+            if (points && points.length > 0) {
+                newDatasets.push({
+                    type: 'line', label: `${targetStyles[tKey].label} ${t('p50')}`, data: points,
+                    borderColor: targetStyles[tKey].color, backgroundColor: 'transparent', borderWidth: 2.5,
+                    pointRadius: 0, fill: false, tension: 0.4, cubicInterpolationMode: 'monotone',
+                    pointStyle: 'line', order: 0, yAxisID: 'y'
+                });
+            }
+        });
+      }
+
+      newDatasets.forEach(ds => {
+        if (hiddenStates[ds.label] === true) {
+          ds.hidden = true;
+        }
+      });
+      renderScatterChartInstance('topScatterChart', 'topScatter', newDatasets, topYMax);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function downloadTopScatterCSV() {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupName = groupSelect ? groupSelect.options[groupSelect.selectedIndex].text.replace(/\[.*\]\s*/, '') : 'Data';
+    downloadCSV(charts.topScatter, `Age_Score_Median_${groupName}_${getTopPeriod()}`);
   }
 
   // 期間比較グラフパネルでチェックされている期間一覧を返す(表示順: 全期間 > 2週間 > 1週間)
