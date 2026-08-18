@@ -110,6 +110,15 @@
         <input type="checkbox" id="chkShowWhiskers" onchange="renderBoxPlot()" class="w-4 h-4 cursor-pointer accent-indigo-600" checked>
         <span class="text-sm font-bold text-gray-600" data-i18n="showWhiskers">ヒゲを表示</span>
       </label>
+      <span class="text-gray-300">|</span>
+      <label class="flex items-center gap-1.5 cursor-pointer">
+        <input type="checkbox" id="chkShowMeanTrend" onchange="renderBoxPlot()" class="w-4 h-4 cursor-pointer accent-indigo-600" checked>
+        <span class="text-sm font-bold text-gray-600" data-i18n="showMeanTrend">平均値の推移線を表示</span>
+      </label>
+      <label class="flex items-center gap-1.5 cursor-pointer">
+        <input type="checkbox" id="chkShowMedianTrend" onchange="renderBoxPlot()" class="w-4 h-4 cursor-pointer accent-indigo-600">
+        <span class="text-sm font-bold text-gray-600" data-i18n="showMedianTrend">中央値の推移線を表示</span>
+      </label>
     </div>
   </div>
   <p class="text-sm text-gray-600 mb-6 bg-blue-50 p-3 rounded-lg border border-blue-100">
@@ -170,7 +179,7 @@
       tooltipSubj: "対象: ", tooltipMax: "最大値: ", tooltip75: "75%値 : ", tooltipAvg: "平均値: ", tooltipMed: "中央値: ", tooltip25: "25%値 : ", tooltipMin: "最小値: ",
       apply: "適用", pin: "📌 ピン留め", del: "🗑️ 削除", statsTitle: "📊 スコア統計情報",
       colInd: "指標", totalRow: "対象者数", dataRow: "データ件数",
-      showWhiskers: "ヒゲを表示"
+      showWhiskers: "ヒゲを表示", showMeanTrend: "平均値の推移線を表示", showMedianTrend: "中央値の推移線を表示"
     },
     en: {
       scatterTitle: "Correlation: Age & 4-Letter Avg (Scatter)", csvBtn: "Export CSV", target: "Target:",
@@ -193,7 +202,7 @@
       tooltipSubj: "N = ", tooltipMax: "Max: ", tooltip75: "75th: ", tooltipAvg: "Mean: ", tooltipMed: "Med: ", tooltip25: "25th: ", tooltipMin: "Min: ",
       apply: "Apply", pin: "📌 Pin", del: "🗑️ Del", statsTitle: "📊 Score Stats",
       colInd: "Metric", totalRow: "Subjects", dataRow: "Records",
-      showWhiskers: "Show Whiskers"
+      showWhiskers: "Show Whiskers", showMeanTrend: "Show Mean Trend Line", showMedianTrend: "Show Median Trend Line"
     }
   };
 
@@ -1004,6 +1013,8 @@
         afterDatasetsDraw: (chart) => {
           const ctx = chart.ctx; const yAxis = chart.scales.y; const xAxis = chart.scales.x;
           const showWhiskers = document.getElementById('chkShowWhiskers') ? document.getElementById('chkShowWhiskers').checked : true;
+          const showMeanTrend = document.getElementById('chkShowMeanTrend') ? document.getElementById('chkShowMeanTrend').checked : true;
+          const showMedianTrend = document.getElementById('chkShowMedianTrend') ? document.getElementById('chkShowMedianTrend').checked : false;
 
           // 非表示（凡例クリック）になっていないアクティブなデータセットを取得
           const visibleDatasets = [];
@@ -1021,37 +1032,42 @@
           // 各要素の箱の最大幅を算出
           const boxWidth = Math.max(Math.min(groupAllocatedWidth / Math.max(numVisible, 1), 32), 3);
 
-          // 1. 各統計グループの平均値(Avg/×)を滑らかに結ぶ推移折れ線を描画
-          chart.data.datasets.forEach((dataset, i) => {
-            const meta = chart.getDatasetMeta(i); if (!chart.isDatasetVisible(i)) return;
-            const visibleIdx = visibleDatasets.indexOf(i);
-            const offsetIdx = visibleIdx - (numVisible - 1) / 2;
+          // 1. 各統計グループの代表値(平均値/中央値)を滑らかに結ぶ推移折れ線を描画
+          const drawTrendLine = (statKey, dash) => {
+            chart.data.datasets.forEach((dataset, i) => {
+              const meta = chart.getDatasetMeta(i); if (!chart.isDatasetVisible(i)) return;
+              const visibleIdx = visibleDatasets.indexOf(i);
+              const offsetIdx = visibleIdx - (numVisible - 1) / 2;
 
-            ctx.save();
-            ctx.strokeStyle = dataset._bc;
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            let first = true;
-            
-            meta.data.forEach((element, index) => {
-              const stats = dataset.stats[index];
-              if (!stats || stats.n === 0) return;
-              
-              const xVal = dataset.data[index].x;
-              const xBase = xAxis.getPixelForValue(xVal);
-              const x = xBase + offsetIdx * (boxWidth + 2); // 系列オフセット位置
-              const yAvg = yAxis.getPixelForValue(stats.avg);
-              
-              if (first) {
-                ctx.moveTo(x, yAvg);
-                first = false;
-              } else {
-                ctx.lineTo(x, yAvg);
-              }
+              ctx.save();
+              ctx.strokeStyle = dataset._bc;
+              ctx.lineWidth = 1.8;
+              ctx.setLineDash(dash);
+              ctx.beginPath();
+              let first = true;
+
+              meta.data.forEach((element, index) => {
+                const stats = dataset.stats[index];
+                if (!stats || stats.n === 0) return;
+
+                const xVal = dataset.data[index].x;
+                const xBase = xAxis.getPixelForValue(xVal);
+                const x = xBase + offsetIdx * (boxWidth + 2); // 系列オフセット位置
+                const yVal = yAxis.getPixelForValue(stats[statKey]);
+
+                if (first) {
+                  ctx.moveTo(x, yVal);
+                  first = false;
+                } else {
+                  ctx.lineTo(x, yVal);
+                }
+              });
+              ctx.stroke();
+              ctx.restore();
             });
-            ctx.stroke();
-            ctx.restore();
-          });
+          };
+          if (showMeanTrend) drawTrendLine('avg', []);
+          if (showMedianTrend) drawTrendLine('median', [6, 3]);
 
           // 2. 個別箱ひげの構造体描画
           chart.data.datasets.forEach((dataset, i) => {
