@@ -241,20 +241,25 @@ function processUploadedData(formObject) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     // 蓄積した古い「抽出DB_xxxx」シートを自動整理 (ローテーション消去)
+    // シート名の "抽出DB_MMdd_HHmm" から日時を読み取って新旧を判定する
+    // (タブの並び順に依存すると、手動で並べ替えられていた場合などに誤って
+    //  新しいシートを消してしまうため)
     var allSheets = ss.getSheets();
     var dbSheets = [];
     allSheets.forEach(function(s) {
       var sName = s.getName();
-      if (sName.indexOf('抽出DB_') === 0) {
-        dbSheets.push(s);
+      var m = sName.match(/^抽出DB_(\d{4})_(\d{4})/);
+      if (m) {
+        dbSheets.push({ sheet: s, key: m[1] + m[2] });
       }
     });
-    
+    dbSheets.sort(function(a, b) { return a.key < b.key ? -1 : (a.key > b.key ? 1 : 0); }); // 古い順
+
     var maxKeepSheets = 3;
     if (dbSheets.length >= maxKeepSheets) {
-      for (var k = dbSheets.length - 1; k >= (maxKeepSheets - 1); k--) {
+      for (var k = 0; k <= dbSheets.length - maxKeepSheets; k++) {
         try {
-          ss.deleteSheet(dbSheets[k]);
+          ss.deleteSheet(dbSheets[k].sheet);
         } catch(e) {}
       }
     }

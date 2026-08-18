@@ -122,16 +122,24 @@
       google.script.run.withSuccessHandler(function(names) {
         const select = document.getElementById('sheetSelect');
         select.innerHTML = '<option value="">分析対象の抽出DBシートを選択...</option>';
-        let dbSheetSelected = false;
+
+        // シート名の "抽出DB_MMdd_HHmm" から日時を読み取り、タブの並び順に関係なく
+        // 実際に最も新しく作成されたシートを特定する
+        let newestName = null;
+        let newestKey = '';
         names.forEach(name => {
           const opt = document.createElement('option');
           opt.value = name; opt.text = name;
-          if (!dbSheetSelected && name.includes('抽出DB')) {
-            opt.selected = true;
-            dbSheetSelected = true;
-          }
           select.appendChild(opt);
+
+          const m = name.match(/^抽出DB_(\d{4})_(\d{4})/);
+          if (m) {
+            const key = m[1] + m[2]; // MMddHHmm を文字列比較で新旧判定
+            if (key > newestKey) { newestKey = key; newestName = name; }
+          }
         });
+
+        if (newestName) select.value = newestName;
         if (select.value) loadData();
       }).getSheetList();
     };
