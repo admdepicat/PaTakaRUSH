@@ -66,22 +66,18 @@
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="text-gray-500 mr-1 w-10" data-i18n="indicator">指標:</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="indicatorMode" id="indCurve" value="curve" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+          <input type="checkbox" id="indCurve" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
           <span class="text-gray-700" data-i18n="curveLabel">近似曲線</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="indicatorMode" id="indMean" value="mean" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+          <input type="checkbox" id="indMean" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
           <span class="text-gray-700" data-i18n="mean">平均値</span>
           <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5" stroke-dasharray="10,5"/></svg>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="indicatorMode" id="indMedian" value="p50" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+          <input type="checkbox" id="indMedian" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
           <span class="text-gray-700" data-i18n="p50">50%タイル(中央値)</span>
           <svg width="24" height="10" class="ml-0.5"><line x1="0" y1="5" x2="24" y2="5" stroke="#4b5563" stroke-width="2.5"/></svg>
-        </label>
-        <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="indicatorMode" id="indNone" value="none" onchange="updateMainScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
-          <span class="text-gray-700" data-i18n="indNone">表示なし</span>
         </label>
 
         <span class="text-gray-300 mx-1">|</span>
@@ -98,7 +94,8 @@
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
     <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
     <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図は、チェックした期間のうち先頭（全期間 &gt; 2週間 &gt; 1週間の順）のものに連動します。</span><br>
-    <span data-i18n="descScatter5">※「期間」を2つ以上チェックすると比較表示になります。「指標」で近似曲線・平均値・中央値のいずれかを選んでいる場合は、その指標の折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。「表示なし」の場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。</span>
+    <span data-i18n="descScatter5">※単一期間の表示中は、「指標」の近似曲線・平均値・中央値を自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。</span><br>
+    <span data-i18n="descScatter6">※「期間」を2つ以上チェックすると比較表示になります。この場合「指標」は優先順位（近似曲線 &gt; 平均値 &gt; 中央値）で選ばれた1つだけを、期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。指標を何も選んでいない場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。</span>
   </p>
 
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
@@ -172,13 +169,14 @@
       scatterTitle: "年齢と4文字平均の相関 (散布図)", csvBtn: "CSV出力", target: "対象:",
       total: "全体", male: "男性", female: "女性", other: "未回答",
       periodLabel: "期間:", periodAll: "全期間", period1w: "1週間", period2w: "2週間",
-      yMax: "Y軸最大値:", auto: "自動", indicator: "指標:", mean: "平均値", curveLabel: "近似曲線", indNone: "表示なし",
+      yMax: "Y軸最大値:", auto: "自動", indicator: "指標:", mean: "平均値", curveLabel: "近似曲線",
       p75: "75%タイル", p50: "50%タイル(中央値)", p25: "25%タイル", bgBars: "人数(背景棒)",
       descScatter1: "各ユーザーの年齢と代表スコアの分布を表示しています。",
       descScatter2: "※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。",
       descScatter3: "※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。",
       descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図は、チェックした期間のうち先頭（全期間 > 2週間 > 1週間の順）のものに連動します。",
-      descScatter5: "※「期間」を2つ以上チェックすると比較表示になります。「指標」で近似曲線・平均値・中央値のいずれかを選んでいる場合は、その指標の折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。「表示なし」の場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。",
+      descScatter5: "※単一期間の表示中は、「指標」の近似曲線・平均値・中央値を自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
+      descScatter6: "※「期間」を2つ以上チェックすると比較表示になります。この場合「指標」は優先順位（近似曲線 > 平均値 > 中央値）で選ばれた1つだけを、期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。指標を何も選んでいない場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。",
       boxPlotTitle: "年齢グループ別 スコア分布 (箱ひげ図)", ageStep: "年齢の刻み幅:", ageUnit: "歳",
       descBox1: "上の散布図と同じ対象者について、指定した年齢の刻み幅ごとにスコアの分布を全体および男女別で比較表示しています。",
       descBox2: "箱の中の「×」マーク：", descBox3: "箱の上下の端：", descBox3a: "25%タイル値 と 75%タイル値",
@@ -196,13 +194,14 @@
       scatterTitle: "Correlation: Age & 4-Letter Avg (Scatter)", csvBtn: "Export CSV", target: "Target:",
       total: "Total", male: "Male", female: "Female", other: "Other",
       periodLabel: "Period:", periodAll: "All time", period1w: "1 Week", period2w: "2 Weeks",
-      yMax: "Y-Axis Max:", auto: "Auto", indicator: "Metrics:", mean: "Mean", curveLabel: "Trend Curve", indNone: "None",
+      yMax: "Y-Axis Max:", auto: "Auto", indicator: "Metrics:", mean: "Mean", curveLabel: "Trend Curve",
       p75: "75th Pct", p50: "Median", p25: "25th Pct", bgBars: "User Count (Bars)",
       descScatter1: "Shows the distribution of age and representative scores for each user.",
       descScatter2: "* Background bars (right axis) show unique user counts per age.",
       descScatter3: "* Representative score links to the Daily Max/Avg toggle above.",
       descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows the first checked period (order: All time > 2 Weeks > 1 Week).",
-      descScatter5: "* Checking 2 or more periods switches to comparison mode. If \"Metrics\" has the trend curve, mean, or median selected, that indicator is drawn as one line per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash). If \"None\" is selected, raw scatter points are shown instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week). For clarity, background bars are automatically hidden while comparing.",
+      descScatter5: "* While viewing a single period, you can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
+      descScatter6: "* Checking 2 or more periods switches to comparison mode. In that mode only one \"Metrics\" choice is used, by priority (trend curve > mean > median), drawn as one line per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash). If no metric is selected, raw scatter points are shown instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week). For clarity, background bars are automatically hidden while comparing.",
       boxPlotTitle: "Score Dist by Age Group (Box Plot)", ageStep: "Age Step:", ageUnit: "yrs",
       descBox1: "Compares score distributions by gender across age groups using the same dataset.",
       descBox2: "'x' in Box:", descBox3: "Box Edges:", descBox3a: "25th & 75th Pct",
@@ -461,13 +460,17 @@
       if (document.getElementById('chkTargetMale') && document.getElementById('chkTargetMale').checked) targets.push('male');
       if (document.getElementById('chkTargetFemale') && document.getElementById('chkTargetFemale').checked) targets.push('female');
 
-      const indicatorModeEl = document.querySelector('input[name="indicatorMode"]:checked');
-      const indicatorMode = indicatorModeEl ? indicatorModeEl.value : 'curve'; // 'curve' | 'mean' | 'p50' | 'none'
-      const indicators = [];
-      if (!isCompare) {
-        if (indicatorMode === 'mean') indicators.push('mean');
-        if (indicatorMode === 'p50') indicators.push('p50');
-      }
+      // 「指標」は近似曲線/平均値/中央値を自由に組み合わせて同時表示できる（単一期間モードのみ）
+      const selectedIndicators = [];
+      if (document.getElementById('indCurve') && document.getElementById('indCurve').checked) selectedIndicators.push('curve');
+      if (document.getElementById('indMean') && document.getElementById('indMean').checked) selectedIndicators.push('mean');
+      if (document.getElementById('indMedian') && document.getElementById('indMedian').checked) selectedIndicators.push('p50');
+
+      const showCurve = selectedIndicators.includes('curve');
+      const indicators = selectedIndicators.filter(x => x === 'mean' || x === 'p50');
+
+      // 期間比較モードでは指標は1つだけ使う（優先順位: 近似曲線 > 平均値 > 中央値）。未選択なら生の散布点で比較。
+      const compareIndicator = selectedIndicators[0] || 'none';
 
       const newDatasets = [];
       const targetStyles = {
@@ -509,7 +512,7 @@
       if (isCompare) {
         const PERIOD_DASH = { all: [], '2w': [8, 4], '1w': [2, 2] };
 
-        if (indicatorMode !== 'none') {
+        if (compareIndicator !== 'none') {
           periods.forEach(period => {
             const targetData = getEffectiveScatterData(period);
             const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
@@ -523,14 +526,14 @@
             seriesDefs.forEach(([key, data]) => {
               const style = targetStyles[key];
               let lineData;
-              if (indicatorMode === 'curve') lineData = getPolynomialCurve(data);
-              else lineData = getLineData(data)[indicatorMode]; // 'mean' | 'p50'
+              if (compareIndicator === 'curve') lineData = getPolynomialCurve(data);
+              else lineData = getLineData(data)[compareIndicator]; // 'mean' | 'p50'
 
               if (!lineData || lineData.length === 0) return;
               newDatasets.push({
                 type: 'line', label: style.label + periodLabel, data: lineData,
                 borderColor: style.color, backgroundColor: 'transparent', borderDash: dash,
-                borderWidth: 2.2, pointRadius: 0, fill: false, tension: indicatorMode === 'curve' ? 0.4 : 0,
+                borderWidth: 2.2, pointRadius: 0, fill: false, tension: compareIndicator === 'curve' ? 0.4 : 0,
                 pointStyle: 'line', order: 2, yAxisID: 'y'
               });
             });
@@ -609,7 +612,7 @@
       }
 
       // --- 2. 近似曲線と散布図 ---
-      if (indicatorMode === 'curve') {
+      if (showCurve) {
         const totalCurveData = targets.includes('total') ? getPolynomialCurve(allScatterData) : [];
         const maleCurveData = (targets.includes('male') || targets.includes('total')) ? getPolynomialCurve(maleData) : [];
         const femaleCurveData = (targets.includes('female') || targets.includes('total')) ? getPolynomialCurve(femaleData) : [];
