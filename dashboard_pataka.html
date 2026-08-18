@@ -87,11 +87,11 @@
       </label>
       <label class="flex items-center gap-1.5 cursor-pointer">
         <input type="checkbox" id="patakaScatterShowMean" class="w-4 h-4 cursor-pointer accent-indigo-600" onchange="renderPatakaScatterOnly()" checked>
-        <span>━ 平均値 (実線)</span>
+        <span>--- 平均値 (破線)</span>
       </label>
       <label class="flex items-center gap-1.5 cursor-pointer">
         <input type="checkbox" id="patakaScatterShowMedian" class="w-4 h-4 cursor-pointer accent-indigo-600" onchange="renderPatakaScatterOnly()" checked>
-        <span>--- 中央値 (50%P破線)</span>
+        <span>━ 中央値 (50%P実線)</span>
       </label>
     </div>
 
@@ -201,17 +201,17 @@
         </label>
         <label class="flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" id="patakaGenderShowMean" class="w-4 h-4 cursor-pointer accent-indigo-600" onchange="renderPatakaGenderScatter()" checked>
-          <span>━ 平均値 (実線)</span>
+          <span>--- 平均値 (破線)</span>
         </label>
         <label class="flex items-center gap-1.5 cursor-pointer">
           <input type="checkbox" id="patakaGenderShowMedian" class="w-4 h-4 cursor-pointer accent-indigo-600" onchange="renderPatakaGenderScatter()" checked>
-          <span>--- 中央値 (50%P破線)</span>
+          <span>━ 中央値 (50%P実線)</span>
         </label>
       </div>
     </div>
 
     <p class="text-sm text-gray-600 mb-4">
-      男性（青）と女性（赤）の口腔機能差を詳しく分析します。多項式近似曲線と平均値は実線、中央値(50%P)は破線で美しく描画されます。
+      男性（青）と女性（赤）の口腔機能差を詳しく分析します。多項式近似曲線と中央値は実線、平均値は破線で美しく描画されます。
     </p>
 
     <div class="chart-container max-w-5xl mx-auto mt-4">
@@ -403,16 +403,16 @@
           order: 2
         });
 
-        // 3. 指標ごとの平均値 (実線)
+        // 3. 指標ごとの平均値 (破線)
         scatterDatasets.push({
-          type: 'line', label: meanLabel, data: lines.mean, borderColor: metricColor, borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0, 
+          type: 'line', label: meanLabel, data: lines.mean, borderColor: metricColor, borderWidth: 1.8, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0,
           hidden: !showMean, // 外部カスタムトグルに完全連動
           order: 0
         });
 
-        // 4. 指標ごとの中央値50%タイル (破線)
+        // 4. 指標ごとの中央値50%タイル (実線)
         scatterDatasets.push({
-          type: 'line', label: medianLabel, data: lines.p50, borderColor: metricColor, borderWidth: 1.8, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0, 
+          type: 'line', label: medianLabel, data: lines.p50, borderColor: metricColor, borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0,
           hidden: !showMedian, // 外部カスタムトグルに完全連動
           order: 0
         });
@@ -549,13 +549,13 @@
         
         // 2. 男性の折れ線 (すべて青)
         { type: 'line', label: '男性 近似曲線', data: getPolynomialCurve(maleFiltered), borderColor: '#2563eb', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0.4, hidden: !(showCurve && showMalePlot), order: 2 },
-        { type: 'line', label: '男性 平均値', data: maleLines.mean, borderColor: '#2563eb', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0, hidden: !(showMean && showMalePlot), order: 0 },
-        { type: 'line', label: '男性 中央値(50%P)', data: maleLines.p50, borderColor: '#2563eb', borderWidth: 1.8, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0, hidden: !(showMedian && showMalePlot), order: 0 },
-        
+        { type: 'line', label: '男性 平均値', data: maleLines.mean, borderColor: '#2563eb', borderWidth: 1.8, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0, hidden: !(showMean && showMalePlot), order: 0 },
+        { type: 'line', label: '男性 中央値(50%P)', data: maleLines.p50, borderColor: '#2563eb', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0, hidden: !(showMedian && showMalePlot), order: 0 },
+
         // 3. 女性の折れ線 (すべて赤)
         { type: 'line', label: '女性 近似曲線', data: getPolynomialCurve(femaleFiltered), borderColor: '#e11d48', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0.4, hidden: !(showCurve && showFemalePlot), order: 2 },
-        { type: 'line', label: '女性 平均値', data: femaleLines.mean, borderColor: '#e11d48', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0, hidden: !(showMean && showFemalePlot), order: 0 },
-        { type: 'line', label: '女性 中央値(50%P)', data: femaleLines.p50, borderColor: '#e11d48', borderWidth: 1.8, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0, hidden: !(showMedian && showFemalePlot), order: 0 }
+        { type: 'line', label: '女性 平均値', data: femaleLines.mean, borderColor: '#e11d48', borderWidth: 1.8, borderDash: [6, 4], pointRadius: 0, fill: false, tension: 0, hidden: !(showMean && showFemalePlot), order: 0 },
+        { type: 'line', label: '女性 中央値(50%P)', data: femaleLines.p50, borderColor: '#e11d48', borderWidth: 1.8, pointRadius: 0, fill: false, tension: 0, hidden: !(showMedian && showFemalePlot), order: 0 }
       ];
 
       if (patakaGenderScatterInstance) patakaGenderScatterInstance.destroy();
