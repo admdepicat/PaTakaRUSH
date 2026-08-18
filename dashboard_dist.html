@@ -96,7 +96,7 @@
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
     <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
     <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図は、チェックした期間のうち先頭（全期間 &gt; 2週間 &gt; 1週間の順）のものに連動します。</span><br>
-    <span data-i18n="descScatter5">※「期間」を2つ以上チェックすると、点の形（●全期間 / ▲2週間 / ◆1週間）で期間を見分けられる比較表示になります。見やすさのため、比較表示中は近似曲線・指標線・背景棒は自動的に非表示になります。</span>
+    <span data-i18n="descScatter5">※「期間」を2つ以上チェックすると比較表示になります。「指標」で近似曲線・平均値・中央値のいずれかを選んでいる場合は、その指標の折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。「表示なし」の場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。</span>
   </p>
 
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
@@ -176,7 +176,7 @@
       descScatter2: "※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。",
       descScatter3: "※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。",
       descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図は、チェックした期間のうち先頭（全期間 > 2週間 > 1週間の順）のものに連動します。",
-      descScatter5: "※「期間」を2つ以上チェックすると、点の形（●全期間 / ▲2週間 / ◆1週間）で期間を見分けられる比較表示になります。見やすさのため、比較表示中は近似曲線・指標線・背景棒は自動的に非表示になります。",
+      descScatter5: "※「期間」を2つ以上チェックすると比較表示になります。「指標」で近似曲線・平均値・中央値のいずれかを選んでいる場合は、その指標の折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねて表示します。「表示なし」の場合は、生の散布点を点の形（●全期間 / ▲2週間 / ◆1週間）で見分けます。見やすさのため、比較表示中は背景棒は自動的に非表示になります。",
       boxPlotTitle: "年齢グループ別 スコア分布 (箱ひげ図)", ageStep: "年齢の刻み幅:", ageUnit: "歳",
       descBox1: "上の散布図と同じ対象者について、指定した年齢の刻み幅ごとにスコアの分布を全体および男女別で比較表示しています。",
       descBox2: "箱の中の「×」マーク：", descBox3: "箱の上下の端：", descBox3a: "25%タイル値 と 75%タイル値",
@@ -200,7 +200,7 @@
       descScatter2: "* Background bars (right axis) show unique user counts per age.",
       descScatter3: "* Representative score links to the Daily Max/Avg toggle above.",
       descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows the first checked period (order: All time > 2 Weeks > 1 Week).",
-      descScatter5: "* Checking 2 or more periods switches to comparison mode, distinguishing periods by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week). For clarity, the trend curve, indicator lines, and background bars are automatically hidden while comparing.",
+      descScatter5: "* Checking 2 or more periods switches to comparison mode. If \"Metrics\" has the trend curve, mean, or median selected, that indicator is drawn as one line per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash). If \"None\" is selected, raw scatter points are shown instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week). For clarity, background bars are automatically hidden while comparing.",
       boxPlotTitle: "Score Dist by Age Group (Box Plot)", ageStep: "Age Step:", ageUnit: "yrs",
       descBox1: "Compares score distributions by gender across age groups using the same dataset.",
       descBox2: "'x' in Box:", descBox3: "Box Edges:", descBox3a: "25th & 75th Pct",
@@ -475,27 +475,85 @@
         other: { color: '#6b7280', bg: 'rgba(156, 163, 175, 0.5)', border: 'rgba(156, 163, 175, 0.8)', label: t('other') }
       };
 
-      // ===== 期間比較モード: 生の散布点のみを、期間ごとに点の形を変えて重ねて表示 =====
+      function getLineData(dataArray) {
+          if (!dataArray) return { mean: [], p50: [] };
+          const ageMap = {};
+          dataArray.forEach(d => {
+              if (d && d.x !== undefined && d.y !== undefined) {
+                  const age = Math.round(d.x);
+                  if (!ageMap[age]) ageMap[age] = [];
+                  ageMap[age].push(d.y);
+              }
+          });
+          const sortedAges = Object.keys(ageMap).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
+          const meanData = []; const p50Data = [];
+
+          sortedAges.forEach(age => {
+              const scores = ageMap[age];
+              if (scores && scores.length > 0) {
+                  const stats = calculateStats(scores);
+                  if (stats.mean !== '-') meanData.push({x: age, y: parseFloat(stats.mean)});
+                  if (stats.p50 !== '-') p50Data.push({x: age, y: parseFloat(stats.p50)});
+              }
+          });
+
+          // 平滑化処理（smoothCurveByAge）を完全に撤廃し、各年齢の絶対的な値をそのまま出力する
+          return { mean: meanData, p50: p50Data };
+      }
+
+      // ===== 期間比較モード =====
+      // 指標(近似曲線/平均値/中央値)を選択中: その指標の折れ線を期間ごとに重ねて比較
+      // 「表示なし」選択中: 生の散布点を期間ごとに点の形を変えて比較
       if (isCompare) {
-        periods.forEach(period => {
-          const targetData = getEffectiveScatterData(period);
-          const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
-          const pointStyle = PERIOD_POINT_STYLE[period];
+        const PERIOD_DASH = { all: [], '2w': [8, 4], '1w': [2, 2] };
 
-          const seriesDefs = [];
-          if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
-          if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
-          if (targets.includes('total')) seriesDefs.push(['other', targetData.other || []]);
+        if (indicatorMode !== 'none') {
+          periods.forEach(period => {
+            const targetData = getEffectiveScatterData(period);
+            const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
+            const dash = PERIOD_DASH[period];
 
-          seriesDefs.forEach(([key, data]) => {
-            const style = targetStyles[key];
-            newDatasets.push({
-              type: 'scatter', label: style.label + periodLabel, data: data,
-              backgroundColor: style.bg, borderColor: style.border,
-              pointRadius: 2, pointHoverRadius: 5, pointStyle: pointStyle, order: 1, yAxisID: 'y'
+            const seriesDefs = [];
+            if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
+            if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
+            if (targets.includes('total')) seriesDefs.push(['total', [...(targetData.male||[]), ...(targetData.female||[]), ...(targetData.other||[])]]);
+
+            seriesDefs.forEach(([key, data]) => {
+              const style = targetStyles[key];
+              let lineData;
+              if (indicatorMode === 'curve') lineData = getPolynomialCurve(data);
+              else lineData = getLineData(data)[indicatorMode]; // 'mean' | 'p50'
+
+              if (!lineData || lineData.length === 0) return;
+              newDatasets.push({
+                type: 'line', label: style.label + periodLabel, data: lineData,
+                borderColor: style.color, backgroundColor: 'transparent', borderDash: dash,
+                borderWidth: 2.2, pointRadius: 0, fill: false, tension: indicatorMode === 'curve' ? 0.4 : 0,
+                pointStyle: 'line', order: 2, yAxisID: 'y'
+              });
             });
           });
-        });
+        } else {
+          periods.forEach(period => {
+            const targetData = getEffectiveScatterData(period);
+            const periodLabel = ` (${t(PERIOD_LABEL_KEY[period])})`;
+            const pointStyle = PERIOD_POINT_STYLE[period];
+
+            const seriesDefs = [];
+            if (targets.includes('male') || targets.includes('total')) seriesDefs.push(['male', targetData.male || []]);
+            if (targets.includes('female') || targets.includes('total')) seriesDefs.push(['female', targetData.female || []]);
+            if (targets.includes('total')) seriesDefs.push(['other', targetData.other || []]);
+
+            seriesDefs.forEach(([key, data]) => {
+              const style = targetStyles[key];
+              newDatasets.push({
+                type: 'scatter', label: style.label + periodLabel, data: data,
+                backgroundColor: style.bg, borderColor: style.border,
+                pointRadius: 2, pointHoverRadius: 5, pointStyle: pointStyle, order: 1, yAxisID: 'y'
+              });
+            });
+          });
+        }
 
         newDatasets.forEach(ds => { if (hiddenStates[ds.label] === true) ds.hidden = true; });
         renderScatterChartInstance(newDatasets, mainYMax);
@@ -564,32 +622,6 @@
       if (targets.includes('total')) newDatasets.push({ type: 'scatter', label: t('other'), data: otherData, backgroundColor: 'rgba(156, 163, 175, 0.5)', borderColor: 'rgba(156, 163, 175, 0.8)', pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y' });
 
       // --- 3. 指標線 (平均値/中央値/75%/25%タイル) ---
-      function getLineData(dataArray) {
-          if (!dataArray) return { mean: [], p50: [] };
-          const ageMap = {};
-          dataArray.forEach(d => {
-              if (d && d.x !== undefined && d.y !== undefined) {
-                  const age = Math.round(d.x);
-                  if (!ageMap[age]) ageMap[age] = [];
-                  ageMap[age].push(d.y);
-              }
-          });
-          const sortedAges = Object.keys(ageMap).map(Number).filter(n => !isNaN(n)).sort((a, b) => a - b);
-          const meanData = []; const p50Data = [];
-
-          sortedAges.forEach(age => {
-              const scores = ageMap[age];
-              if (scores && scores.length > 0) {
-                  const stats = calculateStats(scores);
-                  if (stats.mean !== '-') meanData.push({x: age, y: parseFloat(stats.mean)});
-                  if (stats.p50 !== '-') p50Data.push({x: age, y: parseFloat(stats.p50)});
-              }
-          });
-
-          // 平滑化処理（smoothCurveByAge）を完全に撤廃し、各年齢の絶対的な値をそのまま出力する
-          return { mean: meanData, p50: p50Data };
-      }
-
       // 中央値(p50)を実線、平均値(mean)を破線として描画
       const indicatorStyles = { mean: { dash: [10, 5], label: t('mean') }, p50: { dash: [], label: t('p50') } };
 
