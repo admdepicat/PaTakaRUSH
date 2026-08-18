@@ -101,6 +101,25 @@
   <hr class="my-8 border-gray-200">
 
   <!-- ============================================== -->
+  <!-- パネル 1a2: 期間比較 人数(ユニークユーザー数) -->
+  <!-- ============================================== -->
+  <div class="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+    <h2 class="text-lg font-bold text-gray-800" data-i18n="countCompareTitle">年齢別 人数 (期間比較)</h2>
+    <button onclick="downloadPeriodCountCSV()" class="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2 w-fit">
+      <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+      <span data-i18n="csvBtn">CSV出力</span>
+    </button>
+  </div>
+  <p class="text-sm text-gray-600 mb-6">
+    <span data-i18n="descCount1">各年齢について、全期間・2週間・1週間それぞれのユニークユーザー数を並べて比較しています（性別を問わず対象者全員が集計対象です）。</span>
+  </p>
+  <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
+    <canvas id="periodCountChart"></canvas>
+  </div>
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- ============================================== -->
   <!-- パネル 1b: 期間比較グラフ -->
   <!-- ============================================== -->
   <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
@@ -251,7 +270,8 @@
 
   const distI18n = {
     ja: {
-      scatterTitle: "年齢と4文字平均の相関 (詳細散布図)", compareTitle: "年齢と4文字平均の相関 (期間比較グラフ)", csvBtn: "CSV出力", target: "対象:",
+      scatterTitle: "年齢と4文字平均の相関 (詳細散布図)", compareTitle: "年齢と4文字平均の相関 (期間比較グラフ)", countCompareTitle: "年齢別 人数 (期間比較)", csvBtn: "CSV出力", target: "対象:",
+      descCount1: "各年齢について、全期間・2週間・1週間それぞれのユニークユーザー数を並べて比較しています（性別を問わず対象者全員が集計対象です）。",
       total: "全体", male: "男性", female: "女性", other: "未回答", indNone: "生の散布点",
       periodLabel: "期間:", periodAll: "全期間", period1w: "1週間", period2w: "2週間",
       yMax: "Y軸最大値:", auto: "自動", indicator: "指標:", mean: "平均値", curveLabel: "近似曲線",
@@ -278,7 +298,8 @@
       showWhiskers: "ヒゲを表示", showMeanTrend: "平均値の推移線を表示", showMedianTrend: "中央値の推移線を表示"
     },
     en: {
-      scatterTitle: "Correlation: Age & 4-Letter Avg (Detail Scatter)", compareTitle: "Correlation: Age & 4-Letter Avg (Period Comparison)", csvBtn: "Export CSV", target: "Target:",
+      scatterTitle: "Correlation: Age & 4-Letter Avg (Detail Scatter)", compareTitle: "Correlation: Age & 4-Letter Avg (Period Comparison)", countCompareTitle: "User Count by Age (Period Comparison)", csvBtn: "Export CSV", target: "Target:",
+      descCount1: "For each age, compares the unique user count across all-time, 2-week, and 1-week periods (all genders combined).",
       total: "Total", male: "Male", female: "Female", other: "Other", indNone: "Raw points",
       periodLabel: "Period:", periodAll: "All time", period1w: "1 Week", period2w: "2 Weeks",
       yMax: "Y-Axis Max:", auto: "Auto", indicator: "Metrics:", mean: "Mean", curveLabel: "Trend Curve",
@@ -358,6 +379,7 @@
     // メイングラフの再描画
     if (currentDistData) {
       updateMainScatterChart();
+      renderPeriodCountChart();
       renderCompareScatterChart();
       renderBoxPlot();
     }
@@ -449,6 +471,7 @@
       
       currentDistData = targetData;
       updateMainScatterChart();
+      renderPeriodCountChart();
       renderCompareScatterChart();
 
       if (typeof additionalScatters !== 'undefined') {
@@ -645,6 +668,135 @@
     const periods = getCheckedComparePeriods();
     const periodSuffix = periods.length > 0 ? `_${periods.join('+')}` : '';
     downloadCSV(charts.scatterCompare, `Age_Score_Compare_${groupName}${periodSuffix}`);
+  }
+
+  // ===== 年齢別 人数 (期間比較): 全期間/2週間/1週間 を並べたグループ棒グラフ =====
+  function getUniqueUserCountsByAge(period) {
+    const targetData = getEffectiveScatterData(period);
+    const allData = [...(targetData.male || []), ...(targetData.female || []), ...(targetData.other || [])];
+    const ageUserMap = {};
+    allData.forEach(d => {
+      if (d && d.x !== undefined && d.uid !== undefined) {
+        const age = Math.round(d.x);
+        if (!ageUserMap[age]) ageUserMap[age] = new Set();
+        ageUserMap[age].add(d.uid);
+      }
+    });
+    const counts = {};
+    Object.keys(ageUserMap).forEach(age => { counts[age] = ageUserMap[age].size; });
+    return counts;
+  }
+
+  function renderPeriodCountChart() {
+    try {
+      if (!rawData) return;
+      const groupSelect = document.getElementById('groupSelect');
+      if (!groupSelect) return;
+
+      const periods = CMP_PERIOD_ORDER; // 全期間/2週間/1週間の3本を常に並べて比較
+      const PERIOD_COLOR = { all: 'rgba(5, 150, 105, 0.6)', '2w': 'rgba(37, 99, 235, 0.6)', '1w': 'rgba(225, 29, 72, 0.6)' };
+      const PERIOD_BORDER = { all: 'rgba(5, 150, 105, 0.9)', '2w': 'rgba(37, 99, 235, 0.9)', '1w': 'rgba(225, 29, 72, 0.9)' };
+      const OFFSET = { all: -0.6, '2w': 0, '1w': 0.6 }; // linear軸上でグループ棒を模擬するための微小オフセット
+
+      const countsByPeriod = {};
+      periods.forEach(p => { countsByPeriod[p] = getUniqueUserCountsByAge(p); });
+
+      const allAgesSet = new Set();
+      periods.forEach(p => { Object.keys(countsByPeriod[p]).forEach(age => allAgesSet.add(Number(age))); });
+      const sortedAges = Array.from(allAgesSet).sort((a, b) => a - b);
+
+      const newDatasets = periods.map(p => {
+        const data = sortedAges.map(age => ({ x: age + OFFSET[p], y: countsByPeriod[p][age] || 0, age: age }));
+        return {
+          type: 'bar', label: t(PERIOD_LABEL_KEY[p]), data: data,
+          backgroundColor: PERIOD_COLOR[p], borderColor: PERIOD_BORDER[p], borderWidth: 1,
+          barThickness: 6, order: 1
+        };
+      });
+
+      renderPeriodCountChartInstance(newDatasets);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function renderPeriodCountChartInstance(newDatasets) {
+    const el = document.getElementById('periodCountChart');
+    if (!el) return;
+
+    if (!charts.periodCount) {
+      charts.periodCount = new Chart(el, {
+        type: 'bar',
+        data: { datasets: newDatasets },
+        options: {
+          responsive: true, maintainAspectRatio: true, aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9,
+          plugins: {
+            legend: { labels: { usePointStyle: true } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const d = context.raw; const dsLabel = context.dataset.label || '';
+                  return `${dsLabel}: ${d.y} (${d.age}${t('ageUnit')})`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              title: { display: true, text: t('axisAge') },
+              min: 0, max: 100, bounds: 'ticks', offset: false,
+              ticks: {
+                stepSize: 5, autoSkip: false,
+                callback: function(value) { if (value % 5 === 0) return value; return null; }
+              },
+              grid: {
+                offset: false,
+                color: function(context) {
+                  if (!context || !context.tick) return 'transparent';
+                  const val = context.tick.value;
+                  if (val % 10 === 0) return 'rgba(0, 0, 0, 0.15)';
+                  if (val % 5 === 0) return 'rgba(0, 0, 0, 0.06)';
+                  return 'transparent';
+                },
+                lineWidth: function(context) {
+                  if (!context || !context.tick) return 0;
+                  const val = context.tick.value;
+                  if (val % 10 === 0) return 1.2;
+                  if (val % 5 === 0) return 1;
+                  return 0;
+                }
+              }
+            },
+            y: { title: { display: true, text: t('axisCount') }, min: 0, ticks: { stepSize: 10 } }
+          }
+        }
+      });
+    } else {
+      const chart = charts.periodCount;
+      chart.data.datasets = newDatasets;
+      chart.options.scales.x.title.text = t('axisAge');
+      chart.options.scales.y.title.text = t('axisCount');
+      chart.update();
+    }
+  }
+
+  function downloadPeriodCountCSV() {
+    if (!charts.periodCount) return;
+    const groupSelect = document.getElementById('groupSelect');
+    const groupName = groupSelect ? groupSelect.options[groupSelect.selectedIndex].text.replace(/\[.*\]\s*/, '') : 'Data';
+    let csvContent = window.currentLang === 'ja' ? "期間,年齢,人数\n" : "Period,Age,Count\n";
+    charts.periodCount.data.datasets.forEach(dataset => {
+      if (dataset.type === 'bar' && dataset.data) {
+        const label = dataset.label;
+        dataset.data.forEach(point => { csvContent += `${label},${point.age},${point.y}\n`; });
+      }
+    });
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url); link.setAttribute("download", `Age_UserCount_Compare_${groupName}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
   }
 
   // ===== 詳細散布図 (単一期間: 近似曲線/指標線/背景棒つき) =====
