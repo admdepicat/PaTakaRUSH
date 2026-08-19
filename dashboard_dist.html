@@ -64,6 +64,13 @@
         </span>
       </div>
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10" data-i18n="periodDataCount">件数:</span>
+        <span class="text-emerald-600"><span data-i18n="total">全体</span> <span id="topPeriodCountTotal">-</span></span>
+        <span class="text-blue-600"><span data-i18n="male">男性</span> <span id="topPeriodCountMale">-</span></span>
+        <span class="text-rose-600"><span data-i18n="female">女性</span> <span id="topPeriodCountFemale">-</span></span>
+        <span class="text-gray-500"><span data-i18n="other">未回答</span> <span id="topPeriodCountOther">-</span></span>
+      </div>
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="text-gray-500 mr-1 w-10" data-i18n="indicator">指標:</span>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="checkbox" id="topIndMedian" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
@@ -388,6 +395,7 @@
       descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図もこの期間に連動します。",
       descScatter5: "※「指標」の近似曲線・平均値・中央値は自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
       lmsPercentiles: "パーセンタイル曲線 (LMS法: 3/10/25/50/75/90/97%ile)",
+      periodDataCount: "件数:",
       pctModeLabel: "表示:", pctMode7: "7本線 (3/10/25/50/75/90/97%ile)", pctMode5a: "5本線① (5/10/50/90/95%ile)",
       pctMode5b: "5本線② (3/10/50/90/97%ile・帯塗り)", pctMode2: "2本線 (3〜97%ile帯 + 50%ile細線)",
       p5: "5%タイル", p95: "95%タイル",
@@ -422,6 +430,7 @@
       descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows this period too.",
       descScatter5: "* You can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
       lmsPercentiles: "Percentile Curves (LMS method: 3/10/25/50/75/90/97%ile)",
+      periodDataCount: "N:",
       pctModeLabel: "Display:", pctMode7: "7 lines (3/10/25/50/75/90/97%ile)", pctMode5a: "5 lines A (5/10/50/90/95%ile)",
       pctMode5b: "5 lines B (3/10/50/90/97%ile, shaded bands)", pctMode2: "2 lines (3-97%ile band + thin 50%ile)",
       p5: "5th Pct", p95: "95th Pct",
@@ -628,6 +637,25 @@
   }
 
   // ===== 年齢と4文字平均の相関 (中央値・成長曲線): 詳細散布図と同じ対象/期間だが、指標は中央値の滑らかな線のみ =====
+  // 「期間」ラジオで選択中の期間について、性別ごとのデータ件数を表示する
+  function updateTopPeriodCounts() {
+    if (!rawData) return;
+    const groupSelect = document.getElementById('groupSelect');
+    if (!groupSelect) return;
+
+    const targetData = getEffectiveScatterData(getTopPeriod());
+    const maleN = (targetData.male || []).length;
+    const femaleN = (targetData.female || []).length;
+    const otherN = (targetData.other || []).length;
+    const totalN = maleN + femaleN + otherN;
+
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val.toLocaleString(); };
+    setText('topPeriodCountTotal', totalN);
+    setText('topPeriodCountMale', maleN);
+    setText('topPeriodCountFemale', femaleN);
+    setText('topPeriodCountOther', otherN);
+  }
+
   function updateTopScatterChart() {
     try {
       if (!rawData) return;
@@ -635,6 +663,7 @@
       if (!groupSelect) return;
 
       const period = getTopPeriod();
+      updateTopPeriodCounts();
 
       let hiddenStates = {};
       if (charts.topScatter && charts.topScatter.data && charts.topScatter.data.datasets) {
