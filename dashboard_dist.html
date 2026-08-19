@@ -737,14 +737,14 @@
               if (curves[50] && curves[50].length > 0) pushPctLine(`${label} ${t('p50')}`, curves[50], color, 3.5, 1, false, 0, -1);
 
             } else if (pctMode === '5b') {
-              // 5本線②: 3/10/50/90/97パーセンタイル。3-10・90-97帯を濃いめ、10-90帯を薄めに塗る
+              // 5本線②: 3/10/50/90/97パーセンタイル。10-90帯を濃いめ、3-10・90-97帯を薄めに塗る
               const curves = computeLmsPercentileCurves(dataArray, [3, 10, 50, 90, 97]);
               const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50Points = curves[50];
               if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
                   pushPctLine(`${label} ${t('p97')}`, p97, color, 1.5, 0.65, false, 0, 0);
-                  pushPctLine(`${label} ${t('p90')}`, p90, color, 1.5, 0.65, '-1', 0.28, 0);
-                  pushPctLine(`${label} ${t('p10')}`, p10, color, 1.5, 0.65, '-1', 0.12, 0);
-                  pushPctLine(`${label} ${t('p3')}`, p3, color, 1.5, 0.65, '-1', 0.28, 0);
+                  pushPctLine(`${label} ${t('p90')}`, p90, color, 1.5, 0.65, '-1', 0.12, 0);
+                  pushPctLine(`${label} ${t('p10')}`, p10, color, 1.5, 0.65, '-1', 0.28, 0);
+                  pushPctLine(`${label} ${t('p3')}`, p3, color, 1.5, 0.65, '-1', 0.12, 0);
               }
               if (p50Points && p50Points.length > 0) pushPctLine(`${label} ${t('p50')}`, p50Points, color, 3.5, 1, false, 0, -1);
 
