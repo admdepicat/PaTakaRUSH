@@ -46,16 +46,12 @@
       <div id="loading" class="text-blue-600 font-bold text-sm hidden whitespace-nowrap">⏳ 集計中...</div>
     </div>
 
-    <!-- 集計条件（アプリ全体の対象者数・データ件数・全グラフに影響します） -->
+    <!-- 集計条件（対象者数・データ件数の表示に影響します。年齢未入力の除外は「データ整理」タブ側で行います） -->
     <div class="bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700">
       <span class="text-gray-500">集計条件:</span>
       <label class="flex items-center gap-1 cursor-pointer">
         <input type="checkbox" id="chkEnableDedup" checked onchange="loadData()" class="w-4 h-4 cursor-pointer accent-gray-600">
         名寄せ（ニックネーム＋性別＋生年月日＋都道府県で同一人物と判定する）
-      </label>
-      <label class="flex items-center gap-1 cursor-pointer">
-        <input type="checkbox" id="chkExcludeEmptyAgeAnalysis" checked onchange="loadData()" class="w-4 h-4 cursor-pointer accent-gray-600">
-        年齢が未入力（0または空）のユーザーを除外する
       </label>
     </div>
 
@@ -169,7 +165,8 @@
 
       const scoreType = document.getElementById('scoreTypeSelect') ? document.getElementById('scoreTypeSelect').value : 'max';
       const enableDedup = document.getElementById('chkEnableDedup') ? document.getElementById('chkEnableDedup').checked : true;
-      const excludeEmptyAge = document.getElementById('chkExcludeEmptyAgeAnalysis') ? document.getElementById('chkExcludeEmptyAgeAnalysis').checked : true;
+      // 年齢未入力の除外は「データ整理」タブ側（シート作成時）で行う。ここでは常にON。
+      const excludeEmptyAge = true;
 
       document.getElementById('loading').classList.remove('hidden');
       document.getElementById('dashboardContent').classList.add('hidden');

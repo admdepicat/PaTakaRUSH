@@ -662,9 +662,8 @@
     }
 
     const weeksToUse = period === '1w' ? [0] : [0, 1];
-    // 「名寄せ」設定は離脱率タブと同じ週次データ(usersChurn、常にフル名寄せ)を土台にしているため対象外。「年齢未入力除外」のみ反映する
-    const excludeEmptyAgeEl = document.getElementById('chkExcludeEmptyAgeAnalysis');
-    const excludeEmptyAge = excludeEmptyAgeEl ? excludeEmptyAgeEl.checked : true;
+    // 年齢未入力の除外は「データ整理」タブ側（シート作成時）で行うため、ここでは常にON。
+    const excludeEmptyAge = true;
 
     const subj = { male: 0, female: 0, other: 0 };
     const rec = { male: 0, female: 0, other: 0 };
