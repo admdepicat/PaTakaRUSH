@@ -480,7 +480,20 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
             } else scoresArr.push(null);
           } else { dataArr.push(null); scoresArr.push(null); }
         }
-        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
+
+        // 「新・年齢と4文字平均の相関」の1週間/2週間用：週で区切って平均するのではなく、
+        // 期間内の生の検査記録を同じ重みで直接平均した値（1人1データ）を別途算出する
+        var rawRecords1w = []; var rawRecords2w = [];
+        user.records.forEach(function(rec) {
+          var recMidnight = new Date(rec.date.getFullYear(), rec.date.getMonth(), rec.date.getDate()).getTime();
+          var relDay = Math.round((recMidnight - firstMidnight) / (1000 * 60 * 60 * 24));
+          if (relDay < 7) rawRecords1w.push(rec.a4);
+          if (relDay < 14) rawRecords2w.push(rec.a4);
+        });
+        var avgRaw1w = rawRecords1w.length > 0 ? rawRecords1w.reduce(function(a, b){ return a + b; }, 0) / rawRecords1w.length : null;
+        var avgRaw2w = rawRecords2w.length > 0 ? rawRecords2w.reduce(function(a, b){ return a + b; }, 0) / rawRecords2w.length : null;
+
+        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
       }
     });
 

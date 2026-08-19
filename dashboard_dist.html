@@ -123,7 +123,7 @@
     <span data-i18n="descScatter1">各ユーザーの年齢と代表スコアの分布を表示しています。</span><br>
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
     <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
-    <span data-i18n="descScatter4">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。</span><br>
+    <span data-i18n="descTopRawAvg">※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の生データを、週で区切らず同じ重みで単純平均した値（1人1データ）で再計算します。</span><br>
     <span data-i18n="descTopMedianSmooth">※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole &amp; Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、パーセンタイル曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。</span><br>
     <span data-i18n="descTopPctMode">※「表示」で7本線/5本線①/5本線②/2本線を切り替えられます。5本線②・2本線では、パーセンタイル帯を色の濃淡で塗りつぶします。</span>
   </p>
@@ -407,6 +407,7 @@
       pctModeLabel: "表示:", pctMode7: "7本線 (3/10/25/50/75/90/97%ile)", pctMode5a: "5本線① (5/10/50/90/95%ile)",
       pctMode5b: "5本線② (3/10/50/90/97%ile・帯塗り)", pctMode2: "2本線 (3〜97%ile帯 + 50%ile細線)",
       p5: "5%タイル", p95: "95%タイル",
+      descTopRawAvg: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の生データを、週で区切らず同じ重みで単純平均した値（1人1データ）で再計算します。",
       descTopMedianSmooth: "※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole & Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、パーセンタイル曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。",
       descTopPctMode: "※「表示」で7本線/5本線①/5本線②/2本線を切り替えられます。5本線②・2本線では、パーセンタイル帯を色の濃淡で塗りつぶします。",
       descCompare1: "全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。",
@@ -441,6 +442,7 @@
       pctModeLabel: "Display:", pctMode7: "7 lines (3/10/25/50/75/90/97%ile)", pctMode5a: "5 lines A (5/10/50/90/95%ile)",
       pctMode5b: "5 lines B (3/10/50/90/97%ile, shaded bands)", pctMode2: "2 lines (3-97%ile band + thin 50%ile)",
       p5: "5th Pct", p95: "95th Pct",
+      descTopRawAvg: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the simple average of the raw test data taken within that many days of their first test, weighting every test equally regardless of week (one data point per person).",
       descTopMedianSmooth: "* Using the same LMS method (Cole & Green, 1992) behind WHO/CDC height-weight growth charts, L (skewness), M (median), and S (coefficient of variation) are estimated per age and used to draw percentile curves (the 50th/median line is bolded; the trend curve and mean are hidden).",
       descTopPctMode: "* Use \"Display\" to switch between 7 lines / 5 lines A / 5 lines B / 2 lines. 5 lines B and 2 lines shade the percentile bands with varying color intensity.",
       descCompare1: "Overlays the all-time, 2-week, and 1-week representative values on one chart for comparison.",
@@ -645,7 +647,8 @@
 
   // ===== 年齢と4文字平均の相関 (中央値・成長曲線): 詳細散布図と同じ対象/期間だが、指標は中央値の滑らかな線のみ =====
   // 「期間」ラジオで選択中の期間について、性別ごとのデータ件数を表示する
-  // 期間ごとの「対象者数」(ユニークユーザー数)と「データ件数」(全期間=検査記録数／1週間・2週間=利用日数の合計)を算出する
+  // 期間ごとの「対象者数」(ユニークユーザー数)と「データ件数」を算出する
+  // 全期間=検査記録数（1人が複数回検査していれば複数件）／1週間・2週間=1人1データ（グラフの点数と一致）
   function computeTopPeriodCounts(period) {
     const groupSelect = document.getElementById('groupSelect');
     const groupKey = groupSelect ? groupSelect.value : 'total';
@@ -661,9 +664,10 @@
       };
     }
 
-    const weeksToUse = period === '1w' ? [0] : [0, 1];
     // 年齢未入力の除外は「データ整理」タブ側（シート作成時）で行うため、ここでは常にON。
     const excludeEmptyAge = true;
+    // グラフ本体(getTopEffectiveScatterData)と同じ、生データの単純平均(avgRaw1w/avgRaw2w)の有無で対象者を判定する
+    const rawKey = period === '1w' ? 'avgRaw1w' : 'avgRaw2w';
 
     const subj = { male: 0, female: 0, other: 0 };
     const rec = { male: 0, female: 0, other: 0 };
@@ -677,8 +681,7 @@
         if (!inGroup) return;
         if (excludeEmptyAge && !(u.age > 0)) return;
 
-        const vals = weeksToUse.map(w => u.scores[w]).filter(v => v !== null && v !== undefined);
-        if (vals.length === 0) return;
+        if (u[rawKey] === null || u[rawKey] === undefined) return;
 
         let genderKey = 'other';
         if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
@@ -739,7 +742,7 @@
       const newDatasets = [];
       const targetStyles = { total: { color: TARGET_STYLES.total.color, label: t('total') }, male: { color: TARGET_STYLES.male.color, label: t('male') }, female: { color: TARGET_STYLES.female.color, label: t('female') } };
 
-      const targetData = getEffectiveScatterData(period);
+      const targetData = getTopEffectiveScatterData(period);
       const maleData = targetData.male || [];
       const femaleData = targetData.female || [];
       const otherData = targetData.other || [];
@@ -908,6 +911,42 @@
       const vals = weeksToUse.map(w => u.scores[w]).filter(v => v !== null && v !== undefined);
       if (vals.length === 0) return;
       const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+      const pt = { x: u.age, y: avg, uid: u.uid, a4: avg };
+      let genderKey = 'other';
+      if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
+      else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
+      result[genderKey].push(pt);
+    });
+    return result;
+  }
+
+  // 「新・年齢と4文字平均の相関」専用：1週間/2週間は「週で区切って平均→週平均を平均」ではなく、
+  // 期間内の生の検査記録を週で区切らず同じ重みで直接単純平均した値（1人1データ）を使う
+  function getTopEffectiveScatterData(period) {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupKey = groupSelect ? groupSelect.value : 'total';
+
+    if (period === 'all') {
+      const targetData = rawData ? rawData[groupKey] : null;
+      return targetData && targetData.scatter ? targetData.scatter : { male: [], female: [], other: [] };
+    }
+
+    const result = { male: [], female: [], other: [] };
+    if (!rawData || !rawData.usersChurn) return result;
+    const rawKey = period === '1w' ? 'avgRaw1w' : 'avgRaw2w';
+
+    rawData.usersChurn.forEach(u => {
+      let inGroup = false;
+      if (groupKey === 'total') inGroup = true;
+      else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
+      else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
+      else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
+      if (!inGroup) return;
+      if (!u.age || u.age <= 0) return;
+
+      const avg = u[rawKey];
+      if (avg === null || avg === undefined) return;
 
       const pt = { x: u.age, y: avg, uid: u.uid, a4: avg };
       let genderKey = 'other';
