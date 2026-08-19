@@ -115,7 +115,11 @@
     </div>
   </div>
 
-  <p class="text-sm text-gray-600 mb-6">
+  <div class="chart-container max-w-5xl mx-auto mt-4 mb-4">
+    <canvas id="topScatterChart"></canvas>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-8">
     <span data-i18n="descScatter1">各ユーザーの年齢と代表スコアの分布を表示しています。</span><br>
     <span data-i18n="descScatter2">※背景の薄い棒グラフ（右軸）は、各年齢のユニークなユーザー数を表しています。</span><br>
     <span data-i18n="descScatter3">※代表スコアは上部の「1日の最高」「1日の平均」の切り替えに連動します。</span><br>
@@ -123,10 +127,6 @@
     <span data-i18n="descTopMedianSmooth">※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole &amp; Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、パーセンタイル曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。</span><br>
     <span data-i18n="descTopPctMode">※「表示」で7本線/5本線①/5本線②/2本線を切り替えられます。5本線②・2本線では、パーセンタイル帯を色の濃淡で塗りつぶします。</span>
   </p>
-
-  <div class="chart-container max-w-5xl mx-auto mt-4 mb-8">
-    <canvas id="topScatterChart"></canvas>
-  </div>
 
   <hr class="my-8 border-gray-200">
 
