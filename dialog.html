@@ -104,23 +104,23 @@
       </div>
 
       <div class="section">
-        <h3>1. 連携グループの排除</h3>
-        <p class="desc">チェックを入れたグループのデータをデータベースから【排除】します。（※選択は自動保存されます）</p>
+        <h3>1. 連携グループの除外</h3>
+        <p class="desc">チェックを入れたグループのデータをデータベースから【除外】します。（※選択は自動保存されます）</p>
         <div id="groupList" class="group-container">
           ファイルを選択すると、ここにグループが表示されます。
         </div>
       </div>
 
       <div class="section">
-        <h3>2. 年齢の排除</h3>
-        <p class="desc">指定した年齢範囲のデータを【排除】します。（空白の場合は無視）</p>
+        <h3>2. 年齢の除外</h3>
+        <p class="desc">指定した年齢範囲のデータを【除外】します。（空白の場合は無視）</p>
         <div class="inline-input">
           <input type="number" id="ageMinVal" placeholder="例: 3"> 歳
           <select id="ageMinType">
             <option value="lessThan">未満 (指定した年齢を含まない)</option>
             <option value="lessThanOrEqual">以下 (指定した年齢を含む)</option>
           </select>
-          を排除
+          を除外
         </div>
         <div class="inline-input">
           <input type="number" id="ageMaxVal" placeholder="例: 100"> 歳
@@ -128,50 +128,50 @@
             <option value="greaterThanOrEqual">以上 (指定した年齢を含む)</option>
             <option value="greaterThan">より上 (指定した年齢を含まない)</option>
           </select>
-          を排除
+          を除外
         </div>
         <label style="margin-top: 10px; display: flex; align-items: center; gap: 6px; font-weight: bold; color: #334155;">
           <input type="checkbox" id="chkExcludeEmptyAge" checked style="width: auto; margin: 0;">
-          年齢が未入力（0または空）のユーザーを排除する
+          年齢が未入力（0または空）のユーザーを除外する
         </label>
       </div>
 
       <div class="section">
-        <h3>3. 口腔機能指標(回/秒)の一括排除</h3>
-        <p class="desc">指定した範囲に合致するデータをデータベースから【排除】します。（空白の場合は無視）</p>
+        <h3>3. 口腔機能指標(回/秒)の一括除外</h3>
+        <p class="desc">指定した範囲に合致するデータをデータベースから【除外】します。（空白の場合は無視）</p>
         <p class="desc" style="color: #2563eb; font-weight: bold; display: flex; align-items: center; gap: 4px;">
-          <span>💡</span> 範囲を入力し、対象にする指標のみにチェックを入れてください。秒間発音回数（N〜Q列）を基準に正確に排除します。
+          <span>💡</span> 範囲を入力し、対象にする指標のみにチェックを入れてください。秒間発音回数（N〜Q列）を基準に正確に除外します。
         </p>
         
         <div class="master-metric-panel">
           <div class="panel-title">
-            <span>⚙️ 一括排除基準の設定</span>
+            <span>⚙️ 一括除外基準の設定</span>
             <span class="metric-badge">パタカラ一括条件</span>
           </div>
 
           <div class="inline-input" style="margin-bottom: 12px;">
-            <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">下限値による排除:</span>
+            <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">下限値による除外:</span>
             <input type="number" step="0.1" id="masterMinVal" placeholder="例: 0.2" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
             <select id="masterMinType" style="font-weight: bold; color: #475569;">
               <option value="lessThan" selected>未満 (指定値を含まない)</option>
               <option value="lessThanOrEqual">以下 (指定値を含む)</option>
             </select>
-            を排除
+            を除外
           </div>
 
           <div class="inline-input" style="margin-bottom: 16px;">
-            <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">上限値による排除:</span>
+            <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">上限値による除外:</span>
             <input type="number" step="0.1" id="masterMaxVal" placeholder="例: 10.0" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
             <select id="masterMaxType" style="font-weight: bold; color: #475569;">
               <option value="greaterThanOrEqual" selected>以上 (指定値を含む)</option>
               <option value="greaterThan">より上 (指定値を含まない)</option>
             </select>
-            を排除
+            を除外
           </div>
 
           <!-- 対象指標の選択チェックボックス -->
           <div style="border-top: 1px solid #e2e8f0; padding-top: 12px;">
-            <span style="font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px;">✔️ 排除の対象にする指標（複数選択可）:</span>
+            <span style="font-size: 13px; font-weight: bold; color: #475569; display: block; margin-bottom: 8px;">✔️ 除外の対象にする指標（複数選択可）:</span>
             <div class="metric-selection-grid">
               <label><input type="checkbox" id="chkA4" checked> 4文字平均</label>
               <label><input type="checkbox" id="chkA3" checked> 3文字平均</label>

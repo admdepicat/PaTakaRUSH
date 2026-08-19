@@ -130,7 +130,7 @@ function findPatakaIndex(headers, char) {
 }
 
 /**
- * データ整理：インポートデータを各排除条件に基づいて加工し、新規シートとして出力する
+ * データ整理：インポートデータを各除外条件に基づいて加工し、新規シートとして出力する
  */
 function processUploadedData(formObject) {
   try {
@@ -186,7 +186,7 @@ function processUploadedData(formObject) {
       
       var row = fullRow.slice(0, lastValidColIdx + 1);
 
-      // 【徹底排除ガードレール】ゴースト行は書き込まない
+      // 【徹底除外ガードレール】ゴースト行は書き込まない
       if (idxName !== -1) {
         var nameVal = cleanText(row[idxName]);
         if (!nameVal) continue;
@@ -206,14 +206,14 @@ function processUploadedData(formObject) {
         var ageVal = row[idxAge];
         if (shouldExcludeMetric(ageVal, formObject.ageMinVal, formObject.ageMinType)) isExcluded = true;
         if (shouldExcludeMetric(ageVal, formObject.ageMaxVal, formObject.ageMaxType)) isExcluded = true;
-        // 年齢が未入力（0または空）のユーザーを排除する（デフォルトON。年齢別分布タブの散布図等は元々この条件でしか描画できないため）
+        // 年齢が未入力（0または空）のユーザーを除外する（デフォルトON。年齢別分布タブの散布図等は元々この条件でしか描画できないため）
         if (!isExcluded && formObject.excludeEmptyAge) {
           var ageNum = parseFloat(ageVal);
           if (ageVal === "" || ageVal === null || ageVal === undefined || isNaN(ageNum) || ageNum === 0) isExcluded = true;
         }
       }
       
-      // 口腔機能指標排除
+      // 口腔機能指標除外
       if (!isExcluded && idxA4 !== -1 && formObject.a4MinVal !== "") {
         if (shouldExcludeMetric(row[idxA4], formObject.a4MinVal, formObject.a4MinType)) isExcluded = true;
         if (shouldExcludeMetric(row[idxA4], formObject.a4MaxVal, formObject.a4MaxType)) isExcluded = true;
@@ -298,7 +298,7 @@ function processUploadedData(formObject) {
     }
     
     return {
-      message: "データのクレンジングが成功しました。<br>抽出DBシート「" + newSheetName + "」に保存されました。<br>(排除レコード数: " + excludedCount.toLocaleString() + "件)",
+      message: "データのクレンジングが成功しました。<br>抽出DBシート「" + newSheetName + "」に保存されました。<br>(除外レコード数: " + excludedCount.toLocaleString() + "件)",
       url: ss.getUrl() + "#gid=" + newSheet.getSheetId()
     };
   } catch (err) { return { error: "データ整理実行エラー: " + err.toString() }; }
