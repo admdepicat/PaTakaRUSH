@@ -684,8 +684,9 @@
         if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
         else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
 
+        // 「1週間」「2週間」は週平均を使った1人1点のグラフなので、データ件数も対象者数と同じ(1人1点)にする
         subj[genderKey]++;
-        rec[genderKey] += weeksToUse.reduce((sum, w) => sum + (u.data && u.data[w] ? u.data[w] : 0), 0);
+        rec[genderKey]++;
       });
     }
     return { subjects: subj, records: rec };
