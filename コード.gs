@@ -306,9 +306,13 @@ function processUploadedData(formObject) {
 
 /**
  * ダッシュボード集計：新定義のユニークユーザー（ニックネーム＋性別＋生年月日＋都道府県）で集計
+ * @param {boolean} [enableDedup=true] ニックネーム＋性別＋生年月日＋都道府県による同一人物の名寄せを行うか（falseの場合は行単位＝そのままの数で集計）
+ * @param {boolean} [excludeEmptyAge=true] 年齢が未入力（0または空）のユーザーを対象者数等の集計から除外するか
  */
-function getAdvancedAnalyticsData(sheetName) {
+function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
   try {
+    enableDedup = (enableDedup !== false);
+    excludeEmptyAge = (excludeEmptyAge !== false);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(sheetName);
     if (!sheet) return { error: "シートが見つかりません" };
@@ -336,6 +340,12 @@ function getAdvancedAnalyticsData(sheetName) {
     var idxR = findPatakaIndex(cleanHeaders, 'ラ');
 
     var userMap = {};
+    // 「集計条件」の名寄せOFF時に使う、行単位（そのままの数）の対象者数・データ件数カウンター
+    var rawRowCounts = {
+      total: { male: 0, female: 0, other: 0 },
+      managed: { male: 0, female: 0, other: 0 },
+      unmanaged: { male: 0, female: 0, other: 0 }
+    };
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
       var name = idxName !== -1 ? row[idxName] : '';
@@ -366,8 +376,9 @@ function getAdvancedAnalyticsData(sheetName) {
       var prefClean = cleanText(pref);
       var groupClean = cleanText(group);
       
+      // 散布図・離脱率等のグラフ用データ(userMap)は、名寄せ設定に関わらず常にフル名寄せキーで構築する（グラフの見た目を変えないため）
       var userIdKey = nameClean + '|' + genderClean + '|' + birthClean + '|' + prefClean;
-      
+
       // =========================================================
       // 【管理・未管理の判定ロジックバグの修正】
       // グループ名が 空欄 / "-" / "未設定" / "未登録" のいずれかである場合は、
@@ -376,7 +387,16 @@ function getAdvancedAnalyticsData(sheetName) {
       var isUnmanaged = (groupClean === "" || groupClean === "-" || groupClean === "未設定" || groupClean === "未登録");
       var groupType = isUnmanaged ? 'unmanaged' : 'managed';
       var groupName = isUnmanaged ? '' : group; // 管理なしの場合はグループ名（系列名）として扱わない
-      
+
+      // 「集計条件」の名寄せOFF時に使う、行単位（そのままの数）の対象者数・データ件数カウンター
+      var rowGenderKey = "other";
+      if (genderClean === "男性" || genderClean === "男" || genderClean === "M") rowGenderKey = "male";
+      else if (genderClean === "女性" || genderClean === "女" || genderClean === "F") rowGenderKey = "female";
+      if (!(excludeEmptyAge && !(age > 0))) {
+        rawRowCounts.total[rowGenderKey]++;
+        rawRowCounts[groupType][rowGenderKey]++;
+      }
+
       if (!userMap[userIdKey]) {
         userMap[userIdKey] = { 
           uid: name, // 表示用ニックネーム
@@ -391,7 +411,7 @@ function getAdvancedAnalyticsData(sheetName) {
     }
 
     var userNames = Object.keys(userMap);
-    var createEmptyResult = function() { return { userCount: 0, userCounts: { male: 0, female: 0, other: 0 }, scatter: { male: [], female: [], other: [] } }; };
+    var createEmptyResult = function() { return { userCount: 0, userCounts: { male: 0, female: 0, other: 0 }, recordCounts: { male: 0, female: 0, other: 0 }, scatter: { male: [], female: [], other: [] } }; };
     var result = { total: createEmptyResult(), managed: createEmptyResult(), unmanaged: createEmptyResult(), groups: {}, usersChurn: [] };
 
     userNames.forEach(function(userIdKey) {
@@ -399,12 +419,16 @@ function getAdvancedAnalyticsData(sheetName) {
       var genderKey = "other";
       if (user.gender === "男性" || user.gender === "男" || user.gender === "M") genderKey = "male";
       else if (user.gender === "女性" || user.gender === "女" || user.gender === "F") genderKey = "female";
-      
-      result.total.userCount++; result.total.userCounts[genderKey]++;
-      result[user.groupType].userCount++; result[user.groupType].userCounts[genderKey]++;
-      if (user.groupType === 'managed' && user.groupName) {
-        if (!result.groups[user.groupName]) result.groups[user.groupName] = createEmptyResult();
-        result.groups[user.groupName].userCount++; result.groups[user.groupName].userCounts[genderKey]++;
+
+      // 「対象者数」「データ件数」（=集計条件表示専用の数値）だけを、年齢未入力除外設定に応じて加算する。
+      // 散布図・離脱率等のグラフ用データ生成（この下の処理）は設定に関わらず常に実行し、グラフの見た目は変えない。
+      if (!(excludeEmptyAge && !(user.age > 0))) {
+        result.total.userCount++; result.total.userCounts[genderKey]++; result.total.recordCounts[genderKey] += user.records.length;
+        result[user.groupType].userCount++; result[user.groupType].userCounts[genderKey]++; result[user.groupType].recordCounts[genderKey] += user.records.length;
+        if (user.groupType === 'managed' && user.groupName) {
+          if (!result.groups[user.groupName]) result.groups[user.groupName] = createEmptyResult();
+          result.groups[user.groupName].userCount++; result.groups[user.groupName].userCounts[genderKey]++; result.groups[user.groupName].recordCounts[genderKey] += user.records.length;
+        }
       }
 
       user.records.sort(function(a, b) { return a.date - b.date; });
@@ -494,6 +518,17 @@ function getAdvancedAnalyticsData(sheetName) {
     Object.keys(result.groups).forEach(function(gName) { generateChurnStats(result.groups[gName], function(u) { return u.groupType === 'managed' && u.groupName === gName; }); });
     result.groupRanking = Object.keys(result.groups).map(function(gName) { return { name: gName, userCount: result.groups[gName].userCount }; });
     result.groupRanking.sort(function(a, b) { return b.userCount - a.userCount; });
+
+    // 名寄せOFF時は「対象者数」「データ件数」を行単位（そのままの数）に置き換える（グラフ用データには影響させない）
+    if (!enableDedup) {
+      ['total', 'managed', 'unmanaged'].forEach(function(key) {
+        var counts = rawRowCounts[key];
+        result[key].userCounts = { male: counts.male, female: counts.female, other: counts.other };
+        result[key].userCount = counts.male + counts.female + counts.other;
+        result[key].recordCounts = { male: counts.male, female: counts.female, other: counts.other };
+      });
+    }
+
     return JSON.stringify(result);
   } catch (err) { return { error: "GAS実行エラー: " + err.toString() }; }
 }

@@ -651,20 +651,21 @@
     const groupKey = groupSelect ? groupSelect.value : 'total';
 
     if (period === 'all') {
-      const targetData = getEffectiveScatterData('all');
-      const uniqueCount = (arr) => {
-        const s = new Set();
-        (arr || []).forEach(d => { if (d && d.uid !== undefined) s.add(d.uid); });
-        return s.size;
-      };
-      const maleArr = targetData.male || [], femaleArr = targetData.female || [], otherArr = targetData.other || [];
+      // 「集計条件」(名寄せ・年齢未入力除外)の設定を反映したサーバー算出値をそのまま使う（グラフの散布図データとは別物）
+      const targetData = rawData ? rawData[groupKey] : null;
+      const userCounts = (targetData && targetData.userCounts) || { male: 0, female: 0, other: 0 };
+      const recordCounts = (targetData && targetData.recordCounts) || { male: 0, female: 0, other: 0 };
       return {
-        subjects: { male: uniqueCount(maleArr), female: uniqueCount(femaleArr), other: uniqueCount(otherArr) },
-        records: { male: maleArr.length, female: femaleArr.length, other: otherArr.length }
+        subjects: { male: userCounts.male || 0, female: userCounts.female || 0, other: userCounts.other || 0 },
+        records: { male: recordCounts.male || 0, female: recordCounts.female || 0, other: recordCounts.other || 0 }
       };
     }
 
     const weeksToUse = period === '1w' ? [0] : [0, 1];
+    // 「名寄せ」設定は離脱率タブと同じ週次データ(usersChurn、常にフル名寄せ)を土台にしているため対象外。「年齢未入力除外」のみ反映する
+    const excludeEmptyAgeEl = document.getElementById('chkExcludeEmptyAgeAnalysis');
+    const excludeEmptyAge = excludeEmptyAgeEl ? excludeEmptyAgeEl.checked : true;
+
     const subj = { male: 0, female: 0, other: 0 };
     const rec = { male: 0, female: 0, other: 0 };
     if (rawData && rawData.usersChurn) {
@@ -674,7 +675,8 @@
         else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
         else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
         else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
-        if (!inGroup || !u.age || u.age <= 0) return;
+        if (!inGroup) return;
+        if (excludeEmptyAge && !(u.age > 0)) return;
 
         const vals = weeksToUse.map(w => u.scores[w]).filter(v => v !== null && v !== undefined);
         if (vals.length === 0) return;
