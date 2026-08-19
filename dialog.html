@@ -130,6 +130,10 @@
           </select>
           を排除
         </div>
+        <label style="margin-top: 10px; display: flex; align-items: center; gap: 6px; font-weight: bold; color: #334155;">
+          <input type="checkbox" id="chkExcludeEmptyAge" checked style="width: auto; margin: 0;">
+          年齢が未入力（0または空）のユーザーを排除する
+        </label>
       </div>
 
       <div class="section">
@@ -271,6 +275,7 @@
           fileData: currentFileData, fileName: currentFileName, excludeGroups: [],
           ageMinVal: document.getElementById('ageMinVal').value, ageMinType: document.getElementById('ageMinType').value,
           ageMaxVal: document.getElementById('ageMaxVal').value, ageMaxType: document.getElementById('ageMaxType').value,
+          excludeEmptyAge: document.getElementById('chkExcludeEmptyAge').checked,
           a4MinVal: document.getElementById('chkA4').checked ? minVal : "", a4MinType: minType, a4MaxVal: document.getElementById('chkA4').checked ? maxVal : "", a4MaxType: maxType,
           a3MinVal: document.getElementById('chkA3').checked ? minVal : "", a3MinType: minType, a3MaxVal: document.getElementById('chkA3').checked ? maxVal : "", a3MaxType: maxType,
           pMinVal: document.getElementById('chkP').checked ? minVal : "", pMinType: minType, pMaxVal: document.getElementById('chkP').checked ? maxVal : "", pMaxType: maxType,

@@ -206,6 +206,11 @@ function processUploadedData(formObject) {
         var ageVal = row[idxAge];
         if (shouldExcludeMetric(ageVal, formObject.ageMinVal, formObject.ageMinType)) isExcluded = true;
         if (shouldExcludeMetric(ageVal, formObject.ageMaxVal, formObject.ageMaxType)) isExcluded = true;
+        // 年齢が未入力（0または空）のユーザーを排除する（デフォルトON。年齢別分布タブの散布図等は元々この条件でしか描画できないため）
+        if (!isExcluded && formObject.excludeEmptyAge) {
+          var ageNum = parseFloat(ageVal);
+          if (ageVal === "" || ageVal === null || ageVal === undefined || isNaN(ageNum) || ageNum === 0) isExcluded = true;
+        }
       }
       
       // 口腔機能指標排除
