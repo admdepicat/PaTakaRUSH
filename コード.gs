@@ -483,17 +483,32 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
 
         // 「新・年齢と4文字平均の相関」の1週間/2週間用：週で区切って平均するのではなく、
         // 期間内の生の検査記録を同じ重みで直接平均した値（1人1データ）を別途算出する
+        // （パタカラ分析タブ用に、4文字平均以外の指標(3文字平均・パ・タ・カ・ラ)も同様に2週間分を算出する）
         var rawRecords1w = []; var rawRecords2w = [];
+        var rawRecords2wA3 = []; var rawRecords2wP = []; var rawRecords2wT = []; var rawRecords2wK = []; var rawRecords2wR = [];
         user.records.forEach(function(rec) {
           var recMidnight = new Date(rec.date.getFullYear(), rec.date.getMonth(), rec.date.getDate()).getTime();
           var relDay = Math.round((recMidnight - firstMidnight) / (1000 * 60 * 60 * 24));
           if (relDay < 7) rawRecords1w.push(rec.a4);
-          if (relDay < 14) rawRecords2w.push(rec.a4);
+          if (relDay < 14) {
+            rawRecords2w.push(rec.a4);
+            rawRecords2wA3.push(rec.a3);
+            rawRecords2wP.push(rec.p);
+            rawRecords2wT.push(rec.t);
+            rawRecords2wK.push(rec.k);
+            rawRecords2wR.push(rec.r);
+          }
         });
-        var avgRaw1w = rawRecords1w.length > 0 ? rawRecords1w.reduce(function(a, b){ return a + b; }, 0) / rawRecords1w.length : null;
-        var avgRaw2w = rawRecords2w.length > 0 ? rawRecords2w.reduce(function(a, b){ return a + b; }, 0) / rawRecords2w.length : null;
+        var avgOf = function(arr) { return arr.length > 0 ? arr.reduce(function(a, b){ return a + b; }, 0) / arr.length : null; };
+        var avgRaw1w = avgOf(rawRecords1w);
+        var avgRaw2w = avgOf(rawRecords2w);
+        var avgRaw2wA3 = avgOf(rawRecords2wA3);
+        var avgRaw2wP = avgOf(rawRecords2wP);
+        var avgRaw2wT = avgOf(rawRecords2wT);
+        var avgRaw2wK = avgOf(rawRecords2wK);
+        var avgRaw2wR = avgOf(rawRecords2wR);
 
-        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
+        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
       }
     });
 

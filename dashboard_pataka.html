@@ -3,7 +3,419 @@
 <!-- ============================================== -->
 <div id="panel-pataka" class="hidden space-y-6">
 
+  <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+    <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
+        <h2 class="text-lg font-bold text-gray-800">年齢とパタカラ指標の相関 (詳細散布図)</h2>
+        <button onclick="downloadPatakaScatterCSV()" class="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition shadow-sm flex items-center gap-2 w-fit">
+          <svg class="fill-current w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/></svg>
+          <span>CSV出力</span>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 w-full xl:w-auto overflow-x-auto">
+        <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">対象:</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkTargetTotal" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+            <span class="text-emerald-600">全体</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkTargetMale" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
+            <span class="text-blue-600">男性</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkTargetFemale" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
+            <span class="text-rose-600">女性</span>
+          </label>
+
+          <span class="text-gray-300 mx-1">|</span>
+          <span class="flex items-center gap-1 whitespace-nowrap">
+            <span class="text-gray-500">Y軸最大値:</span>
+            <input type="number" id="patakaYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updatePatakaScatterChart()" min="1" step="1">
+          </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">文字:</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkA4" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#1e293b;" checked>
+            <span style="color:#1e293b;">4文字平均</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkA3" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#7c3aed;">
+            <span style="color:#7c3aed;">3文字平均</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkP" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#e11d48;">
+            <span style="color:#e11d48;">パ</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkT" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#ca8a04;">
+            <span style="color:#ca8a04;">タ</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkK" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#059669;">
+            <span style="color:#059669;">カ</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkR" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#2563eb;">
+            <span style="color:#2563eb;">ラ</span>
+          </label>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">対象者数:</span>
+          <span class="text-blue-600 text-base" id="patakaSubjectsTotal">-</span>
+          <span class="text-gray-300 mx-1">|</span>
+          <span class="text-blue-600">男性 <span id="patakaSubjectsMale">-</span></span>
+          <span class="text-rose-600">女性 <span id="patakaSubjectsFemale">-</span></span>
+          <span class="text-gray-500">未回答 <span id="patakaSubjectsOther">-</span></span>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">データ件数:</span>
+          <span class="text-emerald-600 text-base" id="patakaRecordsTotal">-</span>
+          <span class="text-gray-300 mx-1">|</span>
+          <span class="text-blue-600">男性 <span id="patakaRecordsMale">-</span></span>
+          <span class="text-rose-600">女性 <span id="patakaRecordsFemale">-</span></span>
+          <span class="text-gray-500">未回答 <span id="patakaRecordsOther">-</span></span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">指標:</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaIndPct" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+            <span class="text-gray-700">パーセンタイル曲線 (LMS法)</span>
+          </label>
+          <span class="text-gray-300 mx-1">|</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkBgBars" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+            <span class="text-gray-700">人数(背景棒)</span>
+          </label>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">表示:</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="patakaPctMode" id="patakaPctMode7" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+            <span class="text-gray-700">7本線 (3/10/25/50/75/90/97%ile)</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="patakaPctMode" id="patakaPctMode5a" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span class="text-gray-700">5本線① (5/10/50/90/95%ile)</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="patakaPctMode" id="patakaPctMode5b" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span class="text-gray-700">5本線② (3/10/50/90/97%ile・帯塗り)</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="patakaPctMode" id="patakaPctMode2" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span class="text-gray-700">2本線 (3〜97%ile帯 + 50%ile細線)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container max-w-5xl mx-auto mt-4 mb-4">
+      <canvas id="patakaScatterChart"></canvas>
+    </div>
+
+    <p class="text-sm text-gray-600 mb-2">
+      ※各ユーザーの初回検査日から14日以内(2週間)に行われた検査の生データを、週で区切らず同じ重みで単純平均した値（1人1データ）を使用しています。<br>
+      ※パーセンタイル曲線はWHO・厚労省の身長体重成長曲線と同じLMS法（Cole &amp; Green, 1992）で算出しています。<br>
+      ※「文字」で複数の指標を同時に選択すると、同じグラフ上に重ねて表示します（色=指標、線種=対象で区別: 全体=実線 / 男性=粗い破線 / 女性=細かい破線）。
+    </p>
+  </div>
+
 </div>
 
 <script>
+  const PATAKA_METRICS = ['a4', 'a3', 'p', 't', 'k', 'r'];
+  const PATAKA_METRIC_FIELD = { a4: 'avgRaw2w', a3: 'avgRaw2wA3', p: 'avgRaw2wP', t: 'avgRaw2wT', k: 'avgRaw2wK', r: 'avgRaw2wR' };
+  const PATAKA_METRIC_STYLE = {
+    a4: { color: '#1e293b', label: '4文字平均' },
+    a3: { color: '#7c3aed', label: '3文字平均' },
+    p:  { color: '#e11d48', label: 'パ' },
+    t:  { color: '#ca8a04', label: 'タ' },
+    k:  { color: '#059669', label: 'カ' },
+    r:  { color: '#2563eb', label: 'ラ' }
+  };
+  const PATAKA_TARGET_DASH = { total: [], male: [6, 3], female: [2, 2] };
+  const PATAKA_TARGET_LABEL = { total: '全体', male: '男性', female: '女性' };
+
+  function renderPatakaChart() {
+    updatePatakaScatterChart();
+  }
+
+  // 指定した指標(a4/a3/p/t/k/r)について、2週間の生データを単純平均した値(1人1データ)を年齢別に返す
+  function getPatakaEffectiveScatterData(metricKey) {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupKey = groupSelect ? groupSelect.value : 'total';
+    const result = { male: [], female: [], other: [] };
+    if (!rawData || !rawData.usersChurn) return result;
+    const field = PATAKA_METRIC_FIELD[metricKey];
+
+    rawData.usersChurn.forEach(u => {
+      let inGroup = false;
+      if (groupKey === 'total') inGroup = true;
+      else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
+      else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
+      else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
+      if (!inGroup) return;
+      if (!u.age || u.age <= 0) return;
+
+      const val = u[field];
+      if (val === null || val === undefined) return;
+
+      const pt = { x: u.age, y: val, uid: u.uid };
+      let genderKey = 'other';
+      if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
+      else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
+      result[genderKey].push(pt);
+    });
+    return result;
+  }
+
+  // 対象者数・データ件数(2週間、1人1データなので常に同数)を集計する
+  function computePatakaCounts() {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupKey = groupSelect ? groupSelect.value : 'total';
+    const subj = { male: 0, female: 0, other: 0 };
+    if (rawData && rawData.usersChurn) {
+      rawData.usersChurn.forEach(u => {
+        let inGroup = false;
+        if (groupKey === 'total') inGroup = true;
+        else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
+        else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
+        else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
+        if (!inGroup) return;
+        if (!(u.age > 0)) return;
+        if (u.avgRaw2w === null || u.avgRaw2w === undefined) return;
+
+        let genderKey = 'other';
+        if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
+        else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
+        subj[genderKey]++;
+      });
+    }
+    return subj;
+  }
+
+  function updatePatakaCounts() {
+    const counts = computePatakaCounts();
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val.toLocaleString(); };
+    const total = counts.male + counts.female + counts.other;
+    setText('patakaSubjectsTotal', total);
+    setText('patakaSubjectsMale', counts.male);
+    setText('patakaSubjectsFemale', counts.female);
+    setText('patakaSubjectsOther', counts.other);
+    setText('patakaRecordsTotal', total);
+    setText('patakaRecordsMale', counts.male);
+    setText('patakaRecordsFemale', counts.female);
+    setText('patakaRecordsOther', counts.other);
+  }
+
+  function getPatakaSelectedMetrics() {
+    const metrics = [];
+    const idMap = { a4: 'patakaChkA4', a3: 'patakaChkA3', p: 'patakaChkP', t: 'patakaChkT', k: 'patakaChkK', r: 'patakaChkR' };
+    PATAKA_METRICS.forEach(m => {
+      const el = document.getElementById(idMap[m]);
+      if (el && el.checked) metrics.push(m);
+    });
+    return metrics;
+  }
+
+  function getPatakaPctMode() {
+    if (document.getElementById('patakaPctMode5a') && document.getElementById('patakaPctMode5a').checked) return '5a';
+    if (document.getElementById('patakaPctMode5b') && document.getElementById('patakaPctMode5b').checked) return '5b';
+    if (document.getElementById('patakaPctMode2') && document.getElementById('patakaPctMode2').checked) return '2';
+    return '7';
+  }
+
+  function updatePatakaScatterChart() {
+    try {
+      if (!rawData) return;
+      const groupSelect = document.getElementById('groupSelect');
+      if (!groupSelect) return;
+
+      updatePatakaCounts();
+
+      let hiddenStates = {};
+      if (charts.patakaScatter && charts.patakaScatter.data && charts.patakaScatter.data.datasets) {
+        charts.patakaScatter.data.datasets.forEach((ds, index) => {
+          const meta = charts.patakaScatter.getDatasetMeta(index);
+          if (meta.hidden === true || ds.hidden === true) hiddenStates[ds.label] = true;
+        });
+      }
+
+      const yMaxStr = document.getElementById('patakaYMax') ? document.getElementById('patakaYMax').value : '';
+      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : undefined;
+
+      const targets = [];
+      if (document.getElementById('patakaChkTargetTotal') && document.getElementById('patakaChkTargetTotal').checked) targets.push('total');
+      if (document.getElementById('patakaChkTargetMale') && document.getElementById('patakaChkTargetMale').checked) targets.push('male');
+      if (document.getElementById('patakaChkTargetFemale') && document.getElementById('patakaChkTargetFemale').checked) targets.push('female');
+
+      const metrics = getPatakaSelectedMetrics();
+      const newDatasets = [];
+
+      // --- 1. 人数(背景棒): 指標に関わらず対象者集合は共通なので、代表としてa4を使う ---
+      const showBgBars = document.getElementById('patakaChkBgBars') && document.getElementById('patakaChkBgBars').checked;
+      if (showBgBars) {
+        const bgData = getPatakaEffectiveScatterData('a4');
+        const getUniqueCountByAge = (arr) => {
+          const ageMap = {};
+          (arr || []).forEach(d => { if (d && d.x !== undefined) { const age = Math.round(d.x); ageMap[age] = (ageMap[age] || 0) + 1; } });
+          return ageMap;
+        };
+        const cM = getUniqueCountByAge(bgData.male), cF = getUniqueCountByAge(bgData.female), cO = getUniqueCountByAge(bgData.other);
+        const allAges = Array.from(new Set([...Object.keys(cM), ...Object.keys(cF), ...Object.keys(cO)])).map(Number).sort((a, b) => a - b);
+        const barMale = [], barFemale = [], barOther = [];
+        allAges.forEach(age => {
+          barMale.push({ x: age, y: cM[age] || 0 });
+          barFemale.push({ x: age, y: cF[age] || 0 });
+          barOther.push({ x: age, y: cO[age] || 0 });
+        });
+        if (targets.includes('total')) newDatasets.push({ type: 'bar', label: '未回答(人数)', data: barOther, backgroundColor: 'rgba(107, 114, 128, 0.35)', borderColor: 'rgba(107, 114, 128, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('female') || targets.includes('total')) newDatasets.push({ type: 'bar', label: '女性(人数)', data: barFemale, backgroundColor: 'rgba(225, 29, 72, 0.35)', borderColor: 'rgba(225, 29, 72, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('male') || targets.includes('total')) newDatasets.push({ type: 'bar', label: '男性(人数)', data: barMale, backgroundColor: 'rgba(37, 99, 235, 0.35)', borderColor: 'rgba(37, 99, 235, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+      }
+
+      // --- 2. LMS法によるパーセンタイル曲線 ---
+      const showPercentiles = document.getElementById('patakaIndPct') ? document.getElementById('patakaIndPct').checked : true;
+      const pctMode = getPatakaPctMode();
+
+      const pushPctLine = (label, points, color, width, opacity, fillTo, bgOpacity, order, dash) => {
+        newDatasets.push({
+          type: 'line', label: label, data: points,
+          borderColor: width > 0 ? hexToRgba(color, opacity) : 'transparent',
+          backgroundColor: fillTo ? hexToRgba(color, bgOpacity) : 'transparent',
+          borderWidth: width, borderDash: dash || [], pointRadius: 0, fill: fillTo || false,
+          tension: 0.3, cubicInterpolationMode: 'monotone', pointStyle: 'line', order: order, yAxisID: 'y'
+        });
+      };
+
+      if (showPercentiles) {
+        metrics.forEach(metricKey => {
+          const metricData = getPatakaEffectiveScatterData(metricKey);
+          const color = PATAKA_METRIC_STYLE[metricKey].color;
+          const metricLabel = PATAKA_METRIC_STYLE[metricKey].label;
+
+          targets.forEach(tKey => {
+            let dataArray = [];
+            if (tKey === 'total') dataArray = [...(metricData.male || []), ...(metricData.female || []), ...(metricData.other || [])];
+            else if (tKey === 'male') dataArray = metricData.male || [];
+            else if (tKey === 'female') dataArray = metricData.female || [];
+
+            const dash = PATAKA_TARGET_DASH[tKey];
+            const labelPrefix = `${metricLabel}(${PATAKA_TARGET_LABEL[tKey]})`;
+
+            if (pctMode === '5a') {
+              const curves = computeLmsPercentileCurves(dataArray, [5, 10, 50, 90, 95]);
+              [5, 10, 90, 95].forEach(p => { if (curves[p] && curves[p].length > 0) pushPctLine(`${labelPrefix} ${p}%ile`, curves[p], color, 1.5, 0.55, false, 0, 0, dash); });
+              if (curves[50] && curves[50].length > 0) pushPctLine(`${labelPrefix} 中央値`, curves[50], color, 3, 1, false, 0, -1, dash);
+
+            } else if (pctMode === '5b') {
+              const curves = computeLmsPercentileCurves(dataArray, [3, 10, 50, 90, 97]);
+              const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50 = curves[50];
+              if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
+                pushPctLine(`${labelPrefix} 97%ile`, p97, color, 1.5, 0.55, false, 0, 0, dash);
+                pushPctLine(`${labelPrefix} 90%ile`, p90, color, 1.5, 0.55, '-1', 0.12, 0, dash);
+                pushPctLine(`${labelPrefix} 10%ile`, p10, color, 1.5, 0.55, '-1', 0.28, 0, dash);
+                pushPctLine(`${labelPrefix} 3%ile`, p3, color, 1.5, 0.55, '-1', 0.12, 0, dash);
+              }
+              if (p50 && p50.length > 0) pushPctLine(`${labelPrefix} 中央値`, p50, color, 3, 1, false, 0, -1, dash);
+
+            } else if (pctMode === '2') {
+              const curves = computeLmsPercentileCurves(dataArray, [3, 50, 97]);
+              const p97 = curves[97], p3 = curves[3], p50 = curves[50];
+              if (p97 && p97.length > 0 && p3 && p3.length > 0) {
+                pushPctLine(`${labelPrefix} 97%ile`, p97, color, 0, 0, false, 0, 1, dash);
+                pushPctLine(`${labelPrefix} 3%ile`, p3, color, 0, 0, '-1', 0.18, 1, dash);
+              }
+              if (p50 && p50.length > 0) pushPctLine(`${labelPrefix} 中央値`, p50, color, 1.5, 1, false, 0, -1, dash);
+
+            } else {
+              const PCT_LIST = [3, 10, 25, 50, 75, 90, 97];
+              const curves = computeLmsPercentileCurves(dataArray, PCT_LIST);
+              PCT_LIST.forEach(p => {
+                if (curves[p] && curves[p].length > 0) {
+                  const label = p === 50 ? `${labelPrefix} 中央値` : `${labelPrefix} ${p}%ile`;
+                  pushPctLine(label, curves[p], color, p === 50 ? 3 : 1.5, p === 50 ? 1 : 0.55, false, 0, p === 50 ? -1 : 0, dash);
+                }
+              });
+            }
+          });
+        });
+      }
+
+      newDatasets.forEach(ds => { if (hiddenStates[ds.label] === true) ds.hidden = true; });
+      renderPatakaScatterInstance(newDatasets, yMax);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function renderPatakaScatterInstance(newDatasets, yMax) {
+    const el = document.getElementById('patakaScatterChart');
+    if (!el) return;
+
+    if (!charts.patakaScatter) {
+      charts.patakaScatter = new Chart(el, {
+        type: 'scatter',
+        data: { datasets: newDatasets },
+        options: {
+          responsive: true, maintainAspectRatio: true, aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9,
+          plugins: {
+            legend: { labels: { usePointStyle: true } },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const d = context.raw; const dsLabel = context.dataset.label || '';
+                  if (context.dataset.type === 'bar') return `${dsLabel}: ${d.y} (${d.x}歳)`;
+                  return `${dsLabel}: ${d.y !== undefined ? d.y.toFixed(2) : ''} (${d.x}歳)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear', title: { display: true, text: '年齢' }, min: 0, max: 100, bounds: 'ticks', offset: false,
+              ticks: { stepSize: 5, autoSkip: false, callback: function(value) { return value % 5 === 0 ? value : null; } },
+              grid: {
+                offset: false,
+                color: function(context) { if (!context || !context.tick) return 'transparent'; const val = context.tick.value; if (val % 10 === 0) return 'rgba(0, 0, 0, 0.15)'; if (val % 5 === 0) return 'rgba(0, 0, 0, 0.06)'; return 'transparent'; },
+                lineWidth: function(context) { if (!context || !context.tick) return 0; const val = context.tick.value; if (val % 10 === 0) return 1.2; if (val % 5 === 0) return 1; return 0; }
+              }
+            },
+            y: { position: 'left', title: { display: true, text: 'スコア (回/秒)' }, min: 0, max: yMax, grid: { drawOnChartArea: true } },
+            yCount: { position: 'right', title: { display: true, text: 'ユーザー数 (人)' }, min: 0, stacked: true, grid: { drawOnChartArea: false }, ticks: { stepSize: 10 } }
+          }
+        }
+      });
+    } else {
+      const chart = charts.patakaScatter;
+      chart.data.datasets = newDatasets;
+      chart.options.scales.y.max = yMax;
+      chart.update();
+    }
+  }
+
+  function downloadPatakaScatterCSV() {
+    if (!charts.patakaScatter) return;
+    const groupSelect = document.getElementById('groupSelect');
+    const groupName = groupSelect ? groupSelect.options[groupSelect.selectedIndex].text.replace(/\[.*\]\s*/, '') : 'Data';
+    let csvContent = "指標,年齢,値\n";
+    charts.patakaScatter.data.datasets.forEach(dataset => {
+      if (dataset.type === 'line' && dataset.data) {
+        const label = dataset.label;
+        dataset.data.forEach(point => { csvContent += `${label},${point.x},${point.y}\n`; });
+      }
+    });
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url); link.setAttribute("download", `Pataka_${groupName}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  }
 </script>
