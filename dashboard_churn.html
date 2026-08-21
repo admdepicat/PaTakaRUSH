@@ -67,6 +67,8 @@
 
 <script>
   let churnWeeklyCache = [];
+  let churnLastClickedIndex = null;
+  const CHURN_GENDER_COLOR = { total: '#059669', male: '#2563eb', female: '#e11d48' };
 
   function getChurnGenderFilter() {
     if (document.getElementById('churnGenderMale') && document.getElementById('churnGenderMale').checked) return 'male';
@@ -122,6 +124,7 @@
       const yMax = yMaxStr ? parseInt(yMaxStr, 10) : 7;
 
       const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
+      const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
 
       if (!charts.churn) {
         charts.churn = new Chart(document.getElementById('churnWeeklyChart'), {
@@ -129,8 +132,8 @@
           data: {
             datasets: [{
               label: '週あたり利用日数(平均)', data: dataPoints,
-              borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.15)',
-              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#2563eb',
+              borderColor: color, backgroundColor: hexToRgba(color, 0.15),
+              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: color,
               fill: false, tension: 0
             }]
           },
@@ -139,6 +142,7 @@
             onClick: (evt, elements) => {
               if (elements && elements.length > 0) {
                 const idx = elements[0].index;
+                churnLastClickedIndex = idx;
                 showChurnHistogram(churnWeeklyCache[idx]);
               }
             },
@@ -159,8 +163,16 @@
       } else {
         const chart = charts.churn;
         chart.data.datasets[0].data = dataPoints;
+        chart.data.datasets[0].borderColor = color;
+        chart.data.datasets[0].backgroundColor = hexToRgba(color, 0.15);
+        chart.data.datasets[0].pointBackgroundColor = color;
         chart.options.scales.y.max = yMax;
         chart.update();
+      }
+
+      // 性別・管理状態の切り替え後も、選択中の週があればヒストグラムの色を追随させる
+      if (churnLastClickedIndex !== null && churnWeeklyCache[churnLastClickedIndex]) {
+        showChurnHistogram(churnWeeklyCache[churnLastClickedIndex]);
       }
     } catch (error) {
       console.error(error);
@@ -172,6 +184,7 @@
     const total = weekInfo.activeUsers;
     const days = [0, 1, 2, 3, 4, 5, 6, 7];
     const percents = days.map(d => total > 0 ? (weekInfo.hist[d] || 0) / total * 100 : 0);
+    const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
 
     const caption = document.getElementById('churnHistCaption');
     if (caption) caption.innerText = `${weekInfo.week}週目 (対象 ${total.toLocaleString()}人)`;
@@ -183,7 +196,7 @@
           labels: days.map(d => d + '日'),
           datasets: [{
             label: '割合(%)', data: percents,
-            backgroundColor: 'rgba(37, 99, 235, 0.5)', borderColor: 'rgba(37, 99, 235, 0.8)', borderWidth: 1
+            backgroundColor: hexToRgba(color, 0.5), borderColor: hexToRgba(color, 0.8), borderWidth: 1
           }]
         },
         options: {
@@ -200,6 +213,8 @@
       });
     } else {
       charts.churnHist.data.datasets[0].data = percents;
+      charts.churnHist.data.datasets[0].backgroundColor = hexToRgba(color, 0.5);
+      charts.churnHist.data.datasets[0].borderColor = hexToRgba(color, 0.8);
       charts.churnHist.update();
     }
   }
