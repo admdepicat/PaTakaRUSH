@@ -120,10 +120,7 @@
 
   <script>
     let rawData = null;
-    let charts = { scatter: null, scatterCompare: null, periodCount: null, topScatter: null, patakaScatter: null, patakaBoxPlot: null, impact: null, churn: null };
-    let additionalScatters = {};
-    let scatterCounter = 0;
-    let isFirstLoad = true;
+    let charts = { topScatter: null, patakaScatter: null, patakaBoxPlot: null, impact: null, churn: null };
 
     Chart.defaults.font.family = 'sans-serif';
 
@@ -204,16 +201,6 @@
           if (document.getElementById('aspectRatioSelect')) document.getElementById('aspectRatioSelect').disabled = false;
           
           renderCharts();
-
-          if (isFirstLoad) {
-            google.script.run.withSuccessHandler(function(pinnedData) {
-              if (pinnedData && pinnedData.length > 0 && typeof addScatterChart === 'function') {
-                Object.keys(additionalScatters).forEach(id => removeScatterChart(id, true));
-                pinnedData.forEach(config => addScatterChart(config));
-              }
-            }).loadPinnedCharts();
-            isFirstLoad = false;
-          }
         })
         .withFailureHandler(function(err) {
           document.getElementById('loading').classList.add('hidden');
