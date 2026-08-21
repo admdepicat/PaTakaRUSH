@@ -63,7 +63,7 @@
         <button onclick="showTab('dist')" id="tab-dist" class="tab-btn flex-1 py-3 tab-active min-w-[120px]">年齢別分布</button>
         <!-- 新設：パタカラ分析タブ -->
         <button onclick="showTab('pataka')" id="tab-pataka" class="tab-btn flex-1 py-3 min-w-[120px]">パタカラ分析</button>
-        <button onclick="showTab('churn')" id="tab-churn" class="tab-btn flex-1 py-3 min-w-[120px]">離脱率(利用頻度)</button>
+        <button onclick="showTab('churn')" id="tab-churn" class="tab-btn flex-1 py-3 min-w-[120px]">離脱率</button>
       </div>
 
       <!-- 共通: ユーザー数およびデータ件数表示 -->
@@ -120,7 +120,7 @@
 
   <script>
     let rawData = null;
-    let charts = { topScatter: null, patakaScatter: null, patakaBoxPlot: null, impact: null, churn: null };
+    let charts = { topScatter: null, patakaScatter: null, patakaBoxPlot: null, impact: null, churn: null, churnHist: null };
 
     Chart.defaults.font.family = 'sans-serif';
 

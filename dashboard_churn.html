@@ -1,9 +1,158 @@
 <!-- ============================================== -->
-<!-- パネル 4: 離脱率(利用頻度推移) -->
+<!-- パネル 4: 離脱率 -->
 <!-- ============================================== -->
 <div id="panel-churn" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
+    <h2 class="text-lg font-bold text-gray-800">週次利用日数の推移</h2>
+    <div class="flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+      <span class="text-gray-500 text-sm font-bold">Y軸最大値:</span>
+      <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" max="7" step="1">
+    </div>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-6">
+    ※各ユーザーの初回検査日を基準に、1週間ごとに何日検査を実施したか（最大7日/週）の平均推移を折れ線で表示しています（対象データ: 全期間）。<br>
+    ※グラフ上の点をクリックすると、右側にその週の利用日数の分布（ヒストグラム）が表示されます。
+  </p>
+
+  <div class="flex flex-col lg:flex-row gap-6">
+    <div class="flex-1 min-w-0 chart-container">
+      <canvas id="churnWeeklyChart"></canvas>
+    </div>
+    <div class="w-full lg:w-80 shrink-0">
+      <div class="chart-container">
+        <canvas id="churnHistChart"></canvas>
+      </div>
+      <p id="churnHistCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
+    </div>
+  </div>
 
 </div>
 
 <script>
+  let churnWeeklyCache = [];
+
+  // 各週(w=0始まり)について、初回検査日からの経過日数が該当週に達しているユーザーを対象に、
+  // その週の利用日数(0〜7日)の平均・分布(ヒストグラム)を集計する
+  function computeChurnWeeklyStats() {
+    const groupSelect = document.getElementById('groupSelect');
+    const groupKey = groupSelect ? groupSelect.value : 'total';
+    const weekly = [];
+    if (!rawData || !rawData.usersChurn) return weekly;
+
+    for (let w = 0; w < 24; w++) {
+      let activeUsers = 0, sumDays = 0;
+      const hist = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
+      rawData.usersChurn.forEach(u => {
+        let inGroup = false;
+        if (groupKey === 'total') inGroup = true;
+        else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
+        else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
+        else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
+        if (!inGroup) return;
+        if (u.accountAgeDays >= w * 7) {
+          activeUsers++;
+          const days = u.data && u.data[w] ? u.data[w] : 0;
+          sumDays += days;
+          hist[days] = (hist[days] || 0) + 1;
+        }
+      });
+      if (activeUsers === 0) break; // 経過週数はユーザーごとに単調なので、対象者が0になった時点で以降も0
+      weekly.push({ week: w + 1, avg: sumDays / activeUsers, activeUsers: activeUsers, hist: hist });
+    }
+    return weekly;
+  }
+
+  function renderChurnChart() {
+    try {
+      if (!rawData) return;
+      const weekly = computeChurnWeeklyStats();
+      churnWeeklyCache = weekly;
+
+      const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
+      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : 7;
+
+      const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
+
+      if (!charts.churn) {
+        charts.churn = new Chart(document.getElementById('churnWeeklyChart'), {
+          type: 'line',
+          data: {
+            datasets: [{
+              label: '週あたり利用日数(平均)', data: dataPoints,
+              borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.15)',
+              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#2563eb',
+              fill: false, tension: 0
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: true, aspectRatio: 16 / 9,
+            onClick: (evt, elements) => {
+              if (elements && elements.length > 0) {
+                const idx = elements[0].index;
+                showChurnHistogram(churnWeeklyCache[idx]);
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.raw.y !== null && ctx.raw.y !== undefined ? ctx.raw.y.toFixed(2) : '-'} 日/週 (対象 ${churnWeeklyCache[ctx.dataIndex] ? churnWeeklyCache[ctx.dataIndex].activeUsers : 0}人)`
+                }
+              }
+            },
+            scales: {
+              x: { type: 'linear', title: { display: true, text: '週目' }, min: 1, ticks: { stepSize: 1, precision: 0 } },
+              y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: yMax, ticks: { stepSize: 1, precision: 0 } }
+            }
+          }
+        });
+      } else {
+        const chart = charts.churn;
+        chart.data.datasets[0].data = dataPoints;
+        chart.options.scales.y.max = yMax;
+        chart.update();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  function showChurnHistogram(weekInfo) {
+    if (!weekInfo) return;
+    const total = weekInfo.activeUsers;
+    const days = [0, 1, 2, 3, 4, 5, 6, 7];
+    const percents = days.map(d => total > 0 ? (weekInfo.hist[d] || 0) / total * 100 : 0);
+
+    const caption = document.getElementById('churnHistCaption');
+    if (caption) caption.innerText = `${weekInfo.week}週目 (対象 ${total.toLocaleString()}人)`;
+
+    if (!charts.churnHist) {
+      charts.churnHist = new Chart(document.getElementById('churnHistChart'), {
+        type: 'bar',
+        data: {
+          labels: days.map(d => d + '日'),
+          datasets: [{
+            label: '割合(%)', data: percents,
+            backgroundColor: 'rgba(37, 99, 235, 0.5)', borderColor: 'rgba(37, 99, 235, 0.8)', borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true, aspectRatio: 1,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(1)}%` } }
+          },
+          scales: {
+            x: { title: { display: true, text: '利用日数 (日/週)' } },
+            y: { title: { display: true, text: '割合 (%)' }, min: 0, max: 100 }
+          }
+        }
+      });
+    } else {
+      charts.churnHist.data.datasets[0].data = percents;
+      charts.churnHist.update();
+    }
+  }
 </script>
