@@ -145,7 +145,11 @@
           }
         });
 
-        if (newestName) select.value = newestName;
+        // 既定の分析対象シートを指定（存在すればこちらを優先し、無ければ最新シートにフォールバック）
+        const defaultSheetName = '抽出DB_0819_1158（パタカラ全て）';
+        if (names.indexOf(defaultSheetName) !== -1) select.value = defaultSheetName;
+        else if (newestName) select.value = newestName;
+
         if (select.value) loadData();
       }).getSheetList();
     };
