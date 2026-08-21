@@ -39,24 +39,24 @@
         <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
           <span class="text-gray-500 mr-1 w-10">文字:</span>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkA4" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#1e293b;" checked>
-            <span style="color:#1e293b;">4文字平均</span>
+            <input type="checkbox" id="patakaChkA4" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#000000;" checked>
+            <span style="color:#000000;">4文字平均</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkA3" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#7c3aed;">
-            <span style="color:#7c3aed;">3文字平均</span>
+            <input type="checkbox" id="patakaChkA3" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#6b7280;">
+            <span style="color:#6b7280;">3文字平均</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkP" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#e11d48;">
-            <span style="color:#e11d48;">パ</span>
+            <input type="checkbox" id="patakaChkP" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#dc2626;">
+            <span style="color:#dc2626;">パ</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkT" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#ca8a04;">
-            <span style="color:#ca8a04;">タ</span>
+            <input type="checkbox" id="patakaChkT" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#eab308;">
+            <span style="color:#eab308;">タ</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkK" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#059669;">
-            <span style="color:#059669;">カ</span>
+            <input type="checkbox" id="patakaChkK" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#16a34a;">
+            <span style="color:#16a34a;">カ</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
             <input type="checkbox" id="patakaChkR" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer" style="accent-color:#2563eb;">
@@ -133,11 +133,11 @@
   const PATAKA_METRICS = ['a4', 'a3', 'p', 't', 'k', 'r'];
   const PATAKA_METRIC_FIELD = { a4: 'avgRaw2w', a3: 'avgRaw2wA3', p: 'avgRaw2wP', t: 'avgRaw2wT', k: 'avgRaw2wK', r: 'avgRaw2wR' };
   const PATAKA_METRIC_STYLE = {
-    a4: { color: '#1e293b', label: '4文字平均' },
-    a3: { color: '#7c3aed', label: '3文字平均' },
-    p:  { color: '#e11d48', label: 'パ' },
-    t:  { color: '#ca8a04', label: 'タ' },
-    k:  { color: '#059669', label: 'カ' },
+    a4: { color: '#000000', label: '4文字平均' },
+    a3: { color: '#6b7280', label: '3文字平均' },
+    p:  { color: '#dc2626', label: 'パ' },
+    t:  { color: '#eab308', label: 'タ' },
+    k:  { color: '#16a34a', label: 'カ' },
     r:  { color: '#2563eb', label: 'ラ' }
   };
   const PATAKA_TARGET_DASH = { total: [], male: [6, 3], female: [2, 2] };
