@@ -5,9 +5,44 @@
 
   <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
     <h2 class="text-lg font-bold text-gray-800">週次利用日数の推移</h2>
-    <div class="flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
-      <span class="text-gray-500 text-sm font-bold">Y軸最大値:</span>
-      <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" max="7" step="1">
+
+    <div class="flex flex-col gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 w-full xl:w-auto overflow-x-auto">
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10">性別:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnGender" id="churnGenderTotal" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+          <span class="text-emerald-600">全体</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnGender" id="churnGenderMale" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
+          <span class="text-blue-600">男性</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnGender" id="churnGenderFemale" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
+          <span class="text-rose-600">女性</span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="text-gray-500 mr-1">管理:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnManaged" id="churnManagedTotal" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <span class="text-gray-700">全体</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnManaged" id="churnManagedYes" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-purple-600">
+          <span class="text-purple-600">管理されている</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnManaged" id="churnManagedNo" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-orange-500">
+          <span class="text-orange-500">管理されていない</span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="flex items-center gap-1 whitespace-nowrap">
+          <span class="text-gray-500">Y軸最大値:</span>
+          <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" max="7" step="1">
+        </span>
+      </div>
     </div>
   </div>
 
@@ -33,11 +68,23 @@
 <script>
   let churnWeeklyCache = [];
 
+  function getChurnGenderFilter() {
+    if (document.getElementById('churnGenderMale') && document.getElementById('churnGenderMale').checked) return 'male';
+    if (document.getElementById('churnGenderFemale') && document.getElementById('churnGenderFemale').checked) return 'female';
+    return 'total';
+  }
+
+  function getChurnManagedFilter() {
+    if (document.getElementById('churnManagedYes') && document.getElementById('churnManagedYes').checked) return 'managed';
+    if (document.getElementById('churnManagedNo') && document.getElementById('churnManagedNo').checked) return 'unmanaged';
+    return 'total';
+  }
+
   // 各週(w=0始まり)について、初回検査日からの経過日数が該当週に達しているユーザーを対象に、
   // その週の利用日数(0〜7日)の平均・分布(ヒストグラム)を集計する
   function computeChurnWeeklyStats() {
-    const groupSelect = document.getElementById('groupSelect');
-    const groupKey = groupSelect ? groupSelect.value : 'total';
+    const genderFilter = getChurnGenderFilter();
+    const managedFilter = getChurnManagedFilter();
     const weekly = [];
     if (!rawData || !rawData.usersChurn) return weekly;
 
@@ -45,12 +92,13 @@
       let activeUsers = 0, sumDays = 0;
       const hist = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
       rawData.usersChurn.forEach(u => {
-        let inGroup = false;
-        if (groupKey === 'total') inGroup = true;
-        else if (groupKey === 'managed') inGroup = u.groupType === 'managed';
-        else if (groupKey === 'unmanaged') inGroup = u.groupType === 'unmanaged';
-        else inGroup = u.groupType === 'managed' && u.groupName === groupKey;
-        if (!inGroup) return;
+        if (managedFilter !== 'total' && u.groupType !== managedFilter) return;
+        if (genderFilter !== 'total') {
+          let genderKey = 'other';
+          if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
+          else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
+          if (genderKey !== genderFilter) return;
+        }
         if (u.accountAgeDays >= w * 7) {
           activeUsers++;
           const days = u.data && u.data[w] ? u.data[w] : 0;
