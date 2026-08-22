@@ -119,6 +119,22 @@
 
   const CHURN_MANAGED_DASH = { total: [], managed: [8, 4], unmanaged: [2, 2] };
 
+  // クリックして選択中の点だけ黒にし、それ以外は性別カラーのままにする
+  function getChurnPointColors(color, count) {
+    const colors = [];
+    for (let i = 0; i < count; i++) colors.push(i === churnLastClickedIndex ? '#000000' : color);
+    return colors;
+  }
+
+  function updateChurnPointColors() {
+    if (!charts.churn) return;
+    const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
+    const pointColors = getChurnPointColors(color, charts.churn.data.datasets[0].data.length);
+    charts.churn.data.datasets[0].pointBackgroundColor = pointColors;
+    charts.churn.data.datasets[0].pointBorderColor = pointColors;
+    charts.churn.update();
+  }
+
   function renderChurnChart() {
     try {
       if (!rawData) return;
@@ -131,6 +147,7 @@
       const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
       const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
       const dash = CHURN_MANAGED_DASH[getChurnManagedFilter()];
+      const pointColors = getChurnPointColors(color, dataPoints.length);
 
       if (!charts.churn) {
         charts.churn = new Chart(document.getElementById('churnWeeklyChart'), {
@@ -139,7 +156,7 @@
             datasets: [{
               label: '週あたり利用日数(平均)', data: dataPoints,
               borderColor: color, backgroundColor: hexToRgba(color, 0.15), borderDash: dash,
-              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#000000', pointBorderColor: '#000000',
+              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: pointColors, pointBorderColor: pointColors,
               fill: false, tension: 0
             }]
           },
@@ -150,6 +167,7 @@
                 const idx = elements[0].index;
                 churnLastClickedIndex = idx;
                 showChurnHistogram(churnWeeklyCache[idx]);
+                updateChurnPointColors();
               }
             },
             plugins: {
@@ -173,6 +191,8 @@
         chart.data.datasets[0].borderColor = color;
         chart.data.datasets[0].backgroundColor = hexToRgba(color, 0.15);
         chart.data.datasets[0].borderDash = dash;
+        chart.data.datasets[0].pointBackgroundColor = pointColors;
+        chart.data.datasets[0].pointBorderColor = pointColors;
         chart.options.scales.y.max = yMax;
         chart.update();
       }
@@ -228,6 +248,7 @@
 
   function clearChurnHistogram() {
     churnLastClickedIndex = null;
+    updateChurnPointColors();
     if (charts.churnHist) {
       charts.churnHist.destroy();
       charts.churnHist = null;
