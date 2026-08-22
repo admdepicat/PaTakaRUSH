@@ -195,7 +195,18 @@
               }
             },
             scales: {
-              x: { type: 'linear', title: { display: true, text: '週目' }, min: xMin, max: xMax, ticks: { stepSize: 1, precision: 0, callback: (value) => value === 0 ? null : value } },
+              x: {
+                type: 'linear', title: { display: true, text: '週目' }, min: xMin, max: xMax,
+                // min を 0.5 ずらして左端の点を見切れなくしている都合上、目盛りは整数値に強制生成する(stepSizeだとmin基準の0.5,1.5...になってしまうため)
+                afterBuildTicks: (axis) => {
+                  const lo = Math.max(1, Math.ceil(axis.min));
+                  const hi = Math.floor(axis.max);
+                  const ticks = [];
+                  for (let v = lo; v <= hi; v++) ticks.push({ value: v });
+                  axis.ticks = ticks;
+                },
+                ticks: { precision: 0 }
+              },
               y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: yMax, ticks: { stepSize: 1, precision: 0 } }
             }
           }
