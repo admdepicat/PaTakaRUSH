@@ -156,9 +156,10 @@
       const xMinStr = document.getElementById('churnXMin') ? document.getElementById('churnXMin').value : '';
       const xMaxStr = document.getElementById('churnXMax') ? document.getElementById('churnXMax').value : '';
       const xMinWeek = xMinStr ? parseInt(xMinStr, 10) : 1;
-      const xMax = xMaxStr ? parseInt(xMaxStr, 10) : undefined;
-      // 1週目の点が左端で半分隠れないよう、指定した最小週より少し左に余白を持たせる
+      const xMaxWeek = xMaxStr ? parseInt(xMaxStr, 10) : (weekly.length > 0 ? weekly[weekly.length - 1].week : xMinWeek);
+      // 最初/最後の点が左右の端で半分隠れないよう、指定した週の範囲より少し余白を持たせる
       const xMin = xMinWeek - 0.5;
+      const xMax = xMaxWeek + 0.5;
 
       const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
       const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
