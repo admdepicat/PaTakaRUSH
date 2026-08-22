@@ -313,6 +313,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
   try {
     enableDedup = (enableDedup !== false);
     excludeEmptyAge = (excludeEmptyAge !== false);
+    var MAX_CHURN_WEEKS = 104; // 離脱率タブの週次集計の上限（約2年分。以前は24週=半年弱までしか集計していなかった）
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName(sheetName);
     if (!sheet) return { error: "シートが見つかりません" };
@@ -462,7 +463,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
           var recMidnight = new Date(rec.date.getFullYear(), rec.date.getMonth(), rec.date.getDate()).getTime();
           var relDay = Math.round((recMidnight - firstMidnight) / (1000 * 60 * 60 * 24));
           var w = Math.floor(relDay / 7);
-          if (w < 24) {
+          if (w < MAX_CHURN_WEEKS) {
             if (!weeklyDaySets[w]) weeklyDaySets[w] = new Set();
             weeklyDaySets[w].add(relDay);
             if (!weeklyScoreMap[w]) weeklyScoreMap[w] = [];
@@ -470,7 +471,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
           }
         });
         var dataArr = []; var scoresArr = [];
-        for (var w = 0; w < 24; w++) {
+        for (var w = 0; w < MAX_CHURN_WEEKS; w++) {
           if (accountAgeDays >= w * 7) {
             dataArr.push(weeklyDaySets[w] ? weeklyDaySets[w].size : 0);
             var wScores = weeklyScoreMap[w];
@@ -514,7 +515,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
 
     var generateChurnStats = function(targetObj, filterFn) {
       targetObj.churn = { weekly: [], dailyFirstWeek: [] };
-      for (var w = 0; w < 24; w++) {
+      for (var w = 0; w < MAX_CHURN_WEEKS; w++) {
         var sumDays = 0, activeUsers = 0, values = [], html = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0};
         result.usersChurn.forEach(function(u) {
           if (!filterFn(u)) return;

@@ -90,7 +90,7 @@
     const weekly = [];
     if (!rawData || !rawData.usersChurn) return weekly;
 
-    for (let w = 0; w < 24; w++) {
+    for (let w = 0; w < 104; w++) {
       let activeUsers = 0, sumDays = 0;
       const hist = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
       rawData.usersChurn.forEach(u => {
