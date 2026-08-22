@@ -52,14 +52,17 @@
   </p>
 
   <div class="flex flex-col lg:flex-row gap-6">
-    <div class="flex-1 min-w-0 chart-container">
+    <div class="flex-1 min-w-0 chart-container" style="height: 380px;">
       <canvas id="churnWeeklyChart"></canvas>
     </div>
     <div class="w-full lg:w-80 shrink-0">
-      <div class="chart-container">
+      <div class="chart-container" style="height: 380px;">
         <canvas id="churnHistChart"></canvas>
       </div>
-      <p id="churnHistCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
+      <div class="flex items-center justify-center gap-2 mt-2">
+        <p id="churnHistCaption" class="text-center text-sm text-gray-500">グラフの点をクリックしてください</p>
+        <button onclick="clearChurnHistogram()" class="text-xs font-bold text-gray-500 border border-gray-300 rounded px-2 py-0.5 hover:bg-gray-50">✕ クリア</button>
+      </div>
     </div>
   </div>
 
@@ -114,6 +117,8 @@
     return weekly;
   }
 
+  const CHURN_MANAGED_DASH = { total: [], managed: [8, 4], unmanaged: [2, 2] };
+
   function renderChurnChart() {
     try {
       if (!rawData) return;
@@ -125,6 +130,7 @@
 
       const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
       const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
+      const dash = CHURN_MANAGED_DASH[getChurnManagedFilter()];
 
       if (!charts.churn) {
         charts.churn = new Chart(document.getElementById('churnWeeklyChart'), {
@@ -132,13 +138,13 @@
           data: {
             datasets: [{
               label: '週あたり利用日数(平均)', data: dataPoints,
-              borderColor: color, backgroundColor: hexToRgba(color, 0.15),
-              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: color,
+              borderColor: color, backgroundColor: hexToRgba(color, 0.15), borderDash: dash,
+              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: '#000000', pointBorderColor: '#000000',
               fill: false, tension: 0
             }]
           },
           options: {
-            responsive: true, maintainAspectRatio: true, aspectRatio: 16 / 9,
+            responsive: true, maintainAspectRatio: false,
             onClick: (evt, elements) => {
               if (elements && elements.length > 0) {
                 const idx = elements[0].index;
@@ -155,7 +161,8 @@
               }
             },
             scales: {
-              x: { type: 'linear', title: { display: true, text: '週目' }, min: 1, ticks: { stepSize: 1, precision: 0 } },
+              // 1週目の点が左端で半分隠れないよう、目盛りの最小値より少し左に余白を持たせる
+              x: { type: 'linear', title: { display: true, text: '週目' }, min: 0.5, ticks: { stepSize: 1, precision: 0 } },
               y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: yMax, ticks: { stepSize: 1, precision: 0 } }
             }
           }
@@ -165,7 +172,7 @@
         chart.data.datasets[0].data = dataPoints;
         chart.data.datasets[0].borderColor = color;
         chart.data.datasets[0].backgroundColor = hexToRgba(color, 0.15);
-        chart.data.datasets[0].pointBackgroundColor = color;
+        chart.data.datasets[0].borderDash = dash;
         chart.options.scales.y.max = yMax;
         chart.update();
       }
@@ -200,7 +207,7 @@
           }]
         },
         options: {
-          responsive: true, maintainAspectRatio: true, aspectRatio: 1,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
             tooltip: { callbacks: { label: (ctx) => `${ctx.raw.toFixed(1)}%` } }
@@ -217,5 +224,15 @@
       charts.churnHist.data.datasets[0].borderColor = hexToRgba(color, 0.8);
       charts.churnHist.update();
     }
+  }
+
+  function clearChurnHistogram() {
+    churnLastClickedIndex = null;
+    if (charts.churnHist) {
+      charts.churnHist.destroy();
+      charts.churnHist = null;
+    }
+    const caption = document.getElementById('churnHistCaption');
+    if (caption) caption.innerText = 'グラフの点をクリックしてください';
   }
 </script>
