@@ -42,6 +42,15 @@
           <span class="text-gray-500">Y軸最大値:</span>
           <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" max="7" step="1">
         </span>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="flex items-center gap-1 whitespace-nowrap">
+          <span class="text-gray-500">週(X軸):</span>
+          <input type="number" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
+          <span class="text-gray-500">〜</span>
+          <input type="number" id="churnXMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
+          <span class="text-gray-500">週</span>
+        </span>
       </div>
     </div>
   </div>
@@ -144,6 +153,13 @@
       const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
       const yMax = yMaxStr ? parseInt(yMaxStr, 10) : 7;
 
+      const xMinStr = document.getElementById('churnXMin') ? document.getElementById('churnXMin').value : '';
+      const xMaxStr = document.getElementById('churnXMax') ? document.getElementById('churnXMax').value : '';
+      const xMinWeek = xMinStr ? parseInt(xMinStr, 10) : 1;
+      const xMax = xMaxStr ? parseInt(xMaxStr, 10) : undefined;
+      // 1週目の点が左端で半分隠れないよう、指定した最小週より少し左に余白を持たせる
+      const xMin = xMinWeek - 0.5;
+
       const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
       const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
       const dash = CHURN_MANAGED_DASH[getChurnManagedFilter()];
@@ -179,8 +195,7 @@
               }
             },
             scales: {
-              // 1週目の点が左端で半分隠れないよう、目盛りの最小値より少し左に余白を持たせる
-              x: { type: 'linear', title: { display: true, text: '週目' }, min: 0.5, ticks: { stepSize: 1, precision: 0 } },
+              x: { type: 'linear', title: { display: true, text: '週目' }, min: xMin, max: xMax, ticks: { stepSize: 1, precision: 0 } },
               y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: yMax, ticks: { stepSize: 1, precision: 0 } }
             }
           }
@@ -191,6 +206,8 @@
         chart.data.datasets[0].borderColor = color;
         chart.data.datasets[0].backgroundColor = hexToRgba(color, 0.15);
         chart.data.datasets[0].borderDash = dash;
+        chart.options.scales.x.min = xMin;
+        chart.options.scales.x.max = xMax;
         chart.data.datasets[0].pointBackgroundColor = pointColors;
         chart.data.datasets[0].pointBorderColor = pointColors;
         chart.options.scales.y.max = yMax;
