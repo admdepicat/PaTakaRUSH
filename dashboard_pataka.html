@@ -17,16 +17,12 @@
         <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
           <span class="text-gray-500 mr-1 w-10">対象:</span>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkTargetTotal" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+            <input type="radio" name="patakaTargetMode" id="patakaTargetTotal" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
             <span class="text-emerald-600">全体</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkTargetMale" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
-            <span class="text-blue-600">男性</span>
-          </label>
-          <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkTargetFemale" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
-            <span class="text-rose-600">女性</span>
+            <input type="radio" name="patakaTargetMode" id="patakaTargetGender" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span><span class="text-blue-600">男性</span>/<span class="text-rose-600">女性</span></span>
           </label>
 
           <span class="text-gray-300 mx-1">|</span>
@@ -256,10 +252,8 @@
       const yMaxStr = document.getElementById('patakaYMax') ? document.getElementById('patakaYMax').value : '';
       const yMax = yMaxStr ? parseInt(yMaxStr, 10) : undefined;
 
-      const targets = [];
-      if (document.getElementById('patakaChkTargetTotal') && document.getElementById('patakaChkTargetTotal').checked) targets.push('total');
-      if (document.getElementById('patakaChkTargetMale') && document.getElementById('patakaChkTargetMale').checked) targets.push('male');
-      if (document.getElementById('patakaChkTargetFemale') && document.getElementById('patakaChkTargetFemale').checked) targets.push('female');
+      const isGenderMode = document.getElementById('patakaTargetGender') && document.getElementById('patakaTargetGender').checked;
+      const targets = isGenderMode ? ['male', 'female'] : ['total'];
 
       const metrics = getPatakaSelectedMetrics();
       const newDatasets = [];
