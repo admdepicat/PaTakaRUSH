@@ -145,6 +145,18 @@
 
       <div class="flex flex-col gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 w-full xl:w-auto overflow-x-auto">
         <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+          <span class="text-gray-500 mr-1 w-10">対象:</span>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkTargetMale2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
+            <span class="text-blue-600">男性</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" id="patakaChkTargetFemale2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-rose-600" checked>
+            <span class="text-rose-600">女性</span>
+          </label>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
           <span class="text-gray-500 mr-1 w-10">文字:</span>
           <label class="flex items-center gap-1 cursor-pointer">
             <input type="checkbox" id="patakaChkA4_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#000000;" checked>
@@ -209,7 +221,7 @@
     </div>
 
     <p class="text-sm text-gray-600 mb-2">
-      ※上のグラフと同じデータで、対象を「男性/女性」のみ、パーセンタイル曲線を「7本線② (3/10/25/50/75/90/97%ile・帯塗り)」に固定して表示しています。<br>
+      ※上のグラフと同じデータで、対象は「男性/女性」のみ選択可能（全体は除く）、パーセンタイル曲線は「7本線② (3/10/25/50/75/90/97%ile・帯塗り)」に固定して表示しています。<br>
       ※「文字」で複数の指標を同時に選択すると、同じグラフ上に重ねて表示します（色=指標、線種=対象で区別: 男性=粗い破線 / 女性=細かい破線）。
     </p>
   </div>
@@ -562,7 +574,9 @@
       const yMaxStr = document.getElementById('patakaYMax2') ? document.getElementById('patakaYMax2').value : '';
       const yMax = yMaxStr ? parseInt(yMaxStr, 10) : undefined;
 
-      const targets = ['male', 'female']; // 対象は男性/女性固定(全体は不要)
+      const targets = []; // 対象は男性/女性のみ(全体は不要)
+      if (document.getElementById('patakaChkTargetMale2') && document.getElementById('patakaChkTargetMale2').checked) targets.push('male');
+      if (document.getElementById('patakaChkTargetFemale2') && document.getElementById('patakaChkTargetFemale2').checked) targets.push('female');
       const metrics = getPatakaSelectedMetrics2();
       const newDatasets = [];
 
@@ -582,8 +596,8 @@
           barMale.push({ x: age, y: cM[age] || 0 });
           barFemale.push({ x: age, y: cF[age] || 0 });
         });
-        newDatasets.push({ type: 'bar', label: '女性(人数)', data: barFemale, backgroundColor: 'rgba(225, 29, 72, 0.35)', borderColor: 'rgba(225, 29, 72, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
-        newDatasets.push({ type: 'bar', label: '男性(人数)', data: barMale, backgroundColor: 'rgba(37, 99, 235, 0.35)', borderColor: 'rgba(37, 99, 235, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('female')) newDatasets.push({ type: 'bar', label: '女性(人数)', data: barFemale, backgroundColor: 'rgba(225, 29, 72, 0.35)', borderColor: 'rgba(225, 29, 72, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
+        if (targets.includes('male')) newDatasets.push({ type: 'bar', label: '男性(人数)', data: barMale, backgroundColor: 'rgba(37, 99, 235, 0.35)', borderColor: 'rgba(37, 99, 235, 0.5)', borderWidth: 1, yAxisID: 'yCount', order: 10, barThickness: 8, stack: 'countStack' });
       }
 
       // --- 2. LMS法によるパーセンタイル曲線 (7本線②固定) ---
