@@ -131,6 +131,28 @@
     <span data-i18n="descTopMedianSmooth">※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole &amp; Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、パーセンタイル曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。</span><br>
     <span data-i18n="descTopPctMode">※「表示」で7本線/5本線①/5本線②/2本線を切り替えられます。5本線②・2本線では、パーセンタイル帯を色の濃淡で塗りつぶします。</span>
   </p>
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- ============================================== -->
+  <!-- パネル 1-top2: 年齢と4文字平均の相関 (中央値・多項式近似) -->
+  <!-- ============================================== -->
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
+    <h2 class="text-lg font-bold text-gray-800" data-i18n="medianPolyTitle">年齢と4文字平均の相関 (中央値・多項式近似)</h2>
+    <div class="flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+      <span class="text-gray-500 text-sm font-bold" data-i18n="polyDegreeLabel">近似式の次数:</span>
+      <input type="number" id="topPolyDegree" value="1" min="1" max="10" step="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateTopMedianPolyChart()">
+    </div>
+  </div>
+
+  <div class="chart-container max-w-5xl mx-auto mt-4 mb-4">
+    <canvas id="topMedianPolyChart"></canvas>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-2">
+    <span data-i18n="descMedianPoly1">※上の「新・年齢と4文字平均の相関」パネルと同じ対象・期間で、50%ile(中央値)の曲線と、その点列に対する多項式近似式の線を表示しています。</span><br>
+    <span data-i18n="descMedianPoly2">※「指標」のパーセンタイル曲線をOFFにすると、このグラフも非表示になります。次数は1(直線)がデフォルトで、上の「近似式の次数」で変更できます。</span>
+  </p>
 </div>
 
 <script>
@@ -161,6 +183,9 @@
       descTopRawAvg: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の生データを、週で区切らず同じ重みで単純平均した値（1人1データ）で再計算します。",
       descTopMedianSmooth: "※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole & Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、パーセンタイル曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。",
       descTopPctMode: "※「表示」で7本線/5本線①/5本線②/2本線を切り替えられます。5本線②・2本線では、パーセンタイル帯を色の濃淡で塗りつぶします。",
+      medianPolyTitle: "年齢と4文字平均の相関 (中央値・多項式近似)", polyDegreeLabel: "近似式の次数:",
+      descMedianPoly1: "※上の「新・年齢と4文字平均の相関」パネルと同じ対象・期間で、50%ile(中央値)の曲線と、その点列に対する多項式近似式の線を表示しています。",
+      descMedianPoly2: "※「指標」のパーセンタイル曲線をOFFにすると、このグラフも非表示になります。次数は1(直線)がデフォルトで、上の「近似式の次数」で変更できます。",
       descCompare1: "全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。",
       descCompare2: "※「指標」で近似曲線・平均値・中央値のいずれかを選ぶと、その折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねます（色は性別）。",
       descCompare3: "※「生の散布点」を選ぶと、指標を計算せず生データの点を期間ごとに点の形（●全期間 / ▲2週間 / ◆1週間）で見分けて重ねます。",
@@ -196,6 +221,9 @@
       descTopRawAvg: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the simple average of the raw test data taken within that many days of their first test, weighting every test equally regardless of week (one data point per person).",
       descTopMedianSmooth: "* Using the same LMS method (Cole & Green, 1992) behind WHO/CDC height-weight growth charts, L (skewness), M (median), and S (coefficient of variation) are estimated per age and used to draw percentile curves (the 50th/median line is bolded; the trend curve and mean are hidden).",
       descTopPctMode: "* Use \"Display\" to switch between 7 lines / 5 lines A / 5 lines B / 2 lines. 5 lines B and 2 lines shade the percentile bands with varying color intensity.",
+      medianPolyTitle: "Correlation: Age & 4-Letter Avg (Median & Polynomial Fit)", polyDegreeLabel: "Fit Degree:",
+      descMedianPoly1: "* Uses the same target and period as the \"New\" panel above, showing the 50th percentile (median) curve along with a polynomial fit of its points.",
+      descMedianPoly2: "* Turning off the percentile curve under \"Metrics\" also hides this chart. Degree defaults to 1 (linear); change it with \"Fit Degree\" above.",
       descCompare1: "Overlays the all-time, 2-week, and 1-week representative values on one chart for comparison.",
       descCompare2: "* Selecting the trend curve, mean, or median under \"Metrics\" draws that line once per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash), colored by gender.",
       descCompare3: "* Selecting \"Raw points\" skips the indicator calculation and overlays the raw data points instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week).",
@@ -534,6 +562,143 @@
         }
       });
       renderScatterChartInstance('topScatterChart', 'topScatter', newDatasets, topYMax);
+      updateTopMedianPolyChart();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // ===== 年齢と4文字平均の相関 (中央値・多項式近似): 上のパネルと同じ対象/期間で50%ileと多項式近似線を表示 =====
+  // 正規方程式 (X^T X)a = X^T y をガウスの消去法で解く汎用の連立方程式ソルバー
+  function solveLinearSystem(A, b) {
+      const n = b.length;
+      const M = A.map((row, i) => [...row, b[i]]);
+      for (let col = 0; col < n; col++) {
+          let pivot = col;
+          for (let r = col + 1; r < n; r++) { if (Math.abs(M[r][col]) > Math.abs(M[pivot][col])) pivot = r; }
+          if (Math.abs(M[pivot][col]) < 1e-10) return null;
+          const tmp = M[col]; M[col] = M[pivot]; M[pivot] = tmp;
+          for (let r = 0; r < n; r++) {
+              if (r === col) continue;
+              const factor = M[r][col] / M[col][col];
+              for (let c = col; c <= n; c++) M[r][c] -= factor * M[col][c];
+          }
+      }
+      return M.map((row, i) => row[n] / row[i]);
+  }
+
+  // 指定した点列(age,y)に対して、指定次数の多項式を最小二乗法でフィットし、曲線データを返す
+  function fitPolynomial(points, degree) {
+      const pts = (points || []).filter(p => p && p.x !== undefined && p.y !== undefined);
+      if (pts.length === 0) return [];
+      const n = Math.max(0, Math.min(degree, pts.length - 1)); // 次数がデータ点数-1を超えないようクランプ
+      const size = n + 1;
+      const XtX = Array.from({ length: size }, () => new Array(size).fill(0));
+      const Xty = new Array(size).fill(0);
+      let minX = Infinity, maxX = -Infinity;
+      pts.forEach(p => {
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          const powers = [];
+          let v = 1;
+          for (let k = 0; k <= 2 * n; k++) { powers.push(v); v *= p.x; }
+          for (let i = 0; i <= n; i++) {
+              for (let j = 0; j <= n; j++) XtX[i][j] += powers[i + j];
+              Xty[i] += powers[i] * p.y;
+          }
+      });
+      const coeffs = solveLinearSystem(XtX, Xty);
+      if (!coeffs || !isFinite(minX) || !isFinite(maxX)) return [];
+      const curve = [];
+      for (let x = Math.floor(minX); x <= Math.ceil(maxX); x++) {
+          let y = 0, xp = 1;
+          for (let i = 0; i < coeffs.length; i++) { y += coeffs[i] * xp; xp *= x; }
+          if (isFinite(y)) curve.push({ x: x, y: y });
+      }
+      return curve;
+  }
+
+  function updateTopMedianPolyChart() {
+    try {
+      if (!rawData) return;
+      const groupSelect = document.getElementById('groupSelect');
+      if (!groupSelect) return;
+
+      const el = document.getElementById('topMedianPolyChart');
+      if (!el) return;
+
+      // 「指標」のパーセンタイル曲線がOFFなら、上のパネルと連動してこのグラフも空にする
+      const showPercentiles = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
+
+      const targets = [];
+      if (document.getElementById('topChkTargetTotal') && document.getElementById('topChkTargetTotal').checked) targets.push('total');
+      if (document.getElementById('topChkTargetMale') && document.getElementById('topChkTargetMale').checked) targets.push('male');
+      if (document.getElementById('topChkTargetFemale') && document.getElementById('topChkTargetFemale').checked) targets.push('female');
+
+      const degreeStr = document.getElementById('topPolyDegree') ? document.getElementById('topPolyDegree').value : '1';
+      const degree = degreeStr ? Math.max(1, parseInt(degreeStr, 10)) : 1;
+
+      const newDatasets = [];
+
+      if (showPercentiles) {
+        const period = getTopPeriod();
+        const targetData = getTopEffectiveScatterData(period);
+        const maleData = targetData.male || [];
+        const femaleData = targetData.female || [];
+        const otherData = targetData.other || [];
+        const allScatterData = [...maleData, ...femaleData, ...otherData];
+
+        targets.forEach(tKey => {
+            let dataArray = [];
+            if (tKey === 'total') dataArray = allScatterData;
+            else if (tKey === 'male') dataArray = maleData;
+            else if (tKey === 'female') dataArray = femaleData;
+
+            const color = TARGET_STYLES[tKey].color;
+            const label = t(TARGET_STYLES[tKey].labelKey);
+
+            const curves = computeLmsPercentileCurves(dataArray, [50]);
+            const p50Points = curves[50];
+            if (!p50Points || p50Points.length === 0) return;
+
+            newDatasets.push({
+                type: 'line', label: `${label} ${t('p50')}`, data: p50Points,
+                borderColor: color, backgroundColor: 'transparent', borderWidth: 2.5,
+                pointRadius: 0, fill: false, tension: 0.3, cubicInterpolationMode: 'monotone',
+                pointStyle: 'line', order: 0, yAxisID: 'y'
+            });
+
+            const polyPoints = fitPolynomial(p50Points, degree);
+            if (polyPoints.length > 0) {
+                newDatasets.push({
+                    type: 'line', label: `${label} 多項式近似(${degree}次)`, data: polyPoints,
+                    borderColor: hexToRgba(color, 0.7), backgroundColor: 'transparent', borderWidth: 2, borderDash: [8, 4],
+                    pointRadius: 0, fill: false, tension: 0, pointStyle: 'line', order: -1, yAxisID: 'y'
+                });
+            }
+        });
+      }
+
+      if (!charts.topMedianPoly) {
+        charts.topMedianPoly = new Chart(el, {
+          type: 'scatter',
+          data: { datasets: newDatasets },
+          options: {
+            responsive: true, maintainAspectRatio: true, aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9,
+            plugins: { legend: { labels: { usePointStyle: true } } },
+            scales: {
+              x: { type: 'linear', title: { display: true, text: t('axisAge') }, min: 0, max: 100, bounds: 'ticks', ticks: { stepSize: 5, autoSkip: false, callback: (v) => v % 5 === 0 ? v : null } },
+              y: { title: { display: true, text: t('axisScore') }, min: 0 }
+            }
+          }
+        });
+      } else {
+        const chart = charts.topMedianPoly;
+        chart.data.datasets = newDatasets;
+        chart.options.scales.x.title.text = t('axisAge');
+        chart.options.scales.y.title.text = t('axisScore');
+        chart.update();
+      }
     } catch (error) {
       console.error(error);
     }
