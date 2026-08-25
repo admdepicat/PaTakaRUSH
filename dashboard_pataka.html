@@ -159,28 +159,28 @@
         <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
           <span class="text-gray-500 mr-1 w-10">文字:</span>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkA4_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#000000;" checked>
-            <span style="color:#000000;">4文字平均</span>
+            <input type="radio" name="patakaMetric2" id="patakaChkA4_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+            <span>4文字平均</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkA3_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#6b7280;">
-            <span style="color:#6b7280;">3文字平均</span>
+            <input type="radio" name="patakaMetric2" id="patakaChkA3_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span>3文字平均</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkP_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#dc2626;">
-            <span style="color:#dc2626;">パ</span>
+            <input type="radio" name="patakaMetric2" id="patakaChkP_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span>パ</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkT_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#eab308;">
-            <span style="color:#eab308;">タ</span>
+            <input type="radio" name="patakaMetric2" id="patakaChkT_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span>タ</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkK_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#16a34a;">
-            <span style="color:#16a34a;">カ</span>
+            <input type="radio" name="patakaMetric2" id="patakaChkK_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span>カ</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" id="patakaChkR_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer" style="accent-color:#2563eb;">
-            <span style="color:#2563eb;">ラ</span>
+            <input type="radio" name="patakaMetric2" id="patakaChkR_2" onchange="updatePatakaScatterChart2()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span>ラ</span>
           </label>
 
           <span class="text-gray-300 mx-1">|</span>
@@ -222,7 +222,7 @@
 
     <p class="text-sm text-gray-600 mb-2">
       ※上のグラフと同じデータで、対象は「男性/女性」のみ選択可能（全体は除く）、パーセンタイル曲線は「7本線② (3/10/25/50/75/90/97%ile・帯塗り)」に固定して表示しています。<br>
-      ※「文字」で複数の指標を同時に選択すると、同じグラフ上に重ねて表示します（色=指標、線種=対象で区別: 男性=粗い破線 / 女性=細かい破線）。
+      ※男女の違いを見やすくするため、色を対象（男性=青 / 女性=赤）で固定しています。「文字」は発音が混ざらないよう、一度に1つだけ選択できます。
     </p>
   </div>
 
@@ -545,14 +545,15 @@
     setText('patakaRecordsFemale2', counts.female);
   }
 
-  function getPatakaSelectedMetrics2() {
-    const metrics = [];
+  const PATAKA_GENDER_COLOR2 = { male: '#2563eb', female: '#e11d48' };
+
+  function getPatakaSelectedMetric2() {
     const idMap = { a4: 'patakaChkA4_2', a3: 'patakaChkA3_2', p: 'patakaChkP_2', t: 'patakaChkT_2', k: 'patakaChkK_2', r: 'patakaChkR_2' };
-    PATAKA_METRICS.forEach(m => {
+    for (const m of PATAKA_METRICS) {
       const el = document.getElementById(idMap[m]);
-      if (el && el.checked) metrics.push(m);
-    });
-    return metrics;
+      if (el && el.checked) return m;
+    }
+    return 'a4';
   }
 
   function updatePatakaScatterChart2() {
@@ -577,7 +578,7 @@
       const targets = []; // 対象は男性/女性のみ(全体は不要)
       if (document.getElementById('patakaChkTargetMale2') && document.getElementById('patakaChkTargetMale2').checked) targets.push('male');
       if (document.getElementById('patakaChkTargetFemale2') && document.getElementById('patakaChkTargetFemale2').checked) targets.push('female');
-      const metrics = getPatakaSelectedMetrics2();
+      const metricKey = getPatakaSelectedMetric2();
       const newDatasets = [];
 
       // --- 1. 人数(背景棒) ---
@@ -614,31 +615,30 @@
       };
 
       if (showPercentiles) {
-        metrics.forEach(metricKey => {
+        {
           const metricData = getPatakaEffectiveScatterData(metricKey);
-          const color = PATAKA_METRIC_STYLE[metricKey].color;
           const metricLabel = PATAKA_METRIC_STYLE[metricKey].label;
 
           targets.forEach(tKey => {
             const dataArray = metricData[tKey] || [];
-            const dash = PATAKA_TARGET_DASH[tKey];
+            const color = PATAKA_GENDER_COLOR2[tKey];
             const labelPrefix = `${metricLabel}(${PATAKA_TARGET_LABEL[tKey]})`;
 
             const PCT_LIST_7B = [3, 10, 25, 50, 75, 90, 97];
             const curves = computeLmsPercentileCurves(dataArray, PCT_LIST_7B);
             const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50 = curves[50];
             if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
-              pushPctLine(`${labelPrefix} 97%ile`, p97, color, 1.5, 0.65, false, 0, 0, dash);
-              pushPctLine(`${labelPrefix} 90%ile`, p90, color, 1.5, 0.65, '-1', 0.12, 0, dash);
-              pushPctLine(`${labelPrefix} 10%ile`, p10, color, 1.5, 0.65, '-1', 0.28, 0, dash);
-              pushPctLine(`${labelPrefix} 3%ile`, p3, color, 1.5, 0.65, '-1', 0.12, 0, dash);
+              pushPctLine(`${labelPrefix} 97%ile`, p97, color, 1.5, 0.65, false, 0, 0);
+              pushPctLine(`${labelPrefix} 90%ile`, p90, color, 1.5, 0.65, '-1', 0.12, 0);
+              pushPctLine(`${labelPrefix} 10%ile`, p10, color, 1.5, 0.65, '-1', 0.28, 0);
+              pushPctLine(`${labelPrefix} 3%ile`, p3, color, 1.5, 0.65, '-1', 0.12, 0);
             }
             [25, 75].forEach(p => {
-              if (curves[p] && curves[p].length > 0) pushPctLine(`${labelPrefix} ${p}%ile`, curves[p], color, 1.5, 0.65, false, 0, 0, dash);
+              if (curves[p] && curves[p].length > 0) pushPctLine(`${labelPrefix} ${p}%ile`, curves[p], color, 1.5, 0.65, false, 0, 0);
             });
-            if (p50 && p50.length > 0) pushPctLine(`${labelPrefix} 中央値`, p50, color, 3.5, 1, false, 0, -1, dash);
+            if (p50 && p50.length > 0) pushPctLine(`${labelPrefix} 中央値`, p50, color, 3.5, 1, false, 0, -1);
           });
-        });
+        }
       }
 
       newDatasets.forEach(ds => { if (hiddenStates[ds.label] === true) ds.hidden = true; });
