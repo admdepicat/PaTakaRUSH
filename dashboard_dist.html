@@ -198,9 +198,9 @@
       <span class="text-gray-700" data-i18n="ageRangeCustomLabel">任意設定</span>
     </label>
     <span class="flex items-center gap-1 whitespace-nowrap">
-      <input type="number" id="ageRangeCustomMin" placeholder="下限" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()" min="0" step="1">
+      <input type="number" id="ageRangeCustomMin" placeholder="下限" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="saveAgeRangeCustomInput('ageRangeCustomMin', this.value); updateAgeRangePolyChart()" min="0" step="1">
       <span class="text-gray-500">≦ 歳 ＜</span>
-      <input type="number" id="ageRangeCustomMax" placeholder="上限" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()" min="0" step="1">
+      <input type="number" id="ageRangeCustomMax" placeholder="上限" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="saveAgeRangeCustomInput('ageRangeCustomMax', this.value); updateAgeRangePolyChart()" min="0" step="1">
     </span>
   </div>
 
@@ -772,6 +772,21 @@
   }
 
   // ===== 年齢範囲別 多項式近似: 選択した年齢範囲の生の散布データに対して多項式をフィットする =====
+  // 「任意設定」の入力値をブラウザに記憶し、次回開いたときに復元する
+  function saveAgeRangeCustomInput(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* ignore */ }
+  }
+  (function restoreAgeRangeCustomInputs() {
+    try {
+      const minEl = document.getElementById('ageRangeCustomMin');
+      const maxEl = document.getElementById('ageRangeCustomMax');
+      const savedMin = localStorage.getItem('ageRangeCustomMin');
+      const savedMax = localStorage.getItem('ageRangeCustomMax');
+      if (minEl && savedMin !== null) minEl.value = savedMin;
+      if (maxEl && savedMax !== null) maxEl.value = savedMax;
+    } catch (e) { /* ignore */ }
+  })();
+
   function getAgeRangeFilter() {
     if (document.getElementById('ageRange3_18') && document.getElementById('ageRange3_18').checked) return { min: 3, max: 18 };
     if (document.getElementById('ageRange18_50') && document.getElementById('ageRange18_50').checked) return { min: 18, max: 50 };
