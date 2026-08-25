@@ -96,8 +96,12 @@
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="text-gray-500 mr-1 w-10" data-i18n="pctModeLabel">表示:</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="topPctMode" id="topPctMode7" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <input type="radio" name="topPctMode" id="topPctMode7" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
           <span class="text-gray-700" data-i18n="pctMode7">7本線 (3/10/25/50/75/90/97%ile)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="topPctMode" id="topPctMode7b" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <span class="text-gray-700" data-i18n="pctMode7b">7本線② (3/10/25/50/75/90/97%ile・帯塗り)</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="topPctMode" id="topPctMode5a" onchange="updateTopScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
@@ -151,7 +155,7 @@
       descScatter4: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の平均スコアで再計算します（離脱率タブの週次集計と同じ基準）。下の箱ひげ図もこの期間に連動します。",
       descScatter5: "※「指標」の近似曲線・平均値・中央値は自由に組み合わせて同時表示できます（すべて外すと指標線は非表示）。",
       lmsPercentiles: "パーセンタイル曲線 (LMS法: 3/10/25/50/75/90/97%ile)",
-      pctModeLabel: "表示:", pctMode7: "7本線 (3/10/25/50/75/90/97%ile)", pctMode5a: "5本線① (5/10/50/90/95%ile)",
+      pctModeLabel: "表示:", pctMode7: "7本線 (3/10/25/50/75/90/97%ile)", pctMode7b: "7本線② (3/10/25/50/75/90/97%ile・帯塗り)", pctMode5a: "5本線① (5/10/50/90/95%ile)",
       pctMode5b: "5本線② (3/10/50/90/97%ile・帯塗り)", pctMode2: "2本線 (3〜97%ile帯 + 50%ile細線)",
       p5: "5%タイル", p95: "95%タイル",
       descTopRawAvg: "※「1週間」「2週間」を選択すると、各ユーザーの初回検査日から その日数以内 に行われた検査の生データを、週で区切らず同じ重みで単純平均した値（1人1データ）で再計算します。",
@@ -186,7 +190,7 @@
       descScatter4: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the average of tests taken within that many days of their first test (same basis as the weekly stats in the Churn tab). The box plot below follows this period too.",
       descScatter5: "* You can freely combine the trend curve, mean, and median under \"Metrics\" (uncheck all to hide indicator lines).",
       lmsPercentiles: "Percentile Curves (LMS method: 3/10/25/50/75/90/97%ile)",
-      pctModeLabel: "Display:", pctMode7: "7 lines (3/10/25/50/75/90/97%ile)", pctMode5a: "5 lines A (5/10/50/90/95%ile)",
+      pctModeLabel: "Display:", pctMode7: "7 lines (3/10/25/50/75/90/97%ile)", pctMode7b: "7 lines B (3/10/25/50/75/90/97%ile, shaded bands)", pctMode5a: "5 lines A (5/10/50/90/95%ile)",
       pctMode5b: "5 lines B (3/10/50/90/97%ile, shaded bands)", pctMode2: "2 lines (3-97%ile band + thin 50%ile)",
       p5: "5th Pct", p95: "95th Pct",
       descTopRawAvg: "* Selecting \"1 Week\" or \"2 Weeks\" recalculates each user's score as the simple average of the raw test data taken within that many days of their first test, weighting every test equally regardless of week (one data point per person).",
@@ -290,10 +294,11 @@
   }
 
   function getTopPctMode() {
+    if (document.getElementById('topPctMode7') && document.getElementById('topPctMode7').checked) return '7';
     if (document.getElementById('topPctMode5a') && document.getElementById('topPctMode5a').checked) return '5a';
     if (document.getElementById('topPctMode5b') && document.getElementById('topPctMode5b').checked) return '5b';
     if (document.getElementById('topPctMode2') && document.getElementById('topPctMode2').checked) return '2';
-    return '7';
+    return '7b';
   }
 
   // ===== 年齢と4文字平均の相関 (中央値・成長曲線): 詳細散布図と同じ対象/期間だが、指標は中央値の滑らかな線のみ =====
@@ -484,6 +489,22 @@
                   pushPctLine(`${label} ${t('p10')}`, p10, color, 1.5, 0.65, '-1', 0.28, 0);
                   pushPctLine(`${label} ${t('p3')}`, p3, color, 1.5, 0.65, '-1', 0.12, 0);
               }
+              if (p50Points && p50Points.length > 0) pushPctLine(`${label} ${t('p50')}`, p50Points, color, 3.5, 1, false, 0, -1);
+
+            } else if (pctMode === '7b') {
+              // 7本線②: 5本線②(3/10/50/90/97・帯塗り)に25/75パーセンタイルの細線を追加
+              const PCT_LIST_7B = [3, 10, 25, 50, 75, 90, 97];
+              const curves = computeLmsPercentileCurves(dataArray, PCT_LIST_7B);
+              const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50Points = curves[50];
+              if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
+                  pushPctLine(`${label} ${t('p97')}`, p97, color, 1.5, 0.65, false, 0, 0);
+                  pushPctLine(`${label} ${t('p90')}`, p90, color, 1.5, 0.65, '-1', 0.12, 0);
+                  pushPctLine(`${label} ${t('p10')}`, p10, color, 1.5, 0.65, '-1', 0.28, 0);
+                  pushPctLine(`${label} ${t('p3')}`, p3, color, 1.5, 0.65, '-1', 0.12, 0);
+              }
+              [25, 75].forEach(p => {
+                  if (curves[p] && curves[p].length > 0) pushPctLine(`${label} ${t(PCT_LABEL_KEY[p])}`, curves[p], color, 1.5, 0.65, false, 0, 0);
+              });
               if (p50Points && p50Points.length > 0) pushPctLine(`${label} ${t('p50')}`, p50Points, color, 3.5, 1, false, 0, -1);
 
             } else if (pctMode === '2') {
