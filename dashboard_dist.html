@@ -718,6 +718,12 @@
             const color = TARGET_STYLES[tKey].color;
             const label = t(TARGET_STYLES[tKey].labelKey);
 
+            newDatasets.push({
+                type: 'scatter', label: label, data: dataArray,
+                backgroundColor: hexToRgba(color, 0.5), borderColor: hexToRgba(color, 0.8),
+                pointRadius: 1.5, pointHoverRadius: 4, pointStyle: 'circle', order: 1, yAxisID: 'y'
+            });
+
             const curves = computeLmsPercentileCurves(dataArray, [50]);
             const p50Points = curves[50];
             if (!p50Points || p50Points.length === 0) return;
