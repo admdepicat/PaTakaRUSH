@@ -189,6 +189,8 @@
     </span>
   </div>
 
+  <div id="ageRangePolyEquation" class="max-w-5xl mx-auto text-sm font-bold mb-1"></div>
+
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-4">
     <canvas id="ageRangePolyChart"></canvas>
   </div>
@@ -654,14 +656,35 @@
           }
       });
       const coeffs = solveLinearSystem(XtX, Xty);
-      if (!coeffs || !isFinite(minX) || !isFinite(maxX)) return [];
+      if (!coeffs || !isFinite(minX) || !isFinite(maxX)) return { curve: [], coeffs: null };
       const curve = [];
       for (let x = Math.floor(minX); x <= Math.ceil(maxX); x++) {
           let y = 0, xp = 1;
           for (let i = 0; i < coeffs.length; i++) { y += coeffs[i] * xp; xp *= x; }
           if (isFinite(y)) curve.push({ x: x, y: y });
       }
-      return curve;
+      return { curve: curve, coeffs: coeffs };
+  }
+
+  // 多項式の係数(低次→高次)から "y = a + bx + cx² ..." 形式の式テキストを組み立てる
+  const POLY_SUPERSCRIPT_DIGITS = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+  function toSuperscript(n) {
+      return String(n).split('').map(ch => POLY_SUPERSCRIPT_DIGITS[ch] || ch).join('');
+  }
+  function formatPolyEquation(coeffs) {
+      if (!coeffs || coeffs.length === 0) return '';
+      let eq = 'y = ';
+      let first = true;
+      for (let i = coeffs.length - 1; i >= 0; i--) {
+          const c = coeffs[i];
+          if (Math.abs(c) < 1e-9 && coeffs.length > 1) continue;
+          const absStr = Math.abs(c).toFixed(4);
+          const sign = c < 0 ? '−' : (first ? '' : '+');
+          const term = i === 0 ? absStr : (i === 1 ? `${absStr}x` : `${absStr}x${toSuperscript(i)}`);
+          eq += (first ? sign : ` ${sign} `) + term;
+          first = false;
+      }
+      return first ? 'y = 0' : eq;
   }
 
   // ===== 年齢範囲別 多項式近似: 選択した年齢範囲の生の散布データに対して多項式をフィットする =====
@@ -715,6 +738,7 @@
 
       const ageRange = getAgeRangeFilter();
       const newDatasets = [];
+      const equationLines = [];
 
       {
         const period = '2w';
@@ -757,15 +781,21 @@
                 }
             }
 
-            const polyPoints = fitPolynomial(filteredData, degree);
-            if (polyPoints.length > 0) {
+            const polyFit = fitPolynomial(filteredData, degree);
+            if (polyFit.curve.length > 0) {
                 newDatasets.push({
-                    type: 'line', label: `${label} 多項式近似(${degree}次)`, data: polyPoints,
+                    type: 'line', label: `${label} 多項式近似(${degree}次)`, data: polyFit.curve,
                     borderColor: color, backgroundColor: 'transparent', borderWidth: 2.5,
                     pointRadius: 0, fill: false, tension: 0, pointStyle: 'line', order: 0, yAxisID: 'y'
                 });
+                if (polyFit.coeffs) equationLines.push({ label: label, color: color, eq: formatPolyEquation(polyFit.coeffs) });
             }
         });
+      }
+
+      const eqEl = document.getElementById('ageRangePolyEquation');
+      if (eqEl) {
+          eqEl.innerHTML = equationLines.map(l => `<span style="color:${l.color}">${l.label}: ${l.eq}</span>`).join('<br>');
       }
 
       // 選択した年齢範囲に合わせてX軸を拡大表示する
