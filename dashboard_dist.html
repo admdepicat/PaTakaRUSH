@@ -142,6 +142,9 @@
     <div class="flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
       <span class="text-gray-500 text-sm font-bold" data-i18n="polyDegreeLabel">近似式の次数:</span>
       <input type="number" id="ageRangePolyDegree" value="1" min="1" max="10" step="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()">
+      <span class="text-gray-300 mx-1">|</span>
+      <span class="text-gray-500 text-sm font-bold" data-i18n="yMax">Y軸最大値:</span>
+      <input type="number" id="ageRangePolyYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()" min="1" step="1">
     </div>
   </div>
 
@@ -707,6 +710,9 @@
       const degreeStr = document.getElementById('ageRangePolyDegree') ? document.getElementById('ageRangePolyDegree').value : '1';
       const degree = degreeStr ? Math.max(1, parseInt(degreeStr, 10)) : 1;
 
+      const yMaxStr = document.getElementById('ageRangePolyYMax') ? document.getElementById('ageRangePolyYMax').value : '';
+      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : undefined;
+
       const ageRange = getAgeRangeFilter();
       const newDatasets = [];
 
@@ -775,7 +781,7 @@
             plugins: { legend: { labels: { usePointStyle: true } } },
             scales: {
               x: { type: 'linear', title: { display: true, text: t('axisAge') }, min: xMin, max: xMax, bounds: 'ticks' },
-              y: { title: { display: true, text: t('axisScore') }, min: 0 }
+              y: { title: { display: true, text: t('axisScore') }, min: 0, max: yMax }
             }
           }
         });
@@ -784,6 +790,7 @@
         chart.data.datasets = newDatasets;
         chart.options.scales.x.min = xMin;
         chart.options.scales.x.max = xMax;
+        chart.options.scales.y.max = yMax;
         chart.options.scales.x.title.text = t('axisAge');
         chart.options.scales.y.title.text = t('axisScore');
         chart.update();
