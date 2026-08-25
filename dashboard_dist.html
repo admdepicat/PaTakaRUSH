@@ -150,8 +150,8 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-2">
-    <span data-i18n="descMedianPoly1">※上の「新・年齢と4文字平均の相関」パネルと同じ対象・期間で、50%ile(中央値)の曲線と、生の散布データに対する多項式近似式の線を表示しています。</span><br>
-    <span data-i18n="descMedianPoly2">※「指標」のパーセンタイル曲線をOFFにすると、このグラフも非表示になります。次数は1(直線)がデフォルトで、上の「近似式の次数」で変更できます。</span>
+    <span data-i18n="descMedianPoly1">※対象=全体・期間=2週間で固定し、50%ile(中央値)の曲線と、生の散布データに対する多項式近似式の線を表示しています。</span><br>
+    <span data-i18n="descMedianPoly2">※次数は1(直線)がデフォルトで、上の「近似式の次数」で変更できます。</span>
   </p>
 
   <hr class="my-8 border-gray-200">
@@ -209,8 +209,8 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-2">
-    <span data-i18n="descAgeRangePoly1">※一番上の「新・年齢と4文字平均の相関」パネルの対象(全体/男性/女性)・期間で絞り込んだ生の散布データのうち、選択した年齢範囲に該当するものに対して多項式近似式を表示しています。</span><br>
-    <span data-i18n="descAgeRangePoly2">※「指標」のパーセンタイル曲線をOFFにすると、このグラフも非表示になります。次数は1(直線)がデフォルトです。</span>
+    <span data-i18n="descAgeRangePoly1">※対象=全体・期間=2週間で固定した生の散布データのうち、選択した年齢範囲に該当するものに対して多項式近似式を表示しています。</span><br>
+    <span data-i18n="descAgeRangePoly2">※次数は1(直線)がデフォルトです。</span>
   </p>
 </div>
 
@@ -243,11 +243,11 @@
       descTopMedianSmooth: "※WHO・厚労省の身長体重成長曲線と同じLMS法（Cole & Green, 1992）で、年齢ごとにL(歪度)・M(中央値)・S(変動係数)を推定し、パーセンタイル曲線として表示しています（50パーセンタイルの中央値のみ太線で強調。近似曲線・平均値は非表示）。",
       descTopPctMode: "※「表示」で7本線/5本線①/5本線②/2本線を切り替えられます。5本線②・2本線では、パーセンタイル帯を色の濃淡で塗りつぶします。",
       medianPolyTitle: "年齢と4文字平均の相関 (中央値・多項式近似)", polyDegreeLabel: "近似式の次数:",
-      descMedianPoly1: "※上の「新・年齢と4文字平均の相関」パネルと同じ対象・期間で、50%ile(中央値)の曲線と、生の散布データに対する多項式近似式の線を表示しています。",
-      descMedianPoly2: "※「指標」のパーセンタイル曲線をOFFにすると、このグラフも非表示になります。次数は1(直線)がデフォルトで、上の「近似式の次数」で変更できます。",
+      descMedianPoly1: "※対象=全体・期間=2週間で固定し、50%ile(中央値)の曲線と、生の散布データに対する多項式近似式の線を表示しています。",
+      descMedianPoly2: "※次数は1(直線)がデフォルトで、上の「近似式の次数」で変更できます。",
       ageRangePolyTitle: "年齢範囲別 多項式近似", ageRangeLabel: "年齢範囲:", ageRangeCustomLabel: "任意設定",
-      descAgeRangePoly1: "※一番上の「新・年齢と4文字平均の相関」パネルの対象(全体/男性/女性)・期間で絞り込んだ生の散布データのうち、選択した年齢範囲に該当するものに対して多項式近似式を表示しています。",
-      descAgeRangePoly2: "※「指標」のパーセンタイル曲線をOFFにすると、このグラフも非表示になります。次数は1(直線)がデフォルトです。",
+      descAgeRangePoly1: "※対象=全体・期間=2週間で固定した生の散布データのうち、選択した年齢範囲に該当するものに対して多項式近似式を表示しています。",
+      descAgeRangePoly2: "※次数は1(直線)がデフォルトです。",
       descCompare1: "全期間・2週間・1週間の代表値を、同じグラフ上に重ねて比較します。",
       descCompare2: "※「指標」で近似曲線・平均値・中央値のいずれかを選ぶと、その折れ線を期間ごとに線種（全期間=実線 / 2週間=粗い破線 / 1週間=細かい破線）で見分けて重ねます（色は性別）。",
       descCompare3: "※「生の散布点」を選ぶと、指標を計算せず生データの点を期間ごとに点の形（●全期間 / ▲2週間 / ◆1週間）で見分けて重ねます。",
@@ -284,11 +284,11 @@
       descTopMedianSmooth: "* Using the same LMS method (Cole & Green, 1992) behind WHO/CDC height-weight growth charts, L (skewness), M (median), and S (coefficient of variation) are estimated per age and used to draw percentile curves (the 50th/median line is bolded; the trend curve and mean are hidden).",
       descTopPctMode: "* Use \"Display\" to switch between 7 lines / 5 lines A / 5 lines B / 2 lines. 5 lines B and 2 lines shade the percentile bands with varying color intensity.",
       medianPolyTitle: "Correlation: Age & 4-Letter Avg (Median & Polynomial Fit)", polyDegreeLabel: "Fit Degree:",
-      descMedianPoly1: "* Uses the same target and period as the \"New\" panel above, showing the 50th percentile (median) curve along with a polynomial fit of the raw scatter data.",
-      descMedianPoly2: "* Turning off the percentile curve under \"Metrics\" also hides this chart. Degree defaults to 1 (linear); change it with \"Fit Degree\" above.",
+      descMedianPoly1: "* Fixed to Target=Total, Period=2 Weeks. Shows the 50th percentile (median) curve along with a polynomial fit of the raw scatter data.",
+      descMedianPoly2: "* Degree defaults to 1 (linear); change it with \"Fit Degree\" above.",
       ageRangePolyTitle: "Polynomial Fit by Age Range", ageRangeLabel: "Age Range:", ageRangeCustomLabel: "Custom",
-      descAgeRangePoly1: "* Shows a polynomial fit for the raw scatter data (filtered by the target and period selected in the \"New\" panel above) restricted to the selected age range.",
-      descAgeRangePoly2: "* Turning off the percentile curve under \"Metrics\" also hides this chart. Degree defaults to 1 (linear).",
+      descAgeRangePoly1: "* Fixed to Target=Total, Period=2 Weeks. Shows a polynomial fit for the raw scatter data restricted to the selected age range.",
+      descAgeRangePoly2: "* Degree defaults to 1 (linear).",
       descCompare1: "Overlays the all-time, 2-week, and 1-week representative values on one chart for comparison.",
       descCompare2: "* Selecting the trend curve, mean, or median under \"Metrics\" draws that line once per period, distinguished by line style (All time = solid / 2 Weeks = coarse dash / 1 Week = fine dash), colored by gender.",
       descCompare3: "* Selecting \"Raw points\" skips the indicator calculation and overlays the raw data points instead, distinguished by point shape (● All time / ▲ 2 Weeks / ◆ 1 Week).",
@@ -374,6 +374,8 @@
       
       currentDistData = targetData;
       updateTopScatterChart();
+      updateTopMedianPolyChart();
+      updateAgeRangePolyChart();
 
     } catch (error) {
       console.error(error);
@@ -627,8 +629,6 @@
         }
       });
       renderScatterChartInstance('topScatterChart', 'topScatter', newDatasets, topYMax);
-      updateTopMedianPolyChart();
-      updateAgeRangePolyChart();
     } catch (error) {
       console.error(error);
     }
@@ -693,21 +693,16 @@
       const el = document.getElementById('topMedianPolyChart');
       if (!el) return;
 
-      // 「指標」のパーセンタイル曲線がOFFなら、上のパネルと連動してこのグラフも空にする
-      const showPercentiles = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
-
-      const targets = [];
-      if (document.getElementById('topChkTargetTotal') && document.getElementById('topChkTargetTotal').checked) targets.push('total');
-      if (document.getElementById('topChkTargetMale') && document.getElementById('topChkTargetMale').checked) targets.push('male');
-      if (document.getElementById('topChkTargetFemale') && document.getElementById('topChkTargetFemale').checked) targets.push('female');
+      // このパネルは上の「新・」パネルから独立しており、対象=全体・期間=2週間で固定表示する
+      const targets = ['total'];
 
       const degreeStr = document.getElementById('topPolyDegree') ? document.getElementById('topPolyDegree').value : '1';
       const degree = degreeStr ? Math.max(1, parseInt(degreeStr, 10)) : 1;
 
       const newDatasets = [];
 
-      if (showPercentiles) {
-        const period = getTopPeriod();
+      {
+        const period = '2w';
         const targetData = getTopEffectiveScatterData(period);
         const maleData = targetData.male || [];
         const femaleData = targetData.female || [];
@@ -794,13 +789,8 @@
       const el = document.getElementById('ageRangePolyChart');
       if (!el) return;
 
-      // 「指標」のパーセンタイル曲線がOFFなら、上のパネルと連動してこのグラフも空にする
-      const showPercentiles = document.getElementById('topIndMedian') ? document.getElementById('topIndMedian').checked : true;
-
-      const targets = [];
-      if (document.getElementById('topChkTargetTotal') && document.getElementById('topChkTargetTotal').checked) targets.push('total');
-      if (document.getElementById('topChkTargetMale') && document.getElementById('topChkTargetMale').checked) targets.push('male');
-      if (document.getElementById('topChkTargetFemale') && document.getElementById('topChkTargetFemale').checked) targets.push('female');
+      // このパネルは上の「新・」パネルから独立しており、対象=全体・期間=2週間で固定表示する
+      const targets = ['total'];
 
       const degreeStr = document.getElementById('ageRangePolyDegree') ? document.getElementById('ageRangePolyDegree').value : '1';
       const degree = degreeStr ? Math.max(1, parseInt(degreeStr, 10)) : 1;
@@ -808,8 +798,8 @@
       const ageRange = getAgeRangeFilter();
       const newDatasets = [];
 
-      if (showPercentiles) {
-        const period = getTopPeriod();
+      {
+        const period = '2w';
         const targetData = getTopEffectiveScatterData(period);
         const maleData = targetData.male || [];
         const femaleData = targetData.female || [];
