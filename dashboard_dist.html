@@ -60,7 +60,7 @@
         <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500" data-i18n="yMax">Y軸最大値:</span>
-          <input type="number" id="topMainYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateTopScatterChart()" min="1" step="1">
+          <input type="number" id="topMainYMax" data-i18n-ph="auto" placeholder="自動" value="10" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateTopScatterChart()" min="1" step="1">
         </span>
       </div>
       <div class="flex flex-wrap items-center gap-3 text-sm font-bold text-gray-700 whitespace-nowrap">
@@ -141,10 +141,10 @@
     <h2 class="text-lg font-bold text-gray-800" data-i18n="ageRangePolyTitle">年齢範囲別 多項式近似</h2>
     <div class="flex items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
       <span class="text-gray-500 text-sm font-bold" data-i18n="polyDegreeLabel">近似式の次数:</span>
-      <input type="number" id="ageRangePolyDegree" value="1" min="1" max="10" step="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()">
+      <input type="number" id="ageRangePolyDegree" value="2" min="1" max="10" step="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()">
       <span class="text-gray-300 mx-1">|</span>
       <span class="text-gray-500 text-sm font-bold" data-i18n="yMax">Y軸最大値:</span>
-      <input type="number" id="ageRangePolyYMax" data-i18n-ph="auto" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()" min="1" step="1">
+      <input type="number" id="ageRangePolyYMax" data-i18n-ph="auto" placeholder="自動" value="10" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeRangePolyChart()" min="1" step="1">
     </div>
   </div>
 
