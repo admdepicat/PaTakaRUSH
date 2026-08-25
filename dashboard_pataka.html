@@ -101,6 +101,10 @@
             <span class="text-gray-700">7本線 (3/10/25/50/75/90/97%ile)</span>
           </label>
           <label class="flex items-center gap-1 cursor-pointer">
+            <input type="radio" name="patakaPctMode" id="patakaPctMode7b" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
+            <span class="text-gray-700">7本線② (3/10/25/50/75/90/97%ile・帯塗り)</span>
+          </label>
+          <label class="flex items-center gap-1 cursor-pointer">
             <input type="radio" name="patakaPctMode" id="patakaPctMode5a" onchange="updatePatakaScatterChart()" class="w-4 h-4 cursor-pointer accent-gray-600">
             <span class="text-gray-700">5本線① (5/10/50/90/95%ile)</span>
           </label>
@@ -226,6 +230,7 @@
   }
 
   function getPatakaPctMode() {
+    if (document.getElementById('patakaPctMode7b') && document.getElementById('patakaPctMode7b').checked) return '7b';
     if (document.getElementById('patakaPctMode5a') && document.getElementById('patakaPctMode5a').checked) return '5a';
     if (document.getElementById('patakaPctMode5b') && document.getElementById('patakaPctMode5b').checked) return '5b';
     if (document.getElementById('patakaPctMode2') && document.getElementById('patakaPctMode2').checked) return '2';
@@ -310,7 +315,22 @@
             const dash = PATAKA_TARGET_DASH[tKey];
             const labelPrefix = `${metricLabel}(${PATAKA_TARGET_LABEL[tKey]})`;
 
-            if (pctMode === '5a') {
+            if (pctMode === '7b') {
+              const PCT_LIST_7B = [3, 10, 25, 50, 75, 90, 97];
+              const curves = computeLmsPercentileCurves(dataArray, PCT_LIST_7B);
+              const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50 = curves[50];
+              if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
+                pushPctLine(`${labelPrefix} 97%ile`, p97, color, 1.5, 0.65, false, 0, 0, dash);
+                pushPctLine(`${labelPrefix} 90%ile`, p90, color, 1.5, 0.65, '-1', 0.12, 0, dash);
+                pushPctLine(`${labelPrefix} 10%ile`, p10, color, 1.5, 0.65, '-1', 0.28, 0, dash);
+                pushPctLine(`${labelPrefix} 3%ile`, p3, color, 1.5, 0.65, '-1', 0.12, 0, dash);
+              }
+              [25, 75].forEach(p => {
+                if (curves[p] && curves[p].length > 0) pushPctLine(`${labelPrefix} ${p}%ile`, curves[p], color, 1.5, 0.65, false, 0, 0, dash);
+              });
+              if (p50 && p50.length > 0) pushPctLine(`${labelPrefix} 中央値`, p50, color, 3.5, 1, false, 0, -1, dash);
+
+            } else if (pctMode === '5a') {
               const curves = computeLmsPercentileCurves(dataArray, [5, 10, 50, 90, 95]);
               [5, 10, 90, 95].forEach(p => { if (curves[p] && curves[p].length > 0) pushPctLine(`${labelPrefix} ${p}%ile`, curves[p], color, 1.5, 0.55, false, 0, 0, dash); });
               if (curves[50] && curves[50].length > 0) pushPctLine(`${labelPrefix} 中央値`, curves[50], color, 3, 1, false, 0, -1, dash);
