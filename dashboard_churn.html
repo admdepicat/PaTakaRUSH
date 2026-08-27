@@ -10,30 +10,30 @@
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="text-gray-500 mr-1 w-10">性別:</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="churnGender" id="churnGenderTotal" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+          <input type="checkbox" id="churnGenderTotal" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
           <span class="text-emerald-600">全体</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="churnGender" id="churnGenderMale" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
+          <input type="checkbox" id="churnGenderMale" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-blue-600">
           <span class="text-blue-600">男性</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="churnGender" id="churnGenderFemale" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
+          <input type="checkbox" id="churnGenderFemale" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-rose-600">
           <span class="text-rose-600">女性</span>
         </label>
 
         <span class="text-gray-300 mx-1">|</span>
         <span class="text-gray-500 mr-1">管理:</span>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="churnManaged" id="churnManagedTotal" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <input type="checkbox" id="churnManagedTotal" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
           <span class="text-gray-700">全体</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="churnManaged" id="churnManagedYes" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-purple-600">
+          <input type="checkbox" id="churnManagedYes" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-purple-600">
           <span class="text-purple-600">管理されている</span>
         </label>
         <label class="flex items-center gap-1 cursor-pointer">
-          <input type="radio" name="churnManaged" id="churnManagedNo" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-orange-500">
+          <input type="checkbox" id="churnManagedNo" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-orange-500">
           <span class="text-orange-500">管理されていない</span>
         </label>
 
@@ -78,27 +78,41 @@
 </div>
 
 <script>
+  // churnWeeklyCache: 現在表示中の各系列(性別×管理の組み合わせ)の週次データを、Chart.jsのdatasetIndexと対応する順で保持する
   let churnWeeklyCache = [];
-  let churnLastClickedIndex = null;
+  let churnLastClicked = null; // { datasetIndex, index } | null
   const CHURN_GENDER_COLOR = { total: '#059669', male: '#2563eb', female: '#e11d48' };
+  const CHURN_GENDER_LABEL = { total: '全体', male: '男性', female: '女性' };
+  const CHURN_MANAGED_LABEL = { total: '全体', managed: '管理されている', unmanaged: '管理されていない' };
+  const CHURN_MANAGED_DASH = { total: [], managed: [8, 4], unmanaged: [2, 2] };
 
-  function getChurnGenderFilter() {
-    if (document.getElementById('churnGenderMale') && document.getElementById('churnGenderMale').checked) return 'male';
-    if (document.getElementById('churnGenderFemale') && document.getElementById('churnGenderFemale').checked) return 'female';
-    return 'total';
+  function getChurnGenderFilters() {
+    const filters = [];
+    if (document.getElementById('churnGenderTotal') && document.getElementById('churnGenderTotal').checked) filters.push('total');
+    if (document.getElementById('churnGenderMale') && document.getElementById('churnGenderMale').checked) filters.push('male');
+    if (document.getElementById('churnGenderFemale') && document.getElementById('churnGenderFemale').checked) filters.push('female');
+    return filters.length > 0 ? filters : ['total'];
   }
 
-  function getChurnManagedFilter() {
-    if (document.getElementById('churnManagedYes') && document.getElementById('churnManagedYes').checked) return 'managed';
-    if (document.getElementById('churnManagedNo') && document.getElementById('churnManagedNo').checked) return 'unmanaged';
-    return 'total';
+  function getChurnManagedFilters() {
+    const filters = [];
+    if (document.getElementById('churnManagedTotal') && document.getElementById('churnManagedTotal').checked) filters.push('total');
+    if (document.getElementById('churnManagedYes') && document.getElementById('churnManagedYes').checked) filters.push('managed');
+    if (document.getElementById('churnManagedNo') && document.getElementById('churnManagedNo').checked) filters.push('unmanaged');
+    return filters.length > 0 ? filters : ['total'];
+  }
+
+  function churnSeriesLabel(genderFilter, managedFilter) {
+    const g = CHURN_GENDER_LABEL[genderFilter], m = CHURN_MANAGED_LABEL[managedFilter];
+    if (genderFilter === 'total' && managedFilter === 'total') return '全体';
+    if (genderFilter === 'total') return m;
+    if (managedFilter === 'total') return g;
+    return `${g}・${m}`;
   }
 
   // 各週(w=0始まり)について、初回検査日からの経過日数が該当週に達しているユーザーを対象に、
   // その週の利用日数(0〜7日)の平均・分布(ヒストグラム)を集計する
-  function computeChurnWeeklyStats() {
-    const genderFilter = getChurnGenderFilter();
-    const managedFilter = getChurnManagedFilter();
+  function computeChurnWeeklyStats(genderFilter, managedFilter) {
     const weekly = [];
     if (!rawData || !rawData.usersChurn) return weekly;
 
@@ -126,29 +140,51 @@
     return weekly;
   }
 
-  const CHURN_MANAGED_DASH = { total: [], managed: [8, 4], unmanaged: [2, 2] };
+  // 現在の性別×管理チェックボックスの組み合わせごとに、週次データの系列を生成する
+  function computeChurnSeriesList() {
+    const genderFilters = getChurnGenderFilters();
+    const managedFilters = getChurnManagedFilters();
+    const seriesList = [];
+    genderFilters.forEach(genderFilter => {
+      managedFilters.forEach(managedFilter => {
+        seriesList.push({
+          genderFilter: genderFilter, managedFilter: managedFilter,
+          label: churnSeriesLabel(genderFilter, managedFilter),
+          color: CHURN_GENDER_COLOR[genderFilter], dash: CHURN_MANAGED_DASH[managedFilter],
+          weekly: computeChurnWeeklyStats(genderFilter, managedFilter)
+        });
+      });
+    });
+    return seriesList;
+  }
 
-  // クリックして選択中の点だけ黒にし、それ以外は性別カラーのままにする
-  function getChurnPointColors(color, count) {
+  // クリックして選択中の点だけ黒にし、それ以外は系列の色のままにする
+  function getChurnPointColors(color, count, datasetIndex) {
     const colors = [];
-    for (let i = 0; i < count; i++) colors.push(i === churnLastClickedIndex ? '#000000' : color);
+    for (let i = 0; i < count; i++) {
+      const isSelected = churnLastClicked && churnLastClicked.datasetIndex === datasetIndex && churnLastClicked.index === i;
+      colors.push(isSelected ? '#000000' : color);
+    }
     return colors;
   }
 
   function updateChurnPointColors() {
     if (!charts.churn) return;
-    const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
-    const pointColors = getChurnPointColors(color, charts.churn.data.datasets[0].data.length);
-    charts.churn.data.datasets[0].pointBackgroundColor = pointColors;
-    charts.churn.data.datasets[0].pointBorderColor = pointColors;
+    charts.churn.data.datasets.forEach((ds, datasetIndex) => {
+      const series = churnWeeklyCache[datasetIndex];
+      if (!series) return;
+      const pointColors = getChurnPointColors(series.color, ds.data.length, datasetIndex);
+      ds.pointBackgroundColor = pointColors;
+      ds.pointBorderColor = pointColors;
+    });
     charts.churn.update();
   }
 
   function renderChurnChart() {
     try {
       if (!rawData) return;
-      const weekly = computeChurnWeeklyStats();
-      churnWeeklyCache = weekly;
+      const seriesList = computeChurnSeriesList();
+      churnWeeklyCache = seriesList;
 
       const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
       const yMax = yMaxStr ? parseInt(yMaxStr, 10) : 7;
@@ -156,42 +192,48 @@
       const xMinStr = document.getElementById('churnXMin') ? document.getElementById('churnXMin').value : '';
       const xMaxStr = document.getElementById('churnXMax') ? document.getElementById('churnXMax').value : '';
       const xMinWeek = xMinStr ? parseInt(xMinStr, 10) : 1;
-      const xMaxWeek = xMaxStr ? parseInt(xMaxStr, 10) : (weekly.length > 0 ? weekly[weekly.length - 1].week : xMinWeek);
+      const lastWeeks = seriesList.map(s => s.weekly.length > 0 ? s.weekly[s.weekly.length - 1].week : 0);
+      const xMaxWeek = xMaxStr ? parseInt(xMaxStr, 10) : Math.max(xMinWeek, ...lastWeeks);
       // 最初/最後の点が左右の端で半分隠れないよう、指定した週の範囲より少し余白を持たせる
       const xMin = xMinWeek - 0.5;
       const xMax = xMaxWeek + 0.5;
 
-      const dataPoints = weekly.map(w => ({ x: w.week, y: w.avg }));
-      const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
-      const dash = CHURN_MANAGED_DASH[getChurnManagedFilter()];
-      const pointColors = getChurnPointColors(color, dataPoints.length);
+      const newDatasets = seriesList.map((series, datasetIndex) => {
+        const dataPoints = series.weekly.map(w => ({ x: w.week, y: w.avg }));
+        const pointColors = getChurnPointColors(series.color, dataPoints.length, datasetIndex);
+        return {
+          label: series.label, data: dataPoints,
+          borderColor: series.color, backgroundColor: hexToRgba(series.color, 0.15), borderDash: series.dash,
+          borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: pointColors, pointBorderColor: pointColors,
+          fill: false, tension: 0
+        };
+      });
 
       if (!charts.churn) {
         charts.churn = new Chart(document.getElementById('churnWeeklyChart'), {
           type: 'line',
-          data: {
-            datasets: [{
-              label: '週あたり利用日数(平均)', data: dataPoints,
-              borderColor: color, backgroundColor: hexToRgba(color, 0.15), borderDash: dash,
-              borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: pointColors, pointBorderColor: pointColors,
-              fill: false, tension: 0
-            }]
-          },
+          data: { datasets: newDatasets },
           options: {
             responsive: true, maintainAspectRatio: false,
             onClick: (evt, elements) => {
               if (elements && elements.length > 0) {
-                const idx = elements[0].index;
-                churnLastClickedIndex = idx;
-                showChurnHistogram(churnWeeklyCache[idx]);
+                const datasetIndex = elements[0].datasetIndex, idx = elements[0].index;
+                const series = churnWeeklyCache[datasetIndex];
+                if (!series) return;
+                churnLastClicked = { datasetIndex: datasetIndex, index: idx };
+                showChurnHistogram(series.weekly[idx], series);
                 updateChurnPointColors();
               }
             },
             plugins: {
-              legend: { display: false },
+              legend: { display: true },
               tooltip: {
                 callbacks: {
-                  label: (ctx) => `${ctx.raw.y !== null && ctx.raw.y !== undefined ? ctx.raw.y.toFixed(2) : '-'} 日/週 (対象 ${churnWeeklyCache[ctx.dataIndex] ? churnWeeklyCache[ctx.dataIndex].activeUsers : 0}人)`
+                  label: (ctx) => {
+                    const series = churnWeeklyCache[ctx.datasetIndex];
+                    const weekInfo = series ? series.weekly[ctx.dataIndex] : null;
+                    return `${series ? series.label : ''}: ${ctx.raw.y !== null && ctx.raw.y !== undefined ? ctx.raw.y.toFixed(2) : '-'} 日/週 (対象 ${weekInfo ? weekInfo.activeUsers : 0}人)`;
+                  }
                 }
               }
             },
@@ -214,36 +256,37 @@
         });
       } else {
         const chart = charts.churn;
-        chart.data.datasets[0].data = dataPoints;
-        chart.data.datasets[0].borderColor = color;
-        chart.data.datasets[0].backgroundColor = hexToRgba(color, 0.15);
-        chart.data.datasets[0].borderDash = dash;
+        chart.data.datasets = newDatasets;
         chart.options.scales.x.min = xMin;
         chart.options.scales.x.max = xMax;
-        chart.data.datasets[0].pointBackgroundColor = pointColors;
-        chart.data.datasets[0].pointBorderColor = pointColors;
         chart.options.scales.y.max = yMax;
         chart.update();
       }
 
-      // 性別・管理状態の切り替え後も、選択中の週があればヒストグラムの色を追随させる
-      if (churnLastClickedIndex !== null && churnWeeklyCache[churnLastClickedIndex]) {
-        showChurnHistogram(churnWeeklyCache[churnLastClickedIndex]);
+      // 選択中の点が今の系列一覧にまだ存在すれば、ヒストグラムの内容を追随させる。無くなっていれば選択を解除する
+      if (churnLastClicked) {
+        const series = churnWeeklyCache[churnLastClicked.datasetIndex];
+        const weekInfo = series ? series.weekly[churnLastClicked.index] : null;
+        if (weekInfo) {
+          showChurnHistogram(weekInfo, series);
+        } else {
+          clearChurnHistogram();
+        }
       }
     } catch (error) {
       console.error(error);
     }
   }
 
-  function showChurnHistogram(weekInfo) {
+  function showChurnHistogram(weekInfo, series) {
     if (!weekInfo) return;
     const total = weekInfo.activeUsers;
     const days = [0, 1, 2, 3, 4, 5, 6, 7];
     const percents = days.map(d => total > 0 ? (weekInfo.hist[d] || 0) / total * 100 : 0);
-    const color = CHURN_GENDER_COLOR[getChurnGenderFilter()];
+    const color = series ? series.color : '#059669';
 
     const caption = document.getElementById('churnHistCaption');
-    if (caption) caption.innerText = `${weekInfo.week}週目 (対象 ${total.toLocaleString()}人)`;
+    if (caption) caption.innerText = `${series ? series.label + ' ' : ''}${weekInfo.week}週目 (対象 ${total.toLocaleString()}人)`;
 
     if (!charts.churnHist) {
       charts.churnHist = new Chart(document.getElementById('churnHistChart'), {
@@ -276,7 +319,7 @@
   }
 
   function clearChurnHistogram() {
-    churnLastClickedIndex = null;
+    churnLastClicked = null;
     updateChurnPointColors();
     if (charts.churnHist) {
       charts.churnHist.destroy();
