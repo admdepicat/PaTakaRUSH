@@ -114,7 +114,8 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※選択したユーザーの、初回検査日を基準にした週ごとの検査日数(0〜7日)をそのまま表示します。平均化や他ユーザーとの合算はしていない、そのユーザー個人の生データです。
+    ※選択したユーザーの、初回検査日を基準にした週ごとの検査日数(0〜7日)をそのまま表示します。平均化や他ユーザーとの合算はしていない、そのユーザー個人の生データです。<br>
+    ※対象者数が多いため、現時点では初回検査から24週目まで到達しているユーザーのみを選択対象としています（人数は上の「週次利用日数の推移」の24週目の対象人数と一致します）。
   </p>
 
   <div class="chart-container" style="height: 380px; max-width: 900px;">
@@ -476,12 +477,16 @@
   }
 
   // ===== ユーザー個別の利用頻度推移 (生の動き) =====
+  const CHURN_USER_SELECT_MIN_WEEKS = 24; // 対象者が多すぎるため、当面は24週目まで到達しているユーザーのみに絞る
+
   function populateChurnUserSelect() {
     const select = document.getElementById('churnUserSelect');
     if (!select || !rawData || !rawData.usersChurn) return;
     const currentValue = select.value;
-    const users = [...rawData.usersChurn].sort((a, b) => (a.uid || '').localeCompare(b.uid || '', 'ja'));
-    select.innerHTML = '<option value="">選択してください</option>' +
+    const users = rawData.usersChurn
+      .filter(u => u.accountAgeDays >= CHURN_USER_SELECT_MIN_WEEKS * 7)
+      .sort((a, b) => (a.uid || '').localeCompare(b.uid || '', 'ja'));
+    select.innerHTML = `<option value="">選択してください (${users.length}人)</option>` +
       users.map(u => `<option value="${u.uid}">${u.uid}</option>`).join('');
     if (currentValue && users.some(u => u.uid === currentValue)) select.value = currentValue;
   }
