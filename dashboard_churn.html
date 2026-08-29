@@ -83,10 +83,8 @@
   <p class="text-sm text-gray-600 mb-6">
     ※各ユーザーの初回検査日を基準に、1週間ごとの「利用日数(平均)」または「継続率(その週に1日以上検査した人の割合)」の推移を折れ線で表示しています（対象データ: 全期間）。<br>
     ※グラフ上の点をクリックすると、右側にその週の利用日数の分布（ヒストグラム）が表示されます。<br>
-    ※背景棒（人数）をクリックすると、その区分（完全離脱／継続中・未実施／その週実施）に該当する具体的なユーザー一覧がポップアップで表示されます。
+    ※背景棒（人数）をクリックすると、その区分（その週実施／未実施）に該当する具体的なユーザー一覧がポップアップで表示されます。
   </p>
-
-  <div id="churnFirstChurnSummary" class="text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 mb-4"></div>
 
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0 chart-container" style="height: 380px;">
@@ -101,19 +99,6 @@
         <button onclick="clearChurnHistogram()" class="text-xs font-bold text-gray-500 border border-gray-300 rounded px-2 py-0.5 hover:bg-gray-50">✕ クリア</button>
       </div>
     </div>
-  </div>
-
-  <hr class="my-8 border-gray-200">
-
-  <h2 class="text-lg font-bold text-gray-800 mb-4">週次利用日数の推移 (離脱者を除外)</h2>
-
-  <p class="text-sm text-gray-600 mb-6">
-    ※上のグラフと同じ性別・管理・表示の設定で、「その週以降、一度も利用実績が無いまま終わった人（完全に離脱した人）」を対象者から除外して集計しています。<br>
-    ※途中に0日の週があっても、その後また利用していれば「継続中」として対象に含め続けます。除外されるのは、それ以降ずっと0日のままだった人だけです。
-  </p>
-
-  <div class="chart-container" style="height: 380px;">
-    <canvas id="churnWeeklyChartExcl"></canvas>
   </div>
 
   <hr class="my-8 border-gray-200">
@@ -203,7 +188,7 @@
     return -1;
   }
 
-  // 背景棒の「完全離脱」「継続中・未実施」「その週実施」いずれかの区分に該当する、具体的なユーザー(uid)一覧を返す
+  // 背景棒の「その週実施」「未実施」いずれかの区分に該当する、具体的なユーザー(uid)一覧を返す
   function getChurnUsersForBarSegment(genderFilter, managedFilter, week, category) {
     const w = week - 1; // 0始まりのインデックスに変換
     const result = [];
@@ -217,12 +202,9 @@
         if (genderKey !== genderFilter) return;
       }
       if (u.accountAgeDays < w * 7) return; // その週にまだ到達していない
-      const lastActiveWeek = getChurnLastActiveWeekIndex(u);
-      const isContinuing = lastActiveWeek >= w;
       const testedThisWeek = !!(u.data && u.data[w]);
-      if (category === '完全離脱' && !isContinuing) result.push(u.uid);
-      else if (category === '継続中・未実施' && isContinuing && !testedThisWeek) result.push(u.uid);
-      else if (category === 'その週実施' && testedThisWeek) result.push(u.uid);
+      if (category === 'その週実施' && testedThisWeek) result.push(u.uid);
+      else if (category === '未実施' && !testedThisWeek) result.push(u.uid);
     });
     return result;
   }
@@ -291,41 +273,6 @@
     }
   }
 
-  // computeChurnWeeklyStatsと同じ集計だが、「その週以降ずっと0日のまま終わった人(完全に離脱した人)」を対象者から除外する。
-  // 途中に0日の週があっても、その後また利用実績があれば対象に含め続ける。
-  function computeChurnWeeklyStatsExcludingChurned(genderFilter, managedFilter) {
-    const weekly = [];
-    if (!rawData || !rawData.usersChurn) return weekly;
-
-    const filteredUsers = rawData.usersChurn.filter(u => {
-      if (managedFilter !== 'total' && u.groupType !== managedFilter) return false;
-      if (genderFilter !== 'total') {
-        let genderKey = 'other';
-        if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
-        else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
-        if (genderKey !== genderFilter) return false;
-      }
-      return true;
-    }).map(u => ({ u: u, lastActiveWeek: getChurnLastActiveWeekIndex(u) }));
-
-    for (let w = 0; w < 104; w++) {
-      let activeUsers = 0, sumDays = 0;
-      const hist = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
-      filteredUsers.forEach(({ u, lastActiveWeek }) => {
-        if (u.accountAgeDays < w * 7) return;
-        if (lastActiveWeek < w) return; // それ以降ずっと0日 → 完全離脱として除外
-        activeUsers++;
-        const days = u.data && u.data[w] ? u.data[w] : 0;
-        sumDays += days;
-        hist[days] = (hist[days] || 0) + 1;
-      });
-      if (activeUsers === 0) break;
-      const retentionRate = (activeUsers - (hist[0] || 0)) / activeUsers * 100;
-      weekly.push({ week: w + 1, avg: sumDays / activeUsers, retentionRate: retentionRate, activeUsers: activeUsers, hist: hist });
-    }
-    return weekly;
-  }
-
   // 表示: 利用日数(平均) / 継続率(1日以上実施した割合)
   function getChurnMetricMode() {
     if (document.getElementById('churnMetricRetentionRate') && document.getElementById('churnMetricRetentionRate').checked) return 'retentionRate';
@@ -361,24 +308,6 @@
     return seriesList;
   }
 
-  // 離脱者除外版: computeChurnSeriesListと同じ組み合わせで、computeChurnWeeklyStatsExcludingChurnedを使う
-  function computeChurnSeriesListExcl() {
-    const genderFilters = getChurnGenderFilters();
-    const managedFilters = getChurnManagedFilters();
-    const seriesList = [];
-    genderFilters.forEach(genderFilter => {
-      managedFilters.forEach(managedFilter => {
-        seriesList.push({
-          genderFilter: genderFilter, managedFilter: managedFilter,
-          label: churnSeriesLabel(genderFilter, managedFilter),
-          color: CHURN_GENDER_COLOR[genderFilter], dash: CHURN_MANAGED_DASH[managedFilter],
-          weekly: computeChurnWeeklyStatsExcludingChurned(genderFilter, managedFilter)
-        });
-      });
-    });
-    return seriesList;
-  }
-
   // クリックして選択中の点だけ黒にし、それ以外は系列の色のままにする
   function getChurnPointColors(color, count, datasetIndex) {
     const colors = [];
@@ -407,23 +336,6 @@
       const seriesList = computeChurnSeriesList();
       churnWeeklyCache = seriesList;
 
-      // 系列ごとに、「完全離脱」が初めて0人でなくなる週を調べてまとめて表示する
-      const summaryEl = document.getElementById('churnFirstChurnSummary');
-      if (summaryEl) {
-        const summaryLines = seriesList.map(series => {
-          const continuingWeekly = computeChurnWeeklyStatsExcludingChurned(series.genderFilter, series.managedFilter);
-          const continuingByWeek = {};
-          continuingWeekly.forEach(w => { continuingByWeek[w.week] = w.activeUsers; });
-          for (const w of series.weekly) {
-            const continuing = continuingByWeek[w.week] || 0;
-            const churned = Math.max(0, w.activeUsers - continuing);
-            if (churned > 0) return `${series.label}: ${w.week}週目で初めて完全離脱者が発生 (${churned}人)`;
-          }
-          return `${series.label}: 完全離脱者はまだ発生していません`;
-        });
-        summaryEl.innerHTML = summaryLines.join('<br>');
-      }
-
       const metricMode = getChurnMetricMode();
       const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
       const yMax = yMaxStr ? parseInt(yMaxStr, 10) : (metricMode === 'retentionRate' ? 100 : 7);
@@ -450,25 +362,17 @@
         };
       });
 
-      // 背景棒: 各系列の対象人数(週ごと)を右軸に3段積み上げで表示する。下から
-      // 「その週に実際に検査した人(濃い色)」+「継続中だがその週は未実施の人(薄い色)」+「完全離脱(白抜き)」。
-      // 合計が登録中の人数(=このグラフの対象者数)と一致するようにする
+      // 背景棒: 各系列の対象人数(週ごと)を右軸に2段積み上げで表示する。下から
+      // 「その週に実際に検査した人(濃い色)」+「未実施の人(薄い色)」。合計が登録中の人数と一致するようにする
       const showBgBars = document.getElementById('churnChkBgBars') && document.getElementById('churnChkBgBars').checked;
       if (showBgBars) {
         seriesList.forEach((series, seriesIndex) => {
-          const continuingWeekly = computeChurnWeeklyStatsExcludingChurned(series.genderFilter, series.managedFilter);
-          const continuingByWeek = {};
-          continuingWeekly.forEach(w => { continuingByWeek[w.week] = w.activeUsers; });
-
-          const testedPoints = [], continuingIdlePoints = [], churnedPoints = [];
+          const testedPoints = [], notTestedPoints = [];
           series.weekly.forEach(w => {
-            const continuing = continuingByWeek[w.week] || 0;
             const tested = Math.max(0, w.activeUsers - (w.hist[0] || 0)); // その週に1日以上検査した人(登録中の人数のうち)
-            const continuingIdle = Math.max(0, continuing - tested); // 継続中だが、その週はたまたま未実施だった人
-            const churned = Math.max(0, w.activeUsers - continuing);
+            const notTested = w.hist[0] || 0;
             testedPoints.push({ x: w.week, y: tested });
-            continuingIdlePoints.push({ x: w.week, y: continuingIdle });
-            churnedPoints.push({ x: w.week, y: churned });
+            notTestedPoints.push({ x: w.week, y: notTested });
           });
 
           const stackKey = `churnCountStack_${seriesIndex}`;
@@ -478,13 +382,8 @@
             yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey, _churnSeriesIndex: seriesIndex
           });
           newDatasets.push({
-            type: 'bar', label: `${series.label}(継続中・未実施)`, data: continuingIdlePoints,
+            type: 'bar', label: `${series.label}(未実施)`, data: notTestedPoints,
             backgroundColor: hexToRgba(series.color, 0.2), borderColor: hexToRgba(series.color, 0.4), borderWidth: 1,
-            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey, _churnSeriesIndex: seriesIndex
-          });
-          newDatasets.push({
-            type: 'bar', label: `${series.label}(完全離脱)`, data: churnedPoints,
-            backgroundColor: 'rgba(255, 255, 255, 0.9)', borderColor: hexToRgba(series.color, 0.6), borderWidth: 1,
             yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey, _churnSeriesIndex: seriesIndex
           });
         });
@@ -539,7 +438,7 @@
               tooltip: {
                 mode: 'x', intersect: false,
                 itemSort: (a, b) => {
-                  const order = ['完全離脱', '継続中・未実施', 'その週実施'];
+                  const order = ['未実施', 'その週実施'];
                   const kindOf = (item) => { const m = item.dataset.label.match(/\(([^)]+)\)$/); return m ? order.indexOf(m[1]) : -1; };
                   return kindOf(a) - kindOf(b);
                 },
@@ -610,104 +509,9 @@
         }
       }
 
-      renderChurnChartExcl(metricMode, yAxisTitle, yTickStepSize, xMin, xMax, showBgBars, countYMax);
       renderChurnInactivityChart(seriesList);
     } catch (error) {
       console.error(error);
-    }
-  }
-
-  // 下段: 離脱者(定義③: それ以降ずっと0日のまま終わった人)を除外したグラフ。上のグラフと同じ性別・管理・表示・Y軸・週の設定を使う
-  function renderChurnChartExcl(metricMode, yAxisTitle, yTickStepSize, xMin, xMax, showBgBars, countYMax) {
-    const el = document.getElementById('churnWeeklyChartExcl');
-    if (!el) return;
-
-    const seriesList = computeChurnSeriesListExcl();
-
-    const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
-    const yMax = yMaxStr ? parseInt(yMaxStr, 10) : (metricMode === 'retentionRate' ? 100 : 7);
-
-    const newDatasets = seriesList.map(series => {
-      const dataPoints = series.weekly.map(w => ({ x: w.week, y: metricMode === 'retentionRate' ? w.retentionRate : w.avg }));
-      return {
-        type: 'line', label: series.label, data: dataPoints,
-        borderColor: series.color, backgroundColor: hexToRgba(series.color, 0.15), borderDash: series.dash,
-        borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: series.color, pointBorderColor: series.color,
-        fill: false, tension: 0, yAxisID: 'y'
-      };
-    });
-
-    if (showBgBars) {
-      seriesList.forEach(series => {
-        const barPoints = series.weekly.map(w => ({ x: w.week, y: w.activeUsers }));
-        newDatasets.push({
-          type: 'bar', label: `${series.label}(人数)`, data: barPoints,
-          backgroundColor: hexToRgba(series.color, 0.18), borderColor: hexToRgba(series.color, 0.35), borderWidth: 1,
-          yAxisID: 'yCount', order: 10, barThickness: 6
-        });
-      });
-    }
-
-    if (!charts.churnExcl) {
-      charts.churnExcl = new Chart(el, {
-        type: 'line',
-        data: { datasets: newDatasets },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              labels: {
-                usePointStyle: true,
-                generateLabels: (chart) => {
-                  const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                  labels.forEach((label, i) => {
-                    const ds = chart.data.datasets[i];
-                    if (ds && ds.type === 'line') label.pointStyle = 'line';
-                  });
-                  return labels;
-                }
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => {
-                  if (ctx.dataset.type === 'bar') return `${ctx.dataset.label}: ${ctx.raw.y}人`;
-                  const series = seriesList[ctx.datasetIndex];
-                  const weekInfo = series ? series.weekly[ctx.dataIndex] : null;
-                  const valueText = ctx.raw.y !== null && ctx.raw.y !== undefined ? (metricMode === 'retentionRate' ? `${ctx.raw.y.toFixed(1)}%` : `${ctx.raw.y.toFixed(2)} 日/週`) : '-';
-                  return `${series ? series.label : ''}: ${valueText} (対象 ${weekInfo ? weekInfo.activeUsers : 0}人)`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              type: 'linear', title: { display: true, text: '週目' }, min: xMin, max: xMax,
-              afterBuildTicks: (axis) => {
-                const lo = Math.max(1, Math.ceil(axis.min));
-                const hi = Math.floor(axis.max);
-                const ticks = [];
-                for (let v = lo; v <= hi; v++) ticks.push({ value: v });
-                axis.ticks = ticks;
-              },
-              ticks: { precision: 0 }
-            },
-            y: { title: { display: true, text: yAxisTitle }, min: 0, max: yMax, ticks: { stepSize: yTickStepSize, precision: 0 } },
-            yCount: { position: 'right', title: { display: true, text: '対象人数 (人)' }, min: 0, max: countYMax, grid: { drawOnChartArea: false } }
-          }
-        }
-      });
-    } else {
-      const chart = charts.churnExcl;
-      chart.data.datasets = newDatasets;
-      chart.options.scales.yCount.max = countYMax;
-      chart.options.scales.x.min = xMin;
-      chart.options.scales.x.max = xMax;
-      chart.options.scales.y.max = yMax;
-      chart.options.scales.y.title.text = yAxisTitle;
-      chart.options.scales.y.ticks.stepSize = yTickStepSize;
-      chart.update();
     }
   }
 
