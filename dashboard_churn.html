@@ -101,6 +101,25 @@
     </div>
   </div>
 
+  <hr class="my-8 border-gray-200">
+
+  <h2 class="text-lg font-bold text-gray-800 mb-4">ユーザー個別の利用頻度推移 (生の動き)</h2>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">ユーザー:</span>
+    <select id="churnUserSelect" onchange="renderChurnUserChart()" class="p-1 border border-gray-300 rounded outline-none font-normal">
+      <option value="">選択してください</option>
+    </select>
+    <span id="churnUserInfo" class="text-gray-600 font-normal"></span>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-6">
+    ※選択したユーザーの、初回検査日を基準にした週ごとの検査日数(0〜7日)をそのまま表示します。平均化や他ユーザーとの合算はしていない、そのユーザー個人の生データです。
+  </p>
+
+  <div class="chart-container" style="height: 380px; max-width: 900px;">
+    <canvas id="churnUserChart"></canvas>
+  </div>
 
 </div>
 
@@ -448,8 +467,74 @@
           clearChurnHistogram();
         }
       }
+
+      populateChurnUserSelect();
+      renderChurnUserChart();
     } catch (error) {
       console.error(error);
+    }
+  }
+
+  // ===== ユーザー個別の利用頻度推移 (生の動き) =====
+  function populateChurnUserSelect() {
+    const select = document.getElementById('churnUserSelect');
+    if (!select || !rawData || !rawData.usersChurn) return;
+    const currentValue = select.value;
+    const users = [...rawData.usersChurn].sort((a, b) => (a.uid || '').localeCompare(b.uid || '', 'ja'));
+    select.innerHTML = '<option value="">選択してください</option>' +
+      users.map(u => `<option value="${u.uid}">${u.uid}</option>`).join('');
+    if (currentValue && users.some(u => u.uid === currentValue)) select.value = currentValue;
+  }
+
+  function renderChurnUserChart() {
+    const select = document.getElementById('churnUserSelect');
+    const infoEl = document.getElementById('churnUserInfo');
+    const el = document.getElementById('churnUserChart');
+    if (!select || !el) return;
+
+    const uid = select.value;
+    const user = (rawData && rawData.usersChurn) ? rawData.usersChurn.find(u => u.uid === uid) : null;
+
+    if (infoEl) {
+      if (user) {
+        const managedText = user.groupType === 'managed' ? `管理されている${user.groupName ? `(${user.groupName})` : ''}` : '管理されていない';
+        infoEl.textContent = `性別: ${user.gender || '-'} / 管理: ${managedText} / 経過日数: ${user.accountAgeDays}日`;
+      } else {
+        infoEl.textContent = '';
+      }
+    }
+
+    const points = [];
+    if (user && user.data) {
+      user.data.forEach((days, w) => {
+        if (days !== null && days !== undefined) points.push({ x: w + 1, y: days });
+      });
+    }
+
+    const newDataset = {
+      type: 'bar', label: uid || '利用日数', data: points,
+      backgroundColor: hexToRgba('#059669', 0.6), borderColor: hexToRgba('#059669', 0.9), borderWidth: 1, barThickness: 8
+    };
+
+    if (!charts.churnUser) {
+      charts.churnUser = new Chart(el, {
+        type: 'bar',
+        data: { datasets: [newDataset] },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.raw.y}日` } }
+          },
+          scales: {
+            x: { type: 'linear', title: { display: true, text: '週目' }, min: 0.5, ticks: { precision: 0, stepSize: 1 } },
+            y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: 7, ticks: { stepSize: 1, precision: 0 } }
+          }
+        }
+      });
+    } else {
+      charts.churnUser.data.datasets = [newDataset];
+      charts.churnUser.update();
     }
   }
 
