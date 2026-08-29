@@ -551,13 +551,21 @@
     if (!container) return;
     const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
 
+    // 濃い(利用日数の合計が多い)人から薄い人の順に並べる
+    const totalDaysOf = (u) => {
+      let sum = 0;
+      for (let w = 0; w < weeksToCheck; w++) sum += (u.data && u.data[w]) ? u.data[w] : 0;
+      return sum;
+    };
+    const sortedUsers = [...users].sort((a, b) => totalDaysOf(b) - totalDaysOf(a));
+
     let html = '<table class="text-xs border-collapse"><thead><tr>' +
       '<th class="sticky left-0 top-0 bg-white px-2 py-1 text-left border-b border-r border-gray-200 z-10">uid</th>';
     for (let w = 1; w <= weeksToCheck; w++) {
       html += `<th class="sticky top-0 bg-white px-1 py-1 text-center border-b border-gray-200" style="min-width:22px;">${w}</th>`;
     }
     html += '</tr></thead><tbody>';
-    users.forEach(u => {
+    sortedUsers.forEach(u => {
       html += `<tr><td class="sticky left-0 bg-white px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10">${u.uid}</td>`;
       for (let w = 0; w < weeksToCheck; w++) {
         const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
