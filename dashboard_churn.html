@@ -82,7 +82,8 @@
 
   <p class="text-sm text-gray-600 mb-6">
     ※各ユーザーの初回検査日を基準に、1週間ごとの「利用日数(平均)」または「継続率(その週に1日以上検査した人の割合)」の推移を折れ線で表示しています（対象データ: 全期間）。<br>
-    ※グラフ上の点をクリックすると、右側にその週の利用日数の分布（ヒストグラム）が表示されます。
+    ※グラフ上の点をクリックすると、右側にその週の利用日数の分布（ヒストグラム）が表示されます。<br>
+    ※背景棒（人数）をクリックすると、その区分（完全離脱／継続中・未実施／その週実施）に該当する具体的なユーザー一覧がポップアップで表示されます。
   </p>
 
   <div class="flex flex-col lg:flex-row gap-6">
@@ -198,6 +199,30 @@
       if (u.data[j]) return j;
     }
     return -1;
+  }
+
+  // 背景棒の「完全離脱」「継続中・未実施」「その週実施」いずれかの区分に該当する、具体的なユーザー(uid)一覧を返す
+  function getChurnUsersForBarSegment(genderFilter, managedFilter, week, category) {
+    const w = week - 1; // 0始まりのインデックスに変換
+    const result = [];
+    if (!rawData || !rawData.usersChurn) return result;
+    rawData.usersChurn.forEach(u => {
+      if (managedFilter !== 'total' && u.groupType !== managedFilter) return;
+      if (genderFilter !== 'total') {
+        let genderKey = 'other';
+        if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
+        else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
+        if (genderKey !== genderFilter) return;
+      }
+      if (u.accountAgeDays < w * 7) return; // その週にまだ到達していない
+      const lastActiveWeek = getChurnLastActiveWeekIndex(u);
+      const isContinuing = lastActiveWeek >= w;
+      const testedThisWeek = !!(u.data && u.data[w]);
+      if (category === '完全離脱' && !isContinuing) result.push(u.uid);
+      else if (category === '継続中・未実施' && isContinuing && !testedThisWeek) result.push(u.uid);
+      else if (category === 'その週実施' && testedThisWeek) result.push(u.uid);
+    });
+    return result;
   }
 
   // 直近の非活動期間別 人数: 各ユーザーの「最後に検査した週」から現在(=アカウント経過日数)までの日数をもとに、
@@ -456,14 +481,26 @@
           options: {
             responsive: true, maintainAspectRatio: false,
             onClick: (evt, elements) => {
-              if (elements && elements.length > 0) {
-                const datasetIndex = elements[0].datasetIndex, idx = elements[0].index;
-                const series = churnWeeklyCache[datasetIndex];
+              if (!elements || elements.length === 0) return;
+              const datasetIndex = elements[0].datasetIndex, idx = elements[0].index;
+              const ds = charts.churn.data.datasets[datasetIndex];
+
+              if (ds.type === 'bar') {
+                const series = churnWeeklyCache[ds._churnSeriesIndex];
                 if (!series) return;
-                churnLastClicked = { datasetIndex: datasetIndex, index: idx };
-                showChurnHistogram(series.weekly[idx], series);
-                updateChurnPointColors();
+                const week = ds.data[idx].x;
+                const m = ds.label.match(/\(([^)]+)\)$/);
+                const category = m ? m[1] : '';
+                const uids = getChurnUsersForBarSegment(series.genderFilter, series.managedFilter, week, category);
+                alert(`${series.label} ${week}週目「${category}」(${uids.length}人)\n${uids.length > 0 ? uids.join('\n') : '該当者なし'}`);
+                return;
               }
+
+              const series = churnWeeklyCache[datasetIndex];
+              if (!series) return;
+              churnLastClicked = { datasetIndex: datasetIndex, index: idx };
+              showChurnHistogram(series.weekly[idx], series);
+              updateChurnPointColors();
             },
             plugins: {
               legend: {
