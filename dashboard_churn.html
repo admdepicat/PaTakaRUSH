@@ -115,7 +115,8 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。
+    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
+    ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
   </p>
 
   <div class="chart-container" style="height: 380px; max-width: 900px;">
@@ -506,6 +507,8 @@
       .sort((a, b) => (a.uid || '').localeCompare(b.uid || '', 'ja'));
   }
 
+  let churnMultiUserSelectedUid = null; // ヒートマップでクリックして選択中のuid
+
   function renderChurnMultiUserLineChart(users) {
     const el = document.getElementById('churnMultiUserLineChart');
     if (!el) return;
@@ -517,12 +520,19 @@
         const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
         points.push({ x: w + 1, y: days });
       }
+      const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
       return {
         type: 'line', label: u.uid, data: points,
-        borderColor: hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
-        borderWidth: 1, pointRadius: 0, fill: false, tension: 0.2
+        borderColor: isSelected ? '#dc2626' : hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
+        borderWidth: isSelected ? 3 : 1, pointRadius: 0, fill: false, tension: 0.2,
+        order: isSelected ? -1 : 0 // 選択中の線を他より前面(上)に描画する
       };
     });
+    // 選択中の線を配列の末尾に移し、他の薄い線の上に重なって描画されるようにする
+    if (churnMultiUserSelectedUid !== null) {
+      const selectedIndex = newDatasets.findIndex(ds => ds.label === churnMultiUserSelectedUid);
+      if (selectedIndex >= 0) newDatasets.push(newDatasets.splice(selectedIndex, 1)[0]);
+    }
 
     if (!charts.churnMultiUserLine) {
       charts.churnMultiUserLine = new Chart(el, {
@@ -566,7 +576,10 @@
     }
     html += '</tr></thead><tbody>';
     sortedUsers.forEach(u => {
-      html += `<tr><td class="sticky left-0 bg-white px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10">${u.uid}</td>`;
+      const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
+      const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const rowCellClass = isSelected ? 'bg-rose-50 text-rose-600' : 'bg-white';
+      html += `<tr><td class="churn-uid-cell sticky left-0 ${rowCellClass} px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10 cursor-pointer hover:underline font-bold" data-uid="${uidEscaped}">${u.uid}</td>`;
       for (let w = 0; w < weeksToCheck; w++) {
         const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
         const alpha = days / 7;
@@ -576,6 +589,22 @@
     });
     html += '</tbody></table>';
     container.innerHTML = html;
+
+    // uidクリックで折れ線グラフ側をハイライトする(1回だけイベント委譲で登録)
+    if (!container._churnClickBound) {
+      container.addEventListener('click', (evt) => {
+        const cell = evt.target.closest('.churn-uid-cell');
+        if (!cell) return;
+        selectChurnMultiUserRow(cell.getAttribute('data-uid'));
+      });
+      container._churnClickBound = true;
+    }
+  }
+
+  function selectChurnMultiUserRow(uid) {
+    // 同じuidを再クリックしたら選択解除する
+    churnMultiUserSelectedUid = (churnMultiUserSelectedUid === uid) ? null : uid;
+    renderChurnMultiUserCharts();
   }
 
   function renderChurnMultiUserCharts() {
