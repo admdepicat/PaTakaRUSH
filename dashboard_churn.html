@@ -123,7 +123,12 @@
     <canvas id="churnMultiUserLineChart"></canvas>
   </div>
 
-  <div id="churnHeatmapContainer" class="mt-6" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
+  <div class="flex items-center justify-end gap-2 mt-6 max-w-[900px]">
+    <p id="churnMultiUserSelectCaption" class="text-sm text-gray-500">ヒートマップのuidをクリックしてください</p>
+    <button onclick="clearChurnMultiUserSelection()" class="text-xs font-bold text-gray-500 border border-gray-300 rounded px-2 py-0.5 hover:bg-gray-50">✕ クリア</button>
+  </div>
+
+  <div id="churnHeatmapContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
 </div>
 
@@ -607,12 +612,24 @@
     renderChurnMultiUserCharts();
   }
 
+  function clearChurnMultiUserSelection() {
+    churnMultiUserSelectedUid = null;
+    renderChurnMultiUserCharts();
+  }
+
+  function updateChurnMultiUserSelectCaption() {
+    const caption = document.getElementById('churnMultiUserSelectCaption');
+    if (!caption) return;
+    caption.textContent = churnMultiUserSelectedUid ? `選択中: ${churnMultiUserSelectedUid}` : 'ヒートマップのuidをクリックしてください';
+  }
+
   function renderChurnMultiUserCharts() {
     const users = getChurnMultiUserFilteredUsers();
     const countEl = document.getElementById('churnMultiUserCount');
     if (countEl) countEl.textContent = `対象: ${users.length}人`;
     const heatmapCountEl = document.getElementById('churnHeatmapCount');
     if (heatmapCountEl) heatmapCountEl.textContent = `ヒートマップ対象: ${users.length}人`;
+    updateChurnMultiUserSelectCaption();
     renderChurnMultiUserLineChart(users);
     renderChurnHeatmap(users);
   }
