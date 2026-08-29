@@ -122,7 +122,13 @@
   const CHURN_GENDER_COLOR = { total: '#059669', male: '#2563eb', female: '#e11d48' };
   const CHURN_GENDER_LABEL = { total: '全体', male: '男性', female: '女性' };
   const CHURN_MANAGED_LABEL = { total: '全体', managed: '管理されている', unmanaged: '管理されていない' };
-  const CHURN_MANAGED_DASH = { total: [], managed: [8, 4], unmanaged: [2, 2] };
+  const CHURN_MANAGED_COLOR = { managed: '#9333ea', unmanaged: '#f97316' }; // チェックボックスのアクセントカラー(紫/オレンジ)と合わせる
+
+  // 管理が絞り込まれている(全体以外)場合は管理状態の色(紫/オレンジ)を優先し、管理=全体のときは性別の色を使う
+  function churnSeriesColor(genderFilter, managedFilter) {
+    if (managedFilter !== 'total') return CHURN_MANAGED_COLOR[managedFilter];
+    return CHURN_GENDER_COLOR[genderFilter];
+  }
 
   function getChurnGenderFilters() {
     const filters = [];
@@ -316,7 +322,7 @@
         seriesList.push({
           genderFilter: genderFilter, managedFilter: managedFilter,
           label: churnSeriesLabel(genderFilter, managedFilter),
-          color: CHURN_GENDER_COLOR[genderFilter], dash: CHURN_MANAGED_DASH[managedFilter],
+          color: churnSeriesColor(genderFilter, managedFilter), dash: [],
           weekly: computeChurnWeeklyStats(genderFilter, managedFilter)
         });
       });
