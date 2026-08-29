@@ -365,7 +365,7 @@
           type: 'line', label: series.label, data: dataPoints,
           borderColor: series.color, backgroundColor: hexToRgba(series.color, 0.15), borderDash: series.dash,
           borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: pointColors, pointBorderColor: pointColors,
-          fill: false, tension: 0, yAxisID: 'y', _churnSeriesIndex: datasetIndex
+          fill: false, tension: 0, yAxisID: 'y', clip: false, _churnSeriesIndex: datasetIndex
         };
       });
 
@@ -404,6 +404,7 @@
           type: 'line',
           data: { datasets: newDatasets },
           options: {
+            layout: { padding: { top: 8 } },
             responsive: true, maintainAspectRatio: false,
             onClick: (evt, elements) => {
               if (!elements || elements.length === 0) return;
