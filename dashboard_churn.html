@@ -36,9 +36,10 @@
           <input type="checkbox" id="churnManagedNo" onchange="renderChurnChart()" class="w-4 h-4 cursor-pointer accent-orange-500">
           <span class="text-orange-500">管理されていない</span>
         </label>
+      </div>
 
-        <span class="text-gray-300 mx-1">|</span>
-        <span class="text-gray-500 mr-1">表示:</span>
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
+        <span class="text-gray-500 mr-1 w-10">表示:</span>
         <label class="flex items-center gap-1 cursor-pointer">
           <input type="radio" name="churnMetricMode" id="churnMetricAvg" onchange="onChurnMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
           <span class="text-gray-700">利用日数(平均)</span>
@@ -47,8 +48,9 @@
           <input type="radio" name="churnMetricMode" id="churnMetricRetentionRate" onchange="onChurnMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600">
           <span class="text-gray-700">継続率(1日以上実施した割合)</span>
         </label>
+      </div>
 
-        <span class="text-gray-300 mx-1">|</span>
+      <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">Y軸最大値:</span>
           <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
