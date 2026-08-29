@@ -115,7 +115,7 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップで表示しています。ヒートマップは0〜3日を青(4段階)、4〜7日を赤(4段階)、色が濃いほどその区分の中で日数が多いことを表します。<br>
+    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
     ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
   </p>
 
@@ -129,6 +129,9 @@
   </div>
 
   <div id="churnHeatmapContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
+
+  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
+  <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
 </div>
 
@@ -561,8 +564,15 @@
     }
   }
 
-  function renderChurnHeatmap(users) {
-    const container = document.getElementById('churnHeatmapContainer');
+  function churnHeatmapCellColor(days, colorMode) {
+    if (colorMode === 'redblue') {
+      return days <= 3 ? hexToRgba('#2563eb', days / 3) : hexToRgba('#dc2626', (days - 3) / 4);
+    }
+    return hexToRgba('#059669', days / 7);
+  }
+
+  function renderChurnHeatmap(users, containerId, colorMode) {
+    const container = document.getElementById(containerId);
     if (!container) return;
     const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
 
@@ -587,9 +597,7 @@
       html += `<tr><td class="churn-uid-cell sticky left-0 ${rowCellClass} px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10 cursor-pointer hover:underline font-bold" data-uid="${uidEscaped}">${u.uid}</td>`;
       for (let w = 0; w < weeksToCheck; w++) {
         const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
-        // 0〜3日は青(4段階)、4〜7日は赤(4段階)で塗り分ける
-        const cellColor = days <= 3 ? hexToRgba('#2563eb', days / 3) : hexToRgba('#dc2626', (days - 3) / 4);
-        html += `<td class="text-center border-b border-gray-100" style="background-color:${cellColor}; min-width:22px; height:18px;" title="${u.uid} ${w + 1}週目: ${days}日">${days > 0 ? days : ''}</td>`;
+        html += `<td class="text-center border-b border-gray-100" style="background-color:${churnHeatmapCellColor(days, colorMode)}; min-width:22px; height:18px;" title="${u.uid} ${w + 1}週目: ${days}日">${days > 0 ? days : ''}</td>`;
       }
       html += '</tr>';
     });
@@ -632,7 +640,8 @@
     if (heatmapCountEl) heatmapCountEl.textContent = `ヒートマップ対象: ${users.length}人`;
     updateChurnMultiUserSelectCaption();
     renderChurnMultiUserLineChart(users);
-    renderChurnHeatmap(users);
+    renderChurnHeatmap(users, 'churnHeatmapContainer', 'green');
+    renderChurnHeatmap(users, 'churnHeatmapRedBlueContainer', 'redblue');
   }
 
   function showChurnHistogram(weekInfo, series) {
