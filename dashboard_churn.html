@@ -402,7 +402,7 @@
           type: 'line', label: series.label, data: dataPoints,
           borderColor: series.color, backgroundColor: hexToRgba(series.color, 0.15), borderDash: series.dash,
           borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: pointColors, pointBorderColor: pointColors,
-          fill: false, tension: 0, yAxisID: 'y'
+          fill: false, tension: 0, yAxisID: 'y', _churnSeriesIndex: datasetIndex
         };
       });
 
@@ -431,17 +431,17 @@
           newDatasets.push({
             type: 'bar', label: `${series.label}(その週実施)`, data: testedPoints,
             backgroundColor: hexToRgba(series.color, 0.75), borderColor: hexToRgba(series.color, 0.9), borderWidth: 1,
-            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
+            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey, _churnSeriesIndex: seriesIndex
           });
           newDatasets.push({
             type: 'bar', label: `${series.label}(継続中・未実施)`, data: continuingIdlePoints,
             backgroundColor: hexToRgba(series.color, 0.2), borderColor: hexToRgba(series.color, 0.4), borderWidth: 1,
-            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
+            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey, _churnSeriesIndex: seriesIndex
           });
           newDatasets.push({
             type: 'bar', label: `${series.label}(完全離脱)`, data: churnedPoints,
             backgroundColor: 'rgba(255, 255, 255, 0.9)', borderColor: hexToRgba(series.color, 0.6), borderWidth: 1,
-            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
+            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey, _churnSeriesIndex: seriesIndex
           });
         });
       }
@@ -481,10 +481,31 @@
                 }
               },
               tooltip: {
+                mode: 'x', intersect: false,
+                itemSort: (a, b) => {
+                  const order = ['完全離脱', '継続中・未実施', 'その週実施'];
+                  const kindOf = (item) => { const m = item.dataset.label.match(/\(([^)]+)\)$/); return m ? order.indexOf(m[1]) : -1; };
+                  return kindOf(a) - kindOf(b);
+                },
                 callbacks: {
+                  title: (items) => {
+                    if (!items || items.length === 0) return '';
+                    const week = items[0].parsed.x;
+                    const seriesIdxSet = [...new Set(items.map(it => it.dataset._churnSeriesIndex))];
+                    if (seriesIdxSet.length === 1) {
+                      const series = churnWeeklyCache[seriesIdxSet[0]];
+                      const weekInfo = series ? series.weekly[items[0].dataIndex] : null;
+                      return `${week}週目 (対象 ${weekInfo ? weekInfo.activeUsers.toLocaleString() : '-'}人)`;
+                    }
+                    return `${week}週目`;
+                  },
                   label: (ctx) => {
-                    if (ctx.dataset.type === 'bar') return `${ctx.dataset.label}: ${ctx.raw.y}人`;
-                    const series = churnWeeklyCache[ctx.datasetIndex];
+                    const series = churnWeeklyCache[ctx.dataset._churnSeriesIndex];
+                    if (ctx.dataset.type === 'bar') {
+                      const m = ctx.dataset.label.match(/\(([^)]+)\)$/);
+                      const kind = m ? m[1] : ctx.dataset.label;
+                      return `${series ? series.label + ' ' : ''}${kind}: ${ctx.raw.y}人`;
+                    }
                     const weekInfo = series ? series.weekly[ctx.dataIndex] : null;
                     const valueText = ctx.raw.y !== null && ctx.raw.y !== undefined ? (metricMode === 'retentionRate' ? `${ctx.raw.y.toFixed(1)}%` : `${ctx.raw.y.toFixed(2)} 日/週`) : '-';
                     return `${series ? series.label : ''}: ${valueText} (対象 ${weekInfo ? weekInfo.activeUsers : 0}人)`;
