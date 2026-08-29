@@ -59,7 +59,7 @@
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">Y軸最大値:</span>
-          <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
+          <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" max="7" step="1">
         </span>
 
         <span class="text-gray-300 mx-1">|</span>
@@ -281,11 +281,18 @@
 
   function onChurnMetricModeChange() {
     // Y軸最大値欄のデフォルト表示(placeholder)・上限を表示中の指標に合わせて切り替える
+    // 利用日数(平均): 1〜7の整数(デフォルト7) / 継続率: 1〜100の整数(デフォルト100)
     const yMaxInput = document.getElementById('churnYMax');
     if (yMaxInput) {
       const isRetentionRate = getChurnMetricMode() === 'retentionRate';
-      yMaxInput.placeholder = isRetentionRate ? '100' : '7';
-      yMaxInput.max = isRetentionRate ? '100' : '7';
+      const newMax = isRetentionRate ? 100 : 7;
+      yMaxInput.placeholder = String(newMax);
+      yMaxInput.max = String(newMax);
+      // 今の入力値が新しい範囲外なら空欄に戻し、デフォルト値(placeholder)を使うようにする
+      const currentVal = yMaxInput.value ? parseInt(yMaxInput.value, 10) : null;
+      if (currentVal !== null && (currentVal < 1 || currentVal > newMax)) {
+        yMaxInput.value = '';
+      }
     }
     renderChurnChart();
   }
