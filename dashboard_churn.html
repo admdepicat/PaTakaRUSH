@@ -86,6 +86,8 @@
     ※背景棒（人数）をクリックすると、その区分（完全離脱／継続中・未実施／その週実施）に該当する具体的なユーザー一覧がポップアップで表示されます。
   </p>
 
+  <div id="churnFirstChurnSummary" class="text-sm font-bold text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 mb-4"></div>
+
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0 chart-container" style="height: 380px;">
       <canvas id="churnWeeklyChart"></canvas>
@@ -404,6 +406,23 @@
       if (!rawData) return;
       const seriesList = computeChurnSeriesList();
       churnWeeklyCache = seriesList;
+
+      // 系列ごとに、「完全離脱」が初めて0人でなくなる週を調べてまとめて表示する
+      const summaryEl = document.getElementById('churnFirstChurnSummary');
+      if (summaryEl) {
+        const summaryLines = seriesList.map(series => {
+          const continuingWeekly = computeChurnWeeklyStatsExcludingChurned(series.genderFilter, series.managedFilter);
+          const continuingByWeek = {};
+          continuingWeekly.forEach(w => { continuingByWeek[w.week] = w.activeUsers; });
+          for (const w of series.weekly) {
+            const continuing = continuingByWeek[w.week] || 0;
+            const churned = Math.max(0, w.activeUsers - continuing);
+            if (churned > 0) return `${series.label}: ${w.week}週目で初めて完全離脱者が発生 (${churned}人)`;
+          }
+          return `${series.label}: 完全離脱者はまだ発生していません`;
+        });
+        summaryEl.innerHTML = summaryLines.join('<br>');
+      }
 
       const metricMode = getChurnMetricMode();
       const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
