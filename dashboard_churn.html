@@ -143,6 +143,13 @@
     <span class="text-gray-500">期間:</span>
     <input type="number" id="churnPairedMonths" value="3" min="1" max="6" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">Y軸:</span>
+    <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" id="churnPairedYMax" value="10" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+
     <span id="churnPairedCount" class="text-gray-600 font-normal"></span>
   </div>
 
@@ -721,7 +728,7 @@
     };
   }
 
-  function renderChurnPairedBoxplot(canvasId, chartKey, pairs) {
+  function renderChurnPairedBoxplot(canvasId, chartKey, pairs, yMin, yMax) {
     const el = document.getElementById(canvasId);
     if (!el) return;
 
@@ -789,7 +796,7 @@
         },
         scales: {
           x: { type: 'linear', min: 0.5, max: 2.5, ticks: { stepSize: 1, callback: (v) => v === 1 ? '最初の週' : (v === 2 ? '最後の週' : '') } },
-          y: { title: { display: true, text: '4文字平均(回/秒)' } }
+          y: { title: { display: true, text: '4文字平均(回/秒)' }, min: yMin, max: yMax, ticks: { stepSize: 1, precision: 0 } }
         }
       }
     });
@@ -803,8 +810,13 @@
     const countEl = document.getElementById('churnPairedCount');
     if (countEl) countEl.textContent = `対象: 0〜3日群 ${lowGroup.length}人 / 4〜7日群 ${highGroup.length}人`;
 
-    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup);
-    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup);
+    const yMinInput = document.getElementById('churnPairedYMin');
+    const yMaxInput = document.getElementById('churnPairedYMax');
+    const yMin = yMinInput && yMinInput.value !== '' ? parseInt(yMinInput.value, 10) : 0;
+    const yMax = yMaxInput && yMaxInput.value !== '' ? parseInt(yMaxInput.value, 10) : 10;
+
+    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup, yMin, yMax);
+    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup, yMin, yMax);
   }
 
   function showChurnHistogram(weekInfo, series) {
