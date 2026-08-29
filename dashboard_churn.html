@@ -115,7 +115,7 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
+    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。折れ線は0〜3日=青4段階/4〜7日=赤4段階と、下のヒートマップと同じ配色で線分ごとに色分けしています。<br>
     ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
   </p>
 
@@ -529,12 +529,17 @@
         points.push({ x: w + 1, y: days });
       }
       const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
-      return {
+      const dataset = {
         type: 'line', label: u.uid, data: points,
         borderColor: isSelected ? '#dc2626' : hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
         borderWidth: isSelected ? 3 : 1, pointRadius: 0, fill: false, tension: 0.2,
         order: isSelected ? -1 : 0 // 選択中の線を他より前面(上)に描画する
       };
+      // 選択中でない線は、ヒートマップと同じ配色(0〜3日=青4段階/4〜7日=赤4段階)で線分ごとに色分けする
+      if (!isSelected) {
+        dataset.segment = { borderColor: (ctx) => churnHeatmapCellColor(ctx.p1.parsed.y, 'redblue') };
+      }
+      return dataset;
     });
     // 選択中の線を配列の末尾に移し、他の薄い線の上に重なって描画されるようにする
     if (churnMultiUserSelectedUid !== null) {
