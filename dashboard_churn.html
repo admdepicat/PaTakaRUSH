@@ -64,6 +64,12 @@
 
         <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
+          <span class="text-gray-500">対象人数Y軸最大値:</span>
+          <input type="number" id="churnCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
+        </span>
+
+        <span class="text-gray-300 mx-1">|</span>
+        <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">週(X軸):</span>
           <input type="number" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
           <span class="text-gray-500">〜</span>
@@ -324,18 +330,39 @@
         };
       });
 
-      // 背景棒: 各系列の対象人数(週ごと)を右軸に薄く重ねて表示する
+      // 背景棒: 各系列の対象人数(週ごと)を右軸に薄く重ねて表示する。「継続中(色塗り)」+「完全離脱(白抜き)」の積み上げにして、
+      // 合計が登録中の人数(=このグラフの対象者数)と一致するようにする
       const showBgBars = document.getElementById('churnChkBgBars') && document.getElementById('churnChkBgBars').checked;
       if (showBgBars) {
-        seriesList.forEach(series => {
-          const barPoints = series.weekly.map(w => ({ x: w.week, y: w.activeUsers }));
+        seriesList.forEach((series, seriesIndex) => {
+          const continuingWeekly = computeChurnWeeklyStatsExcludingChurned(series.genderFilter, series.managedFilter);
+          const continuingByWeek = {};
+          continuingWeekly.forEach(w => { continuingByWeek[w.week] = w.activeUsers; });
+
+          const continuingPoints = [], churnedPoints = [];
+          series.weekly.forEach(w => {
+            const continuing = continuingByWeek[w.week] || 0;
+            const churned = Math.max(0, w.activeUsers - continuing);
+            continuingPoints.push({ x: w.week, y: continuing });
+            churnedPoints.push({ x: w.week, y: churned });
+          });
+
+          const stackKey = `churnCountStack_${seriesIndex}`;
           newDatasets.push({
-            type: 'bar', label: `${series.label}(人数)`, data: barPoints,
-            backgroundColor: hexToRgba(series.color, 0.18), borderColor: hexToRgba(series.color, 0.35), borderWidth: 1,
-            yAxisID: 'yCount', order: 10, barThickness: 6
+            type: 'bar', label: `${series.label}(継続中)`, data: continuingPoints,
+            backgroundColor: hexToRgba(series.color, 0.35), borderColor: hexToRgba(series.color, 0.6), borderWidth: 1,
+            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
+          });
+          newDatasets.push({
+            type: 'bar', label: `${series.label}(完全離脱)`, data: churnedPoints,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)', borderColor: hexToRgba(series.color, 0.6), borderWidth: 1,
+            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
           });
         });
       }
+
+      const countYMaxStr = document.getElementById('churnCountYMax') ? document.getElementById('churnCountYMax').value : '';
+      const countYMax = countYMaxStr ? parseInt(countYMaxStr, 10) : undefined;
 
       if (!charts.churn) {
         charts.churn = new Chart(document.getElementById('churnWeeklyChart'), {
@@ -381,7 +408,7 @@
                 ticks: { precision: 0 }
               },
               y: { title: { display: true, text: yAxisTitle }, min: 0, max: yMax, ticks: { stepSize: yTickStepSize, precision: 0 } },
-              yCount: { position: 'right', title: { display: true, text: '対象人数 (人)' }, min: 0, grid: { drawOnChartArea: false } }
+              yCount: { position: 'right', title: { display: true, text: '対象人数 (人)' }, min: 0, max: countYMax, stacked: true, grid: { drawOnChartArea: false } }
             }
           }
         });
@@ -393,6 +420,7 @@
         chart.options.scales.y.max = yMax;
         chart.options.scales.y.title.text = yAxisTitle;
         chart.options.scales.y.ticks.stepSize = yTickStepSize;
+        chart.options.scales.yCount.max = countYMax;
         chart.update();
       }
 
@@ -407,14 +435,14 @@
         }
       }
 
-      renderChurnChartExcl(metricMode, yAxisTitle, yTickStepSize, xMin, xMax, showBgBars);
+      renderChurnChartExcl(metricMode, yAxisTitle, yTickStepSize, xMin, xMax, showBgBars, countYMax);
     } catch (error) {
       console.error(error);
     }
   }
 
   // 下段: 離脱者(定義③: それ以降ずっと0日のまま終わった人)を除外したグラフ。上のグラフと同じ性別・管理・表示・Y軸・週の設定を使う
-  function renderChurnChartExcl(metricMode, yAxisTitle, yTickStepSize, xMin, xMax, showBgBars) {
+  function renderChurnChartExcl(metricMode, yAxisTitle, yTickStepSize, xMin, xMax, showBgBars, countYMax) {
     const el = document.getElementById('churnWeeklyChartExcl');
     if (!el) return;
 
@@ -477,13 +505,14 @@
               ticks: { precision: 0 }
             },
             y: { title: { display: true, text: yAxisTitle }, min: 0, max: yMax, ticks: { stepSize: yTickStepSize, precision: 0 } },
-            yCount: { position: 'right', title: { display: true, text: '対象人数 (人)' }, min: 0, grid: { drawOnChartArea: false } }
+            yCount: { position: 'right', title: { display: true, text: '対象人数 (人)' }, min: 0, max: countYMax, grid: { drawOnChartArea: false } }
           }
         }
       });
     } else {
       const chart = charts.churnExcl;
       chart.data.datasets = newDatasets;
+      chart.options.scales.yCount.max = countYMax;
       chart.options.scales.x.min = xMin;
       chart.options.scales.x.max = xMax;
       chart.options.scales.y.max = yMax;
