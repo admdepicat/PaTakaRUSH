@@ -38,9 +38,20 @@
         </label>
 
         <span class="text-gray-300 mx-1">|</span>
+        <span class="text-gray-500 mr-1">表示:</span>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnMetricMode" id="churnMetricAvg" onchange="onChurnMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+          <span class="text-gray-700">利用日数(平均)</span>
+        </label>
+        <label class="flex items-center gap-1 cursor-pointer">
+          <input type="radio" name="churnMetricMode" id="churnMetricChurnRate" onchange="onChurnMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600">
+          <span class="text-gray-700">離脱率(0日の割合)</span>
+        </label>
+
+        <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">Y軸最大値:</span>
-          <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" max="7" step="1">
+          <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
         </span>
 
         <span class="text-gray-300 mx-1">|</span>
@@ -56,7 +67,7 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※各ユーザーの初回検査日を基準に、1週間ごとに何日検査を実施したか（最大7日/週）の平均推移を折れ線で表示しています（対象データ: 全期間）。<br>
+    ※各ユーザーの初回検査日を基準に、1週間ごとの「利用日数(平均)」または「離脱率(その週に1日も検査しなかった人の割合)」の推移を折れ線で表示しています（対象データ: 全期間）。<br>
     ※グラフ上の点をクリックすると、右側にその週の利用日数の分布（ヒストグラム）が表示されます。
   </p>
 
@@ -135,9 +146,27 @@
         }
       });
       if (activeUsers === 0) break; // 経過週数はユーザーごとに単調なので、対象者が0になった時点で以降も0
-      weekly.push({ week: w + 1, avg: sumDays / activeUsers, activeUsers: activeUsers, hist: hist });
+      const churnRate = (hist[0] || 0) / activeUsers * 100;
+      weekly.push({ week: w + 1, avg: sumDays / activeUsers, churnRate: churnRate, activeUsers: activeUsers, hist: hist });
     }
     return weekly;
+  }
+
+  // 表示: 利用日数(平均) / 離脱率(0日の割合)
+  function getChurnMetricMode() {
+    if (document.getElementById('churnMetricChurnRate') && document.getElementById('churnMetricChurnRate').checked) return 'churnRate';
+    return 'avg';
+  }
+
+  function onChurnMetricModeChange() {
+    // Y軸最大値欄のデフォルト表示(placeholder)・上限を表示中の指標に合わせて切り替える
+    const yMaxInput = document.getElementById('churnYMax');
+    if (yMaxInput) {
+      const isChurnRate = getChurnMetricMode() === 'churnRate';
+      yMaxInput.placeholder = isChurnRate ? '100' : '7';
+      yMaxInput.max = isChurnRate ? '100' : '7';
+    }
+    renderChurnChart();
   }
 
   // 現在の性別×管理チェックボックスの組み合わせごとに、週次データの系列を生成する
@@ -186,8 +215,11 @@
       const seriesList = computeChurnSeriesList();
       churnWeeklyCache = seriesList;
 
+      const metricMode = getChurnMetricMode();
       const yMaxStr = document.getElementById('churnYMax') ? document.getElementById('churnYMax').value : '';
-      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : 7;
+      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : (metricMode === 'churnRate' ? 100 : 7);
+      const yAxisTitle = metricMode === 'churnRate' ? '離脱率 (%)' : '利用日数 (日/週)';
+      const yTickStepSize = metricMode === 'churnRate' ? 10 : 1;
 
       const xMinStr = document.getElementById('churnXMin') ? document.getElementById('churnXMin').value : '';
       const xMaxStr = document.getElementById('churnXMax') ? document.getElementById('churnXMax').value : '';
@@ -199,7 +231,7 @@
       const xMax = xMaxWeek + 0.5;
 
       const newDatasets = seriesList.map((series, datasetIndex) => {
-        const dataPoints = series.weekly.map(w => ({ x: w.week, y: w.avg }));
+        const dataPoints = series.weekly.map(w => ({ x: w.week, y: metricMode === 'churnRate' ? w.churnRate : w.avg }));
         const pointColors = getChurnPointColors(series.color, dataPoints.length, datasetIndex);
         return {
           label: series.label, data: dataPoints,
@@ -232,7 +264,8 @@
                   label: (ctx) => {
                     const series = churnWeeklyCache[ctx.datasetIndex];
                     const weekInfo = series ? series.weekly[ctx.dataIndex] : null;
-                    return `${series ? series.label : ''}: ${ctx.raw.y !== null && ctx.raw.y !== undefined ? ctx.raw.y.toFixed(2) : '-'} 日/週 (対象 ${weekInfo ? weekInfo.activeUsers : 0}人)`;
+                    const valueText = ctx.raw.y !== null && ctx.raw.y !== undefined ? (metricMode === 'churnRate' ? `${ctx.raw.y.toFixed(1)}%` : `${ctx.raw.y.toFixed(2)} 日/週`) : '-';
+                    return `${series ? series.label : ''}: ${valueText} (対象 ${weekInfo ? weekInfo.activeUsers : 0}人)`;
                   }
                 }
               }
@@ -250,7 +283,7 @@
                 },
                 ticks: { precision: 0 }
               },
-              y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: yMax, ticks: { stepSize: 1, precision: 0 } }
+              y: { title: { display: true, text: yAxisTitle }, min: 0, max: yMax, ticks: { stepSize: yTickStepSize, precision: 0 } }
             }
           }
         });
@@ -260,6 +293,8 @@
         chart.options.scales.x.min = xMin;
         chart.options.scales.x.max = xMax;
         chart.options.scales.y.max = yMax;
+        chart.options.scales.y.title.text = yAxisTitle;
+        chart.options.scales.y.ticks.stepSize = yTickStepSize;
         chart.update();
       }
 
