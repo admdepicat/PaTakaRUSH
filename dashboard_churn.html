@@ -145,6 +145,17 @@
     <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
 
     <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">比較単位:</span>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="radio" name="churnPairedWindow" id="churnPairedWindow1" onchange="renderChurnPairedCharts()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <span>1週間</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="radio" name="churnPairedWindow" id="churnPairedWindow2" onchange="renderChurnPairedCharts()" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <span>2週間平均</span>
+    </label>
+
+    <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
     <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
@@ -710,8 +721,20 @@
   // 指定期間(ヶ月)における各ユーザーの平均利用日数/週で0〜3日群・4〜7日群に分け、
   // それぞれ最初の週・最後の週の4文字平均スコア(scores配列)のペアを集計する
   // 指定した期間(ヶ月)における、各ユーザーの「平均利用日数/週」と、最初の週・最後の週の4文字平均スコアのペアを一括計算する
-  function computeChurnPairedUserStats(months) {
+  // scores配列のうち、[startWeek, startWeek+windowWeeks)の範囲のnullでない値を単純平均する
+  function churnAvgScoresInWindow(scores, startWeek, windowWeeks) {
+    const values = [];
+    for (let w = startWeek; w < startWeek + windowWeeks; w++) {
+      const v = scores[w];
+      if (v !== null && v !== undefined) values.push(v);
+    }
+    if (values.length === 0) return null;
+    return values.reduce((s, v) => s + v, 0) / values.length;
+  }
+
+  function computeChurnPairedUserStats(months, windowWeeks) {
     const weeks = Math.max(1, Math.min(6, months || 1)) * CHURN_WEEKS_PER_MONTH;
+    const win = Math.max(1, windowWeeks || 1);
     const users = getChurnMultiUserFilteredUsers();
     const stats = [];
     users.forEach(u => {
@@ -720,9 +743,9 @@
       let sum = 0;
       for (let w = 0; w < weeks; w++) sum += (u.data[w] || 0);
       const avgDays = sum / weeks;
-      const firstScore = u.scores[0];
-      const lastScore = u.scores[weeks - 1];
-      if (firstScore === null || firstScore === undefined || lastScore === null || lastScore === undefined) return;
+      const firstScore = churnAvgScoresInWindow(u.scores, 0, win);
+      const lastScore = churnAvgScoresInWindow(u.scores, weeks - win, win);
+      if (firstScore === null || lastScore === null) return;
       stats.push({ uid: u.uid, avgDays: avgDays, first: firstScore, last: lastScore });
     });
     return { stats, weeks };
@@ -810,7 +833,7 @@
     return `p = ${p.toFixed(3)}`;
   }
 
-  function renderChurnPairedBoxplot(canvasId, chartKey, pairs, yMin, yMax) {
+  function renderChurnPairedBoxplot(canvasId, chartKey, pairs, yMin, yMax, xLabels) {
     const el = document.getElementById(canvasId);
     if (!el) return;
 
@@ -908,7 +931,7 @@
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
         },
         scales: {
-          x: { type: 'linear', min: 0.5, max: 2.5, ticks: { stepSize: 1, callback: (v) => v === 1 ? '最初の週' : (v === 2 ? '最後の週' : '') } },
+          x: { type: 'linear', min: 0.5, max: 2.5, ticks: { stepSize: 1, callback: (v) => v === 1 ? xLabels[0] : (v === 2 ? xLabels[1] : '') } },
           y: { title: { display: true, text: '4文字平均(回/秒)' }, min: yMin, max: yMax, ticks: { stepSize: 1, precision: 0 } }
         }
       }
@@ -918,7 +941,9 @@
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
-    const { stats } = computeChurnPairedUserStats(months);
+    const windowWeeks = document.getElementById('churnPairedWindow2') && document.getElementById('churnPairedWindow2').checked ? 2 : 1;
+    const windowLabel = windowWeeks === 2 ? '最初の2週間平均 → 最後の2週間平均' : '最初の週 → 最後の週';
+    const { stats } = computeChurnPairedUserStats(months, windowWeeks);
 
     const getRangeInput = (id, fallback) => {
       const el = document.getElementById(id);
@@ -936,7 +961,7 @@
     const highLabel = `${Math.min(highMin, highMax)}〜${Math.max(highMin, highMax)}日群`;
 
     const titleEl = document.getElementById('churnPairedTitle');
-    if (titleEl) titleEl.textContent = `4文字平均の変化 (最初の週 → 最後の週、${lowLabel}/${highLabel}別)`;
+    if (titleEl) titleEl.textContent = `4文字平均の変化 (${windowLabel}、${lowLabel}/${highLabel}別)`;
     const lowLabelEl = document.getElementById('churnPairedLowLabel');
     if (lowLabelEl) lowLabelEl.textContent = lowLabel;
     const highLabelEl = document.getElementById('churnPairedHighLabel');
@@ -951,8 +976,9 @@
     const yMin = yMinInput && yMinInput.value !== '' ? parseInt(yMinInput.value, 10) : 0;
     const yMax = yMaxInput && yMaxInput.value !== '' ? parseInt(yMaxInput.value, 10) : 10;
 
-    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup, yMin, yMax);
-    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup, yMin, yMax);
+    const xLabels = windowWeeks === 2 ? ['最初の2週間', '最後の2週間'] : ['最初の週', '最後の週'];
+    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup, yMin, yMax, xLabels);
+    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup, yMin, yMax, xLabels);
   }
 
   function showChurnHistogram(weekInfo, series) {
