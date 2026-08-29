@@ -145,32 +145,39 @@
     <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span class="text-gray-500">境界(低群の上限日数):</span>
-    <input type="number" id="churnPairedThreshold" value="3" min="0" max="6" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-    <span class="text-gray-500">日</span>
-
-    <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
     <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedYMax" value="10" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-
-    <span id="churnPairedCount" class="text-gray-600 font-normal"></span>
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※指定した期間における「平均利用日数/週」が「境界」以下のユーザーを低群、それを超えるユーザーを高群に分け、それぞれ最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。灰色の線は同一ユーザーの変化、黒い太線は2群の中央値同士を結んだ線です。上部のp値は、最初の週と最後の週の差についての対応のあるt検定の結果です。
+    ※指定した期間における「平均利用日数/週」が、左右それぞれで指定した範囲に該当するユーザーを対象に、最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。左右の範囲は連続している必要はなく、独立して指定できます。灰色の線は同一ユーザーの変化、黒い太線は2群の中央値同士を結んだ線です。上部のp値は、最初の週と最後の週の差についての対応のあるt検定の結果です。
   </p>
 
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
-      <h4 id="churnPairedLowLabel" class="text-sm font-bold text-gray-700 mb-2">0〜3日群</h4>
+      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+        <span id="churnPairedLowLabel">0〜3日群</span>
+        <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+        <span class="text-gray-500">〜</span>
+        <input type="number" id="churnPairedLowMax" value="3" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+        <span class="text-gray-500">日</span>
+        <span id="churnPairedLowCount" class="text-gray-500 font-normal"></span>
+      </div>
       <div class="chart-container" style="height: 380px;">
         <canvas id="churnPairedBoxLow"></canvas>
       </div>
     </div>
     <div class="flex-1 min-w-0">
-      <h4 id="churnPairedHighLabel" class="text-sm font-bold text-gray-700 mb-2">4〜7日群</h4>
+      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+        <span id="churnPairedHighLabel">4〜7日群</span>
+        <input type="number" id="churnPairedHighMin" value="4" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+        <span class="text-gray-500">〜</span>
+        <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+        <span class="text-gray-500">日</span>
+        <span id="churnPairedHighCount" class="text-gray-500 font-normal"></span>
+      </div>
       <div class="chart-container" style="height: 380px;">
         <canvas id="churnPairedBoxHigh"></canvas>
       </div>
@@ -702,11 +709,11 @@
 
   // 指定期間(ヶ月)における各ユーザーの平均利用日数/週で0〜3日群・4〜7日群に分け、
   // それぞれ最初の週・最後の週の4文字平均スコア(scores配列)のペアを集計する
-  function computeChurnPairedGroupData(months, threshold) {
+  // 指定した期間(ヶ月)における、各ユーザーの「平均利用日数/週」と、最初の週・最後の週の4文字平均スコアのペアを一括計算する
+  function computeChurnPairedUserStats(months) {
     const weeks = Math.max(1, Math.min(6, months || 1)) * CHURN_WEEKS_PER_MONTH;
-    const th = Math.max(0, Math.min(6, threshold !== undefined && threshold !== null ? threshold : 3));
-    const lowGroup = [], highGroup = [];
     const users = getChurnMultiUserFilteredUsers();
+    const stats = [];
     users.forEach(u => {
       if (!u.data || !u.scores) return;
       if (u.accountAgeDays < weeks * 7) return; // 指定期間分のデータが無い人は除外
@@ -716,10 +723,18 @@
       const firstScore = u.scores[0];
       const lastScore = u.scores[weeks - 1];
       if (firstScore === null || firstScore === undefined || lastScore === null || lastScore === undefined) return;
-      const pair = { uid: u.uid, first: firstScore, last: lastScore };
-      if (avgDays <= th) lowGroup.push(pair); else highGroup.push(pair);
+      stats.push({ uid: u.uid, avgDays: avgDays, first: firstScore, last: lastScore });
     });
-    return { lowGroup, highGroup, weeks, threshold: th };
+    return { stats, weeks };
+  }
+
+  // 平均利用日数/週が[rangeMin, rangeMax]の範囲(両端含む)に該当するユーザーのペアだけを抽出する
+  function filterChurnPairedGroup(stats, rangeMin, rangeMax) {
+    const lo = Math.max(0, Math.min(7, rangeMin));
+    const hi = Math.max(0, Math.min(7, rangeMax));
+    return stats
+      .filter(s => s.avgDays >= Math.min(lo, hi) && s.avgDays <= Math.max(lo, hi))
+      .map(s => ({ uid: s.uid, first: s.first, last: s.last }));
   }
 
   function churnComputeBoxStats(values) {
@@ -903,12 +918,22 @@
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
-    const thresholdInput = document.getElementById('churnPairedThreshold');
-    const threshold = thresholdInput && thresholdInput.value !== '' ? parseInt(thresholdInput.value, 10) : 3;
-    const { lowGroup, highGroup, threshold: th } = computeChurnPairedGroupData(months, threshold);
+    const { stats } = computeChurnPairedUserStats(months);
 
-    const lowLabel = `0〜${th}日群`;
-    const highLabel = th >= 7 ? '(該当なし)' : `${th + 1}〜7日群`;
+    const getRangeInput = (id, fallback) => {
+      const el = document.getElementById(id);
+      return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
+    };
+    const lowMin = getRangeInput('churnPairedLowMin', 0);
+    const lowMax = getRangeInput('churnPairedLowMax', 3);
+    const highMin = getRangeInput('churnPairedHighMin', 4);
+    const highMax = getRangeInput('churnPairedHighMax', 7);
+
+    const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
+    const highGroup = filterChurnPairedGroup(stats, highMin, highMax);
+
+    const lowLabel = `${Math.min(lowMin, lowMax)}〜${Math.max(lowMin, lowMax)}日群`;
+    const highLabel = `${Math.min(highMin, highMax)}〜${Math.max(highMin, highMax)}日群`;
 
     const titleEl = document.getElementById('churnPairedTitle');
     if (titleEl) titleEl.textContent = `4文字平均の変化 (最初の週 → 最後の週、${lowLabel}/${highLabel}別)`;
@@ -916,9 +941,10 @@
     if (lowLabelEl) lowLabelEl.textContent = lowLabel;
     const highLabelEl = document.getElementById('churnPairedHighLabel');
     if (highLabelEl) highLabelEl.textContent = highLabel;
-
-    const countEl = document.getElementById('churnPairedCount');
-    if (countEl) countEl.textContent = `対象: ${lowLabel} ${lowGroup.length}人 / ${highLabel} ${highGroup.length}人`;
+    const lowCountEl = document.getElementById('churnPairedLowCount');
+    if (lowCountEl) lowCountEl.textContent = `対象: ${lowGroup.length}人`;
+    const highCountEl = document.getElementById('churnPairedHighCount');
+    if (highCountEl) highCountEl.textContent = `対象: ${highGroup.length}人`;
 
     const yMinInput = document.getElementById('churnPairedYMin');
     const yMaxInput = document.getElementById('churnPairedYMax');
