@@ -132,6 +132,11 @@
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (緑・利用日数が多いほど濃い)</h3>
   <div id="churnHeatmapContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
+  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">折れ線グラフ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
+  <div class="chart-container" style="height: 380px; max-width: 900px;">
+    <canvas id="churnMultiUserLineChartRedBlue"></canvas>
+  </div>
+
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
@@ -519,8 +524,8 @@
 
   let churnMultiUserSelectedUid = null; // ヒートマップでクリックして選択中のuid
 
-  function renderChurnMultiUserLineChart(users) {
-    const el = document.getElementById('churnMultiUserLineChart');
+  function renderChurnMultiUserLineChart(users, chartKey, elementId, colorMode) {
+    const el = document.getElementById(elementId);
     if (!el) return;
     const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
 
@@ -531,12 +536,16 @@
         points.push({ x: w + 1, y: days });
       }
       const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
-      return {
+      const dataset = {
         type: 'line', label: u.uid, data: points,
         borderColor: isSelected ? '#dc2626' : hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
         borderWidth: isSelected ? 3 : 1, pointRadius: 0, fill: false, tension: 0.2,
         order: isSelected ? -1 : 0 // 選択中の線を他より前面(上)に描画する
       };
+      if (!isSelected && colorMode === 'redblue') {
+        dataset.segment = { borderColor: (ctx) => churnHeatmapCellColor(ctx.p1.parsed.y, 'redblue') };
+      }
+      return dataset;
     });
     // 選択中の線を配列の末尾に移し、他の薄い線の上に重なって描画されるようにする
     if (churnMultiUserSelectedUid !== null) {
@@ -544,8 +553,8 @@
       if (selectedIndex >= 0) newDatasets.push(newDatasets.splice(selectedIndex, 1)[0]);
     }
 
-    if (!charts.churnMultiUserLine) {
-      charts.churnMultiUserLine = new Chart(el, {
+    if (!charts[chartKey]) {
+      charts[chartKey] = new Chart(el, {
         type: 'line',
         data: { datasets: newDatasets },
         options: {
@@ -561,8 +570,8 @@
         }
       });
     } else {
-      charts.churnMultiUserLine.data.datasets = newDatasets;
-      charts.churnMultiUserLine.update();
+      charts[chartKey].data.datasets = newDatasets;
+      charts[chartKey].update();
     }
   }
 
@@ -641,8 +650,9 @@
     const heatmapCountEl = document.getElementById('churnHeatmapCount');
     if (heatmapCountEl) heatmapCountEl.textContent = `ヒートマップ対象: ${users.length}人`;
     updateChurnMultiUserSelectCaption();
-    renderChurnMultiUserLineChart(users);
+    renderChurnMultiUserLineChart(users, 'churnMultiUserLine', 'churnMultiUserLineChart', 'green');
     renderChurnHeatmap(users, 'churnHeatmapContainer', 'green');
+    renderChurnMultiUserLineChart(users, 'churnMultiUserLineRedBlue', 'churnMultiUserLineChartRedBlue', 'redblue');
     renderChurnHeatmap(users, 'churnHeatmapRedBlueContainer', 'redblue');
   }
 
