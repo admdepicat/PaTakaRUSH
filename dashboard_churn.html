@@ -154,7 +154,7 @@
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※指定した期間における「平均利用日数/週」が0〜3日のユーザーを「0〜3日群」、4〜7日のユーザーを「4〜7日群」に分け、それぞれ最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。灰色の線は同一ユーザーの変化を表します。
+    ※指定した期間における「平均利用日数/週」が0〜3日のユーザーを「0〜3日群」、4〜7日のユーザーを「4〜7日群」に分け、それぞれ最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。灰色の線は同一ユーザーの変化、黒い太線は2群の中央値同士を結んだ線です。上部のp値は、最初の週と最後の週の差についての対応のあるt検定の結果です。
   </p>
 
   <div class="flex flex-col lg:flex-row gap-6">
@@ -728,6 +728,67 @@
     };
   }
 
+  // ===== 対応のあるt検定のp値計算(不完全ベータ関数による近似、Numerical Recipes方式) =====
+  function churnLogGamma(x) {
+    const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    let y = x, tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    let ser = 1.000000000190015;
+    for (let j = 0; j < 6; j++) { y += 1; ser += cof[j] / y; }
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+
+  function churnBetacf(x, a, b) {
+    const MAXIT = 200, EPS = 3e-7, FPMIN = 1e-30;
+    const qab = a + b, qap = a + 1, qam = a - 1;
+    let c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d;
+    let h = d;
+    for (let m = 1; m <= MAXIT; m++) {
+      const m2 = 2 * m;
+      let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      const del = d * c; h *= del;
+      if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+  }
+
+  function churnIncompleteBeta(x, a, b) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    const bt = Math.exp(churnLogGamma(a + b) - churnLogGamma(a) - churnLogGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * churnBetacf(x, a, b) / a;
+    return 1 - bt * churnBetacf(1 - x, b, a) / b;
+  }
+
+  // 対応のある(paired)t検定の両側p値。差の配列を受け取る
+  function churnPairedTTestPValue(diffs) {
+    const n = diffs.length;
+    if (n < 2) return null;
+    const mean = diffs.reduce((s, v) => s + v, 0) / n;
+    const variance = diffs.reduce((s, v) => s + (v - mean) * (v - mean), 0) / (n - 1);
+    const sd = Math.sqrt(variance);
+    if (sd === 0) return mean === 0 ? 1 : 0;
+    const t = mean / (sd / Math.sqrt(n));
+    const df = n - 1;
+    const x = df / (df + t * t);
+    return churnIncompleteBeta(x, df / 2, 0.5);
+  }
+
+  function churnFormatPValue(p) {
+    if (p === null || p === undefined || isNaN(p)) return '';
+    if (p < 0.001) return 'p < 0.001';
+    return `p = ${p.toFixed(3)}`;
+  }
+
   function renderChurnPairedBoxplot(canvasId, chartKey, pairs, yMin, yMax) {
     const el = document.getElementById(canvasId);
     if (!el) return;
@@ -742,6 +803,8 @@
     const lastValues = pairs.map(p => p.last);
     const statsFirst = churnComputeBoxStats(firstValues);
     const statsLast = churnComputeBoxStats(lastValues);
+    const pValue = churnPairedTTestPValue(pairs.map(p => p.last - p.first));
+    const pValueText = churnFormatPValue(pValue);
     const COLOR_FIRST = '#f87171', COLOR_LAST = '#22d3ee';
 
     const lineDatasets = pairs.map(p => ({
@@ -781,6 +844,34 @@
         };
         drawBox(1, statsFirst, COLOR_FIRST);
         drawBox(2, statsLast, COLOR_LAST);
+
+        // 2群の中央値同士を結ぶ線
+        if (statsFirst && statsLast) {
+          ctx.save();
+          ctx.strokeStyle = '#111827'; ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(xScale.getPixelForValue(1), yScale.getPixelForValue(statsFirst.median));
+          ctx.lineTo(xScale.getPixelForValue(2), yScale.getPixelForValue(statsLast.median));
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 対応のあるt検定のp値をブラケット付きで表示
+        if (pValueText) {
+          const x1 = xScale.getPixelForValue(1), x2 = xScale.getPixelForValue(2);
+          const yBracket = chartArea.top + 18;
+          ctx.save();
+          ctx.strokeStyle = '#374151'; ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x1, yBracket + 8); ctx.lineTo(x1, yBracket);
+          ctx.lineTo(x2, yBracket); ctx.lineTo(x2, yBracket + 8);
+          ctx.stroke();
+          ctx.fillStyle = '#374151';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(pValueText, (x1 + x2) / 2, yBracket - 4);
+          ctx.restore();
+        }
       }
     };
 
@@ -790,6 +881,7 @@
       plugins: [boxPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 28 } },
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
