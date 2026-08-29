@@ -110,6 +110,8 @@
     <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="renderChurnMultiUserCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span id="churnMultiUserCount" class="text-emerald-600"></span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="churnHeatmapCount" class="text-emerald-600"></span>
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
@@ -572,6 +574,8 @@
     const users = getChurnMultiUserFilteredUsers();
     const countEl = document.getElementById('churnMultiUserCount');
     if (countEl) countEl.textContent = `対象: ${users.length}人`;
+    const heatmapCountEl = document.getElementById('churnHeatmapCount');
+    if (heatmapCountEl) heatmapCountEl.textContent = `ヒートマップ対象: ${users.length}人`;
     renderChurnMultiUserLineChart(users);
     renderChurnHeatmap(users);
   }
