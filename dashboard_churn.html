@@ -122,6 +122,27 @@
     <canvas id="churnUserChart"></canvas>
   </div>
 
+  <hr class="my-8 border-gray-200">
+
+  <h2 class="text-lg font-bold text-gray-800 mb-4">複数ユーザーの利用頻度推移 (0回が続いた人を除外)</h2>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">0回が</span>
+    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="renderChurnMultiUserCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週以上続いた人を除外</span>
+    <span id="churnMultiUserCount" class="text-emerald-600"></span>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-6">
+    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。
+  </p>
+
+  <div class="chart-container" style="height: 380px; max-width: 900px;">
+    <canvas id="churnMultiUserLineChart"></canvas>
+  </div>
+
+  <div id="churnHeatmapContainer" class="mt-6" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
+
 </div>
 
 <script>
@@ -471,6 +492,7 @@
 
       populateChurnUserSelect();
       renderChurnUserChart();
+      renderChurnMultiUserCharts();
     } catch (error) {
       console.error(error);
     }
@@ -541,6 +563,105 @@
       charts.churnUser.data.datasets = [newDataset];
       charts.churnUser.update();
     }
+  }
+
+  // ===== 複数ユーザーの利用頻度推移 (0回が続いた人を除外) =====
+  // 指定した週数分の範囲(0始まりインデックス)で、0回の週がthreshold週以上連続しているかどうかを判定する
+  function churnHasLongZeroStreak(user, weeksToCheck, threshold) {
+    let streak = 0;
+    for (let w = 0; w < weeksToCheck; w++) {
+      const days = (user.data && user.data[w]) ? user.data[w] : 0;
+      if (days === 0) {
+        streak++;
+        if (streak >= threshold) return true;
+      } else {
+        streak = 0;
+      }
+    }
+    return false;
+  }
+
+  function getChurnMultiUserFilteredUsers() {
+    if (!rawData || !rawData.usersChurn) return [];
+    const thresholdInput = document.getElementById('churnGapWeeksThreshold');
+    const threshold = thresholdInput && thresholdInput.value ? Math.max(1, parseInt(thresholdInput.value, 10)) : 4;
+    const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
+    return rawData.usersChurn
+      .filter(u => u.accountAgeDays >= weeksToCheck * 7)
+      .filter(u => !churnHasLongZeroStreak(u, weeksToCheck, threshold))
+      .sort((a, b) => (a.uid || '').localeCompare(b.uid || '', 'ja'));
+  }
+
+  function renderChurnMultiUserLineChart(users) {
+    const el = document.getElementById('churnMultiUserLineChart');
+    if (!el) return;
+    const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
+
+    const newDatasets = users.map(u => {
+      const points = [];
+      for (let w = 0; w < weeksToCheck; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        points.push({ x: w + 1, y: days });
+      }
+      return {
+        type: 'line', label: u.uid, data: points,
+        borderColor: hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
+        borderWidth: 1, pointRadius: 0, fill: false, tension: 0.2
+      };
+    });
+
+    if (!charts.churnMultiUserLine) {
+      charts.churnMultiUserLine = new Chart(el, {
+        type: 'line',
+        data: { datasets: newDatasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y}日` } }
+          },
+          scales: {
+            x: { type: 'linear', title: { display: true, text: '週目' }, min: 0.5, max: weeksToCheck + 0.5, ticks: { stepSize: 1, precision: 0 } },
+            y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: 7, ticks: { stepSize: 1, precision: 0 } }
+          }
+        }
+      });
+    } else {
+      charts.churnMultiUserLine.data.datasets = newDatasets;
+      charts.churnMultiUserLine.update();
+    }
+  }
+
+  function renderChurnHeatmap(users) {
+    const container = document.getElementById('churnHeatmapContainer');
+    if (!container) return;
+    const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
+
+    let html = '<table class="text-xs border-collapse"><thead><tr>' +
+      '<th class="sticky left-0 top-0 bg-white px-2 py-1 text-left border-b border-r border-gray-200 z-10">uid</th>';
+    for (let w = 1; w <= weeksToCheck; w++) {
+      html += `<th class="sticky top-0 bg-white px-1 py-1 text-center border-b border-gray-200" style="min-width:22px;">${w}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    users.forEach(u => {
+      html += `<tr><td class="sticky left-0 bg-white px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10">${u.uid}</td>`;
+      for (let w = 0; w < weeksToCheck; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        const alpha = days / 7;
+        html += `<td class="text-center border-b border-gray-100" style="background-color:${hexToRgba('#059669', alpha)}; min-width:22px; height:18px;" title="${u.uid} ${w + 1}週目: ${days}日">${days > 0 ? days : ''}</td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  function renderChurnMultiUserCharts() {
+    const users = getChurnMultiUserFilteredUsers();
+    const countEl = document.getElementById('churnMultiUserCount');
+    if (countEl) countEl.textContent = `対象: ${users.length}人`;
+    renderChurnMultiUserLineChart(users);
+    renderChurnHeatmap(users);
   }
 
   function showChurnHistogram(weekInfo, series) {
