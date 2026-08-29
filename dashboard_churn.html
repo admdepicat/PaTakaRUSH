@@ -406,7 +406,8 @@
         };
       });
 
-      // 背景棒: 各系列の対象人数(週ごと)を右軸に薄く重ねて表示する。「継続中(色塗り)」+「完全離脱(白抜き)」の積み上げにして、
+      // 背景棒: 各系列の対象人数(週ごと)を右軸に3段積み上げで表示する。下から
+      // 「その週に実際に検査した人(濃い色)」+「継続中だがその週は未実施の人(薄い色)」+「完全離脱(白抜き)」。
       // 合計が登録中の人数(=このグラフの対象者数)と一致するようにする
       const showBgBars = document.getElementById('churnChkBgBars') && document.getElementById('churnChkBgBars').checked;
       if (showBgBars) {
@@ -415,18 +416,26 @@
           const continuingByWeek = {};
           continuingWeekly.forEach(w => { continuingByWeek[w.week] = w.activeUsers; });
 
-          const continuingPoints = [], churnedPoints = [];
+          const testedPoints = [], continuingIdlePoints = [], churnedPoints = [];
           series.weekly.forEach(w => {
             const continuing = continuingByWeek[w.week] || 0;
+            const tested = Math.max(0, w.activeUsers - (w.hist[0] || 0)); // その週に1日以上検査した人(登録中の人数のうち)
+            const continuingIdle = Math.max(0, continuing - tested); // 継続中だが、その週はたまたま未実施だった人
             const churned = Math.max(0, w.activeUsers - continuing);
-            continuingPoints.push({ x: w.week, y: continuing });
+            testedPoints.push({ x: w.week, y: tested });
+            continuingIdlePoints.push({ x: w.week, y: continuingIdle });
             churnedPoints.push({ x: w.week, y: churned });
           });
 
           const stackKey = `churnCountStack_${seriesIndex}`;
           newDatasets.push({
-            type: 'bar', label: `${series.label}(継続中)`, data: continuingPoints,
-            backgroundColor: hexToRgba(series.color, 0.35), borderColor: hexToRgba(series.color, 0.6), borderWidth: 1,
+            type: 'bar', label: `${series.label}(その週実施)`, data: testedPoints,
+            backgroundColor: hexToRgba(series.color, 0.75), borderColor: hexToRgba(series.color, 0.9), borderWidth: 1,
+            yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
+          });
+          newDatasets.push({
+            type: 'bar', label: `${series.label}(継続中・未実施)`, data: continuingIdlePoints,
+            backgroundColor: hexToRgba(series.color, 0.2), borderColor: hexToRgba(series.color, 0.4), borderWidth: 1,
             yAxisID: 'yCount', order: 10, barThickness: 6, stack: stackKey
           });
           newDatasets.push({
