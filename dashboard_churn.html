@@ -137,6 +137,34 @@
     <canvas id="churnMultiUserLineChartRedBlue"></canvas>
   </div>
 
+  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">4文字平均の変化 (最初の週 → 最後の週、0〜3日群/4〜7日群別)</h3>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">期間:</span>
+    <input type="number" id="churnPairedMonths" value="3" min="1" max="6" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
+    <span id="churnPairedCount" class="text-gray-600 font-normal"></span>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-6">
+    ※指定した期間における「平均利用日数/週」が0〜3日のユーザーを「0〜3日群」、4〜7日のユーザーを「4〜7日群」に分け、それぞれ最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。灰色の線は同一ユーザーの変化を表します。
+  </p>
+
+  <div class="flex flex-col lg:flex-row gap-6">
+    <div class="flex-1 min-w-0">
+      <h4 class="text-sm font-bold text-gray-700 mb-2">0〜3日群</h4>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnPairedBoxLow"></canvas>
+      </div>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h4 class="text-sm font-bold text-gray-700 mb-2">4〜7日群</h4>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnPairedBoxHigh"></canvas>
+      </div>
+    </div>
+  </div>
+
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
@@ -654,6 +682,129 @@
     renderChurnHeatmap(users, 'churnHeatmapContainer', 'green');
     renderChurnMultiUserLineChart(users, 'churnMultiUserLineRedBlue', 'churnMultiUserLineChartRedBlue', 'redblue');
     renderChurnHeatmap(users, 'churnHeatmapRedBlueContainer', 'redblue');
+    renderChurnPairedCharts();
+  }
+
+  // ===== 4文字平均の変化 (最初の週 → 最後の週、0〜3日群/4〜7日群別) =====
+  const CHURN_WEEKS_PER_MONTH = 4; // 簡略化のため1ヶ月=4週間として換算する
+
+  // 指定期間(ヶ月)における各ユーザーの平均利用日数/週で0〜3日群・4〜7日群に分け、
+  // それぞれ最初の週・最後の週の4文字平均スコア(scores配列)のペアを集計する
+  function computeChurnPairedGroupData(months) {
+    const weeks = Math.max(1, Math.min(6, months || 1)) * CHURN_WEEKS_PER_MONTH;
+    const lowGroup = [], highGroup = [];
+    const users = getChurnMultiUserFilteredUsers();
+    users.forEach(u => {
+      if (!u.data || !u.scores) return;
+      if (u.accountAgeDays < weeks * 7) return; // 指定期間分のデータが無い人は除外
+      let sum = 0;
+      for (let w = 0; w < weeks; w++) sum += (u.data[w] || 0);
+      const avgDays = sum / weeks;
+      const firstScore = u.scores[0];
+      const lastScore = u.scores[weeks - 1];
+      if (firstScore === null || firstScore === undefined || lastScore === null || lastScore === undefined) return;
+      const pair = { uid: u.uid, first: firstScore, last: lastScore };
+      if (avgDays <= 3) lowGroup.push(pair); else highGroup.push(pair);
+    });
+    return { lowGroup, highGroup, weeks };
+  }
+
+  function churnComputeBoxStats(values) {
+    if (!values || values.length === 0) return null;
+    const pairs = values.map(v => [v, 1]);
+    return {
+      min: Math.min(...values),
+      q1: weightedPercentile(pairs, 0.25),
+      median: weightedPercentile(pairs, 0.5),
+      q3: weightedPercentile(pairs, 0.75),
+      max: Math.max(...values)
+    };
+  }
+
+  function renderChurnPairedBoxplot(canvasId, chartKey, pairs) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+
+    if (charts[chartKey]) {
+      charts[chartKey].destroy();
+      charts[chartKey] = null;
+    }
+    if (!pairs || pairs.length === 0) return;
+
+    const firstValues = pairs.map(p => p.first);
+    const lastValues = pairs.map(p => p.last);
+    const statsFirst = churnComputeBoxStats(firstValues);
+    const statsLast = churnComputeBoxStats(lastValues);
+    const COLOR_FIRST = '#f87171', COLOR_LAST = '#22d3ee';
+
+    const lineDatasets = pairs.map(p => ({
+      type: 'line', label: p.uid, data: [{ x: 1, y: p.first }, { x: 2, y: p.last }],
+      borderColor: 'rgba(156, 163, 175, 0.5)', borderWidth: 1,
+      pointRadius: 3, pointHoverRadius: 5,
+      pointBackgroundColor: (ctx) => ctx.dataIndex === 0 ? COLOR_FIRST : COLOR_LAST,
+      pointBorderColor: (ctx) => ctx.dataIndex === 0 ? COLOR_FIRST : COLOR_LAST,
+      fill: false, tension: 0, order: 1
+    }));
+
+    const boxPlugin = {
+      id: `churnBoxPlugin_${canvasId}`,
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea } = chart;
+        const xScale = chart.scales.x, yScale = chart.scales.y;
+        const boxWidth = 44;
+        const drawBox = (x, stats, color) => {
+          if (!stats) return;
+          const xPix = xScale.getPixelForValue(x);
+          const yQ1 = yScale.getPixelForValue(stats.q1);
+          const yQ3 = yScale.getPixelForValue(stats.q3);
+          const yMed = yScale.getPixelForValue(stats.median);
+          const yMin = yScale.getPixelForValue(stats.min);
+          const yMax = yScale.getPixelForValue(stats.max);
+          ctx.save();
+          ctx.strokeStyle = color; ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(xPix, yMax); ctx.lineTo(xPix, yQ3);
+          ctx.moveTo(xPix, yQ1); ctx.lineTo(xPix, yMin);
+          ctx.stroke();
+          ctx.strokeRect(xPix - boxWidth / 2, yQ3, boxWidth, yQ1 - yQ3);
+          ctx.beginPath();
+          ctx.moveTo(xPix - boxWidth / 2, yMed); ctx.lineTo(xPix + boxWidth / 2, yMed);
+          ctx.stroke();
+          ctx.restore();
+        };
+        drawBox(1, statsFirst, COLOR_FIRST);
+        drawBox(2, statsLast, COLOR_LAST);
+      }
+    };
+
+    charts[chartKey] = new Chart(el, {
+      type: 'line',
+      data: { datasets: lineDatasets },
+      plugins: [boxPlugin],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
+        },
+        scales: {
+          x: { type: 'linear', min: 0.5, max: 2.5, ticks: { stepSize: 1, callback: (v) => v === 1 ? '最初の週' : (v === 2 ? '最後の週' : '') } },
+          y: { title: { display: true, text: '4文字平均(回/秒)' } }
+        }
+      }
+    });
+  }
+
+  function renderChurnPairedCharts() {
+    const monthsInput = document.getElementById('churnPairedMonths');
+    const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
+    const { lowGroup, highGroup } = computeChurnPairedGroupData(months);
+
+    const countEl = document.getElementById('churnPairedCount');
+    if (countEl) countEl.textContent = `対象: 0〜3日群 ${lowGroup.length}人 / 4〜7日群 ${highGroup.length}人`;
+
+    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup);
+    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup);
   }
 
   function showChurnHistogram(weekInfo, series) {
