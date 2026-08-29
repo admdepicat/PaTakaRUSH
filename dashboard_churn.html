@@ -279,21 +279,30 @@
     return 'avg';
   }
 
+  // 表示モードごとに、直前に入力していたY軸最大値を覚えておく(切り替えるたびに毎回消えると不便なため)
+  let churnYMaxByMode = { avg: '', retentionRate: '' };
+  let churnPrevMetricMode = 'avg';
+
   function onChurnMetricModeChange() {
     // Y軸最大値欄のデフォルト表示(placeholder)・上限を表示中の指標に合わせて切り替える
     // 利用日数(平均): 1〜7の整数(デフォルト7) / 継続率: 1〜100の整数(デフォルト100)
     const yMaxInput = document.getElementById('churnYMax');
+    const newMode = getChurnMetricMode();
     if (yMaxInput) {
-      const isRetentionRate = getChurnMetricMode() === 'retentionRate';
+      // 切り替え前のモードで入力していた値を保存しておく
+      churnYMaxByMode[churnPrevMetricMode] = yMaxInput.value;
+
+      const isRetentionRate = newMode === 'retentionRate';
       const newMax = isRetentionRate ? 100 : 7;
       yMaxInput.placeholder = String(newMax);
       yMaxInput.max = String(newMax);
-      // 今の入力値が新しい範囲外なら空欄に戻し、デフォルト値(placeholder)を使うようにする
-      const currentVal = yMaxInput.value ? parseInt(yMaxInput.value, 10) : null;
-      if (currentVal !== null && (currentVal < 1 || currentVal > newMax)) {
-        yMaxInput.value = '';
-      }
+
+      // 新しいモードで以前入力していた値があれば復元し、無ければ空欄(デフォルト)に戻す
+      const remembered = churnYMaxByMode[newMode];
+      const rememberedNum = remembered ? parseInt(remembered, 10) : null;
+      yMaxInput.value = (rememberedNum !== null && rememberedNum >= 1 && rememberedNum <= newMax) ? remembered : '';
     }
+    churnPrevMetricMode = newMode;
     renderChurnChart();
   }
 
