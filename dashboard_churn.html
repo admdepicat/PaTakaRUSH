@@ -466,7 +466,20 @@
               }
             },
             plugins: {
-              legend: { display: true },
+              legend: {
+                display: true,
+                labels: {
+                  usePointStyle: true,
+                  generateLabels: (chart) => {
+                    const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                    labels.forEach((label, i) => {
+                      const ds = chart.data.datasets[i];
+                      if (ds && ds.type === 'line') label.pointStyle = 'line';
+                    });
+                    return labels;
+                  }
+                }
+              },
               tooltip: {
                 callbacks: {
                   label: (ctx) => {
@@ -565,7 +578,20 @@
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { display: true },
+            legend: {
+              display: true,
+              labels: {
+                usePointStyle: true,
+                generateLabels: (chart) => {
+                  const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                  labels.forEach((label, i) => {
+                    const ds = chart.data.datasets[i];
+                    if (ds && ds.type === 'line') label.pointStyle = 'line';
+                  });
+                  return labels;
+                }
+              }
+            },
             tooltip: {
               callbacks: {
                 label: (ctx) => {
