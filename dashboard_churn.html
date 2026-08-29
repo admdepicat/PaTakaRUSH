@@ -101,17 +101,6 @@
     </div>
   </div>
 
-  <hr class="my-8 border-gray-200">
-
-  <h2 class="text-lg font-bold text-gray-800 mb-4">直近の非活動期間別 人数</h2>
-
-  <p class="text-sm text-gray-600 mb-6">
-    ※各ユーザーの「最後に検査した週」から現在までの経過期間をもとに、「2週間以上」「1ヶ月以上」「3ヶ月以上」それぞれの基準を満たす人数を集計しています（累積の基準のため、3ヶ月以上の人は1ヶ月以上・2週間以上の人数にも含まれます）。上の性別・管理の設定に連動します。
-  </p>
-
-  <div class="chart-container" style="height: 380px; max-width: 700px;">
-    <canvas id="churnInactivityChart"></canvas>
-  </div>
 
 </div>
 
@@ -186,14 +175,6 @@
   }
 
   // そのユーザーが最後に利用した週のインデックス(0始まり)。一度も利用していなければ-1
-  function getChurnLastActiveWeekIndex(u) {
-    if (!u.data) return -1;
-    for (let j = u.data.length - 1; j >= 0; j--) {
-      if (u.data[j]) return j;
-    }
-    return -1;
-  }
-
   // 背景棒の「その週実施」「未実施」いずれかの区分に該当する、具体的なユーザー(uid)一覧を返す
   function getChurnUsersForBarSegment(genderFilter, managedFilter, week, category) {
     const w = week - 1; // 0始まりのインデックスに変換
@@ -213,70 +194,6 @@
       else if (category === '未実施' && !testedThisWeek) result.push(u.uid);
     });
     return result;
-  }
-
-  // 直近の非活動期間別 人数: 各ユーザーの「最後に検査した週」から現在(=アカウント経過日数)までの日数をもとに、
-  // 2週間/1ヶ月/3ヶ月の基準を満たす人数を集計する(累積の基準)
-  const CHURN_INACTIVITY_THRESHOLDS = [
-    { key: '2w', label: '2週間以上', days: 14 },
-    { key: '1m', label: '1ヶ月以上', days: 30 },
-    { key: '3m', label: '3ヶ月以上', days: 90 }
-  ];
-
-  function computeChurnInactivityCounts(genderFilter, managedFilter) {
-    const counts = { '2w': 0, '1m': 0, '3m': 0 };
-    if (!rawData || !rawData.usersChurn) return counts;
-    rawData.usersChurn.forEach(u => {
-      if (managedFilter !== 'total' && u.groupType !== managedFilter) return;
-      if (genderFilter !== 'total') {
-        let genderKey = 'other';
-        if (u.gender === '男性' || u.gender === '男' || u.gender === 'M') genderKey = 'male';
-        else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
-        if (genderKey !== genderFilter) return;
-      }
-      const lastActiveWeek = getChurnLastActiveWeekIndex(u);
-      // 最後に検査した週の終わり(週末)から、現在(アカウント経過日数)までの経過日数
-      const daysSinceLastActive = lastActiveWeek >= 0 ? Math.max(0, u.accountAgeDays - (lastActiveWeek + 1) * 7) : u.accountAgeDays;
-      CHURN_INACTIVITY_THRESHOLDS.forEach(t => { if (daysSinceLastActive >= t.days) counts[t.key]++; });
-    });
-    return counts;
-  }
-
-  function renderChurnInactivityChart(seriesList) {
-    const el = document.getElementById('churnInactivityChart');
-    if (!el) return;
-
-    const categories = CHURN_INACTIVITY_THRESHOLDS.map(t => t.label);
-    const newDatasets = seriesList.map(series => {
-      const counts = computeChurnInactivityCounts(series.genderFilter, series.managedFilter);
-      return {
-        label: series.label, data: CHURN_INACTIVITY_THRESHOLDS.map(t => counts[t.key]),
-        backgroundColor: hexToRgba(series.color, 0.5), borderColor: hexToRgba(series.color, 0.8), borderWidth: 1
-      };
-    });
-
-    if (!charts.churnInactivity) {
-      charts.churnInactivity = new Chart(el, {
-        type: 'bar',
-        data: { labels: categories, datasets: newDatasets },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: true },
-            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw}人` } }
-          },
-          scales: {
-            x: { title: { display: true, text: '直近の非活動期間' } },
-            y: { title: { display: true, text: '人数 (人)' }, min: 0, ticks: { precision: 0 } }
-          }
-        }
-      });
-    } else {
-      const chart = charts.churnInactivity;
-      chart.data.labels = categories;
-      chart.data.datasets = newDatasets;
-      chart.update();
-    }
   }
 
   // 表示: 利用日数(平均) / 継続率(1日以上実施した割合)
@@ -531,8 +448,6 @@
           clearChurnHistogram();
         }
       }
-
-      renderChurnInactivityChart(seriesList);
     } catch (error) {
       console.error(error);
     }
