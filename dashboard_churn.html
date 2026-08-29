@@ -119,6 +119,7 @@
     ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
   </p>
 
+  <h3 class="text-base font-bold text-gray-800 mb-2">折れ線グラフ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div class="chart-container" style="height: 380px; max-width: 900px;">
     <canvas id="churnMultiUserLineChart"></canvas>
   </div>
@@ -128,6 +129,7 @@
     <button onclick="clearChurnMultiUserSelection()" class="text-xs font-bold text-gray-500 border border-gray-300 rounded px-2 py-0.5 hover:bg-gray-50">✕ クリア</button>
   </div>
 
+  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (緑・利用日数が多いほど濃い)</h3>
   <div id="churnHeatmapContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
