@@ -105,15 +105,6 @@
 
   <h2 class="text-lg font-bold text-gray-800 mb-4">複数ユーザーの利用頻度推移 (0回が続いた人を除外)</h2>
 
-  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
-    <span class="text-gray-500">0回が</span>
-    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="renderChurnMultiUserCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-    <span class="text-gray-500">週以上続いた人を除外</span>
-    <span id="churnMultiUserCount" class="text-emerald-600"></span>
-    <span class="text-gray-300 mx-1">|</span>
-    <span id="churnHeatmapCount" class="text-emerald-600"></span>
-  </div>
-
   <p class="text-sm text-gray-600 mb-6">
     ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
     ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
@@ -137,43 +128,18 @@
     <canvas id="churnMultiUserLineChartRedBlue"></canvas>
   </div>
 
-  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">感度分析 (p値の変化)</h3>
-  <p class="text-sm text-gray-600 mb-4">
-    上記の「0〜3日群」「4〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
-  </p>
-
-  <h4 class="text-sm font-bold text-gray-700 mb-2">① 期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
-  <div class="chart-container mb-8" style="height: 260px;">
-    <canvas id="churnSensitivityMonths"></canvas>
-  </div>
-
-  <h4 class="text-sm font-bold text-gray-700 mb-2">② 比較単位(1週間 / 2週間平均)を変えた場合のp値 (期間は現在の設定で固定)</h4>
-  <div class="chart-container mb-8" style="height: 260px;">
-    <canvas id="churnSensitivityWindow"></canvas>
-  </div>
-
-  <h4 class="text-sm font-bold text-gray-700 mb-2">③ 日数範囲パターンを変えた場合のp値 (期間・比較単位は現在の設定で固定)</h4>
-  <div class="mb-3">
-    <table class="text-sm border-collapse w-full max-w-xl" id="churnRangePatternTable">
-      <thead>
-        <tr class="text-gray-500">
-          <th class="text-left font-normal pb-1">ラベル</th>
-          <th class="text-left font-normal pb-1">下限</th>
-          <th class="text-left font-normal pb-1">上限</th>
-          <th class="pb-1"></th>
-        </tr>
-      </thead>
-      <tbody id="churnRangePatternBody"></tbody>
-    </table>
-    <button onclick="addChurnRangePattern()" class="text-xs font-bold text-emerald-700 border border-emerald-300 rounded px-2 py-1 mt-2 hover:bg-emerald-50">+ 範囲パターンを追加</button>
-  </div>
-  <div class="chart-container mb-8" style="height: 260px;">
-    <canvas id="churnSensitivityRangePattern"></canvas>
-  </div>
-
   <h3 id="churnPairedTitle" class="text-base font-bold text-gray-800 mt-8 mb-2">4文字平均の変化 (最初の週 → 最後の週、0〜3日群/4〜7日群別)</h3>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">0回が</span>
+    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="renderChurnMultiUserCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週以上続いた人を除外</span>
+    <span id="churnMultiUserCount" class="text-emerald-600"></span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="churnHeatmapCount" class="text-emerald-600"></span>
+
+    <div class="w-full"></div>
+
     <span class="text-gray-500">期間:</span>
     <input type="number" id="churnPairedMonths" value="3" min="1" max="6" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
@@ -194,6 +160,23 @@
     <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedYMax" value="10" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+
+    <div class="w-full"></div>
+
+    <span id="churnPairedLowLabel" class="text-gray-500">0〜3日群</span>
+    <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" id="churnPairedLowMax" value="3" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span id="churnPairedLowCount" class="text-gray-500 font-normal"></span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="churnPairedHighLabel" class="text-gray-500">4〜7日群</span>
+    <input type="number" id="churnPairedHighMin" value="4" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span id="churnPairedHighCount" class="text-gray-500 font-normal"></span>
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
@@ -202,14 +185,6 @@
 
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span id="churnPairedLowLabel">0〜3日群</span>
-        <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-        <span class="text-gray-500">〜</span>
-        <input type="number" id="churnPairedLowMax" value="3" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-        <span class="text-gray-500">日</span>
-        <span id="churnPairedLowCount" class="text-gray-500 font-normal"></span>
-      </div>
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
       <div class="chart-container" style="height: 380px;">
         <canvas id="churnPairedBoxLow"></canvas>
@@ -222,14 +197,6 @@
       <p id="churnPairedMeanSdLowSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
     <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span id="churnPairedHighLabel">4〜7日群</span>
-        <input type="number" id="churnPairedHighMin" value="4" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-        <span class="text-gray-500">〜</span>
-        <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-        <span class="text-gray-500">日</span>
-        <span id="churnPairedHighCount" class="text-gray-500 font-normal"></span>
-      </div>
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
       <div class="chart-container" style="height: 380px;">
         <canvas id="churnPairedBoxHigh"></canvas>
@@ -241,6 +208,21 @@
       </div>
       <p id="churnPairedMeanSdHighSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
+  </div>
+
+  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">感度分析 (p値の変化)</h3>
+  <p class="text-sm text-gray-600 mb-4">
+    上記の「0〜3日群」「4〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
+  </p>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">① 期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
+  <div class="chart-container mb-8" style="height: 260px;">
+    <canvas id="churnSensitivityMonths"></canvas>
+  </div>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">② 比較単位(1週間 / 2週間平均)を変えた場合のp値 (期間は現在の設定で固定)</h4>
+  <div class="chart-container mb-8" style="height: 260px;">
+    <canvas id="churnSensitivityWindow"></canvas>
   </div>
 
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
@@ -1279,87 +1261,6 @@
     churnRenderSensitivityLineChart('churnSensitivityWindow', 'churnSensitivityWindow', ['1週間', '2週間平均'], lowValues, highValues, lowLabel, highLabel, '比較単位');
   }
 
-  let churnRangePatterns = [
-    { id: 1, label: '0〜3日', min: 0, max: 3 },
-    { id: 2, label: '1〜3日', min: 1, max: 3 },
-    { id: 3, label: '4〜7日', min: 4, max: 7 }
-  ];
-  let churnRangePatternNextId = 4;
-
-  function renderChurnRangePatternRows() {
-    const body = document.getElementById('churnRangePatternBody');
-    if (!body) return;
-    body.innerHTML = churnRangePatterns.map(p => `
-      <tr>
-        <td class="py-0.5 pr-2"><input type="text" value="${String(p.label).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" onchange="updateChurnRangePattern(${p.id}, 'label', this.value)" class="w-24 p-1 border border-gray-300 rounded outline-none text-xs"></td>
-        <td class="py-0.5 pr-2"><input type="number" value="${p.min}" min="0" max="7" step="1" onchange="updateChurnRangePattern(${p.id}, 'min', this.value)" class="w-14 p-1 border border-gray-300 rounded outline-none text-xs text-center"></td>
-        <td class="py-0.5 pr-2"><input type="number" value="${p.max}" min="0" max="7" step="1" onchange="updateChurnRangePattern(${p.id}, 'max', this.value)" class="w-14 p-1 border border-gray-300 rounded outline-none text-xs text-center"></td>
-        <td class="py-0.5"><button onclick="removeChurnRangePattern(${p.id})" class="text-xs text-gray-400 hover:text-rose-600">✕</button></td>
-      </tr>
-    `).join('');
-  }
-
-  function addChurnRangePattern() {
-    churnRangePatterns.push({ id: churnRangePatternNextId++, label: `パターン${churnRangePatterns.length + 1}`, min: 0, max: 7 });
-    renderChurnRangePatternRows();
-    renderChurnPairedCharts();
-  }
-
-  function removeChurnRangePattern(id) {
-    churnRangePatterns = churnRangePatterns.filter(p => p.id !== id);
-    renderChurnRangePatternRows();
-    renderChurnPairedCharts();
-  }
-
-  function updateChurnRangePattern(id, field, value) {
-    const pattern = churnRangePatterns.find(p => p.id === id);
-    if (!pattern) return;
-    pattern[field] = (field === 'label') ? value : parseInt(value, 10);
-    renderChurnPairedCharts();
-  }
-
-  function renderChurnSensitivityRangePattern(months, windowWeeks) {
-    const el = document.getElementById('churnSensitivityRangePattern');
-    const chartKey = 'churnSensitivityRangePattern';
-    if (!el) return;
-    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
-    if (churnRangePatterns.length === 0) return;
-
-    const values = churnRangePatterns.map(p => churnComputeGroupPValue(months, windowWeeks, p.min, p.max));
-
-    charts[chartKey] = new Chart(el, {
-      type: 'bar',
-      data: {
-        labels: churnRangePatterns.map(p => p.label),
-        datasets: [{
-          data: values.map(v => v.pValue === null ? null : Math.max(v.pValue, 0.0001)),
-          backgroundColor: values.map(v => churnPValueColor(v.pValue)),
-          borderColor: values.map(v => churnPValueColor(v.pValue)),
-          borderWidth: 1,
-          barPercentage: 0.5, categoryPercentage: 0.7
-        }]
-      },
-      plugins: [churnPValueRefLinesPlugin],
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const v = values[ctx.dataIndex];
-                return v.pValue === null ? 'データ不足' : `${churnFormatPValue(v.pValue)} (n=${v.n})`;
-              }
-            }
-          }
-        },
-        scales: {
-          y: { type: 'logarithmic', min: 0.00003, max: 1, title: { display: true, text: 'p値(対数軸)' } }
-        }
-      }
-    });
-  }
-
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
@@ -1404,10 +1305,8 @@
     renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
 
-    renderChurnRangePatternRows();
     renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
     renderChurnSensitivityWindow(months, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
-    renderChurnSensitivityRangePattern(months, windowWeeks);
   }
 
   function showChurnHistogram(weekInfo, series) {
