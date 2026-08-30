@@ -980,7 +980,7 @@
         onHover: (evt, elements, chart) => {
           const uid = elements.length > 0 ? chart.data.datasets[elements[0].datasetIndex].label : null;
           churnSetHeatmapUidHover(uid, 'churnHeatmapRedBlueContainer');
-          churnUpdateBoxplotHoverStyle(chart, uid);
+          churnUpdatePairedHover(uid);
         },
         onClick: (evt, elements, chart) => {
           if (elements.length > 0) {
@@ -991,9 +991,10 @@
     });
   }
 
-  function churnUpdateBoxplotHoverStyle(chart, hoverUid) {
-    if (chart._churnHoverUid === hoverUid) return;
-    chart._churnHoverUid = hoverUid;
+  let churnPairedHoverUid = null; // 0〜3日群/4〜7日群の箱ひげ図で連動させるホバー中のuid
+
+  function churnApplyPairedHoverStyle(chart, hoverUid) {
+    if (!chart) return;
     let changed = false;
     chart.data.datasets.forEach(ds => {
       const isSelected = churnMultiUserSelectedUid !== null && ds.label === churnMultiUserSelectedUid;
@@ -1008,6 +1009,14 @@
       }
     });
     if (changed) chart.update('none');
+  }
+
+  function churnUpdatePairedHover(hoverUid) {
+    if (churnPairedHoverUid === hoverUid) return;
+    churnPairedHoverUid = hoverUid;
+    // 該当uidが存在しない側は自動的にハイライトなし(通常色)になる
+    churnApplyPairedHoverStyle(charts['churnPairedBoxLow'], hoverUid);
+    churnApplyPairedHoverStyle(charts['churnPairedBoxHigh'], hoverUid);
   }
 
   function churnMeanSd(values) {
