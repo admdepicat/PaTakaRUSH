@@ -684,20 +684,30 @@
     const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
     churnPairedLowUidSet = new Set(lowGroup.map(p => p.uid));
   }
-  let churnHeatmapHoverEl = null; // 箱ひげ図の線ホバー中にハイライトしているヒートマップのuidセル
+  const churnHeatmapHoverEls = {}; // 箱ひげ図の線ホバー中にハイライトしているヒートマップのuidセル(コンテナIDごと)
+  const CHURN_HOVER_CLASSES = {
+    blue: ['bg-blue-100', 'text-blue-700'],
+    red: ['bg-rose-100', 'text-rose-700']
+  };
+
+  // uid が「4文字平均の変化」の0〜3日群に該当するかどうかで青/赤を判定する
+  function churnHoverColorKey(uid) {
+    return churnPairedLowUidSet.has(uid) ? 'blue' : 'red';
+  }
 
   function churnSetHeatmapUidHover(uid, containerId) {
-    if (churnHeatmapHoverEl) {
-      churnHeatmapHoverEl.classList.remove('bg-amber-100');
-      churnHeatmapHoverEl = null;
+    const prev = churnHeatmapHoverEls[containerId];
+    if (prev) {
+      Object.values(CHURN_HOVER_CLASSES).forEach(cls => prev.classList.remove(...cls));
+      churnHeatmapHoverEls[containerId] = null;
     }
     if (!uid) return;
     const container = document.getElementById(containerId);
     if (!container) return;
     const cell = container.querySelector(`.churn-uid-cell[data-uid="${CSS.escape(String(uid))}"]`);
     if (cell && !cell.classList.contains('text-rose-600')) {
-      cell.classList.add('bg-amber-100');
-      churnHeatmapHoverEl = cell;
+      cell.classList.add(...CHURN_HOVER_CLASSES[churnHoverColorKey(uid)]);
+      churnHeatmapHoverEls[containerId] = cell;
     }
   }
 
@@ -1100,7 +1110,6 @@
         },
         onHover: (evt, elements, chart) => {
           const uid = elements.length > 0 ? chart.data.datasets[elements[0].datasetIndex].label : null;
-          churnSetHeatmapUidHover(uid, 'churnHeatmapRedBlueContainer');
           churnUpdatePairedHover(uid);
         },
         onClick: (evt, elements, chart) => {
@@ -1112,7 +1121,12 @@
     });
   }
 
-  let churnPairedHoverUid = null; // 0〜3日群/4〜7日群の箱ひげ図で連動させるホバー中のuid
+  let churnPairedHoverUid = null; // 各所で連動させるホバー中のuid
+
+  // ホバー中のuidが0〜3日群に該当するかどうかで青/赤のrgbaを返す
+  function churnHoverRgba(uid) {
+    return churnHoverColorKey(uid) === 'blue' ? 'rgba(37, 99, 235, 0.6)' : 'rgba(220, 38, 38, 0.6)';
+  }
 
   function churnApplyPairedHoverStyle(chart, hoverUid) {
     if (!chart) return;
@@ -1121,7 +1135,7 @@
       const isSelected = churnMultiUserSelectedUid !== null && ds.label === churnMultiUserSelectedUid;
       if (isSelected) return; // 選択中は常に濃い赤のまま変更しない
       const isHovered = hoverUid !== null && ds.label === hoverUid;
-      const newColor = isHovered ? 'rgba(220, 38, 38, 0.6)' : 'rgba(156, 163, 175, 0.5)';
+      const newColor = isHovered ? churnHoverRgba(hoverUid) : 'rgba(156, 163, 175, 0.5)';
       const newWidth = isHovered ? 2 : 1;
       if (ds.borderColor !== newColor) {
         ds.borderColor = newColor;
@@ -1132,12 +1146,49 @@
     if (changed) chart.update('none');
   }
 
+  // 「複数ユーザーの利用頻度推移」の緑・赤青の折れ線グラフをホバーに応じて更新する(選択中の線は変更しない)
+  function churnApplyLineHoverStyle(chart, hoverUid, colorMode) {
+    if (!chart) return;
+    let changed = false;
+    const defaultColor = hexToRgba('#059669', 0.15);
+    chart.data.datasets.forEach(ds => {
+      const isSelected = churnMultiUserSelectedUid !== null && ds.label === churnMultiUserSelectedUid;
+      if (isSelected) return;
+      const isHovered = hoverUid !== null && ds.label === hoverUid;
+      if (isHovered) {
+        const color = churnHoverRgba(hoverUid);
+        if (ds.borderColor !== color || ds.segment) {
+          ds.borderColor = color;
+          ds.borderWidth = 2;
+          delete ds.segment;
+          changed = true;
+        }
+      } else {
+        if (ds.borderColor !== defaultColor || ds.borderWidth !== 1) {
+          ds.borderColor = defaultColor;
+          ds.borderWidth = 1;
+          changed = true;
+        }
+        if (colorMode === 'redblue' && !ds.segment) {
+          ds.segment = { borderColor: (ctx) => churnHeatmapCellColor(ctx.p1.parsed.y, 'redblue') };
+          changed = true;
+        }
+      }
+    });
+    if (changed) chart.update('none');
+  }
+
+  // 箱ひげ図の線ホバーを起点に、箱ひげ図(低/高群)・折れ線グラフ(緑/赤青)・ヒートマップ(緑/赤青)すべてを連動させる
   function churnUpdatePairedHover(hoverUid) {
     if (churnPairedHoverUid === hoverUid) return;
     churnPairedHoverUid = hoverUid;
     // 該当uidが存在しない側は自動的にハイライトなし(通常色)になる
     churnApplyPairedHoverStyle(charts['churnPairedBoxLow'], hoverUid);
     churnApplyPairedHoverStyle(charts['churnPairedBoxHigh'], hoverUid);
+    churnApplyLineHoverStyle(charts['churnMultiUserLine'], hoverUid, 'green');
+    churnApplyLineHoverStyle(charts['churnMultiUserLineRedBlue'], hoverUid, 'redblue');
+    churnSetHeatmapUidHover(hoverUid, 'churnHeatmapContainer');
+    churnSetHeatmapUidHover(hoverUid, 'churnHeatmapRedBlueContainer');
   }
 
   function churnMeanSd(values) {
