@@ -105,6 +105,15 @@
 
   <h2 class="text-lg font-bold text-gray-800 mb-4">複数ユーザーの利用頻度推移 (0回が続いた人を除外)</h2>
 
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">0回が</span>
+    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="churnSyncGapWeeksThreshold('churnGapWeeksThreshold')" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週以上続いた人を除外</span>
+    <span id="churnMultiUserCount" class="text-emerald-600"></span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="churnHeatmapCount" class="text-emerald-600"></span>
+  </div>
+
   <p class="text-sm text-gray-600 mb-6">
     ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
     ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
@@ -132,11 +141,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="renderChurnMultiUserCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnGapWeeksThresholdMirror" value="4" min="1" step="1" onchange="churnSyncGapWeeksThreshold('churnGapWeeksThresholdMirror')" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span id="churnMultiUserCount" class="text-emerald-600"></span>
+    <span id="churnMultiUserCountMirror" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span id="churnHeatmapCount" class="text-emerald-600"></span>
+    <span id="churnHeatmapCountMirror" class="text-emerald-600"></span>
 
     <div class="w-full"></div>
 
@@ -747,12 +756,28 @@
     caption.textContent = churnMultiUserSelectedUid ? `選択中: ${churnMultiUserSelectedUid}` : 'ヒートマップのuidをクリックしてください';
   }
 
+  // 上部と「4文字平均の変化」直上の操作パネルにある「0回が◯週以上続いた人を除外」の2つの入力欄を同期させる
+  function churnSyncGapWeeksThreshold(sourceId) {
+    const source = document.getElementById(sourceId);
+    if (!source) return;
+    const targetId = sourceId === 'churnGapWeeksThreshold' ? 'churnGapWeeksThresholdMirror' : 'churnGapWeeksThreshold';
+    const target = document.getElementById(targetId);
+    if (target) target.value = source.value;
+    renderChurnMultiUserCharts();
+  }
+
   function renderChurnMultiUserCharts() {
     const users = getChurnMultiUserFilteredUsers();
-    const countEl = document.getElementById('churnMultiUserCount');
-    if (countEl) countEl.textContent = `対象: ${users.length}人`;
-    const heatmapCountEl = document.getElementById('churnHeatmapCount');
-    if (heatmapCountEl) heatmapCountEl.textContent = `ヒートマップ対象: ${users.length}人`;
+    const countText = `対象: ${users.length}人`;
+    const heatmapCountText = `ヒートマップ対象: ${users.length}人`;
+    ['churnMultiUserCount', 'churnMultiUserCountMirror'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = countText;
+    });
+    ['churnHeatmapCount', 'churnHeatmapCountMirror'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = heatmapCountText;
+    });
     updateChurnMultiUserSelectCaption();
     renderChurnMultiUserLineChart(users, 'churnMultiUserLine', 'churnMultiUserLineChart', 'green');
     renderChurnHeatmap(users, 'churnHeatmapContainer', 'green');
