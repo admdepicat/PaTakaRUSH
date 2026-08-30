@@ -183,6 +183,7 @@
       <div class="chart-container" style="height: 300px;">
         <canvas id="churnPairedMeanSdLow"></canvas>
       </div>
+      <p id="churnPairedMeanSdLowSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
@@ -200,6 +201,7 @@
       <div class="chart-container" style="height: 300px;">
         <canvas id="churnPairedMeanSdHigh"></canvas>
       </div>
+      <p id="churnPairedMeanSdHighSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
   </div>
 
@@ -955,24 +957,30 @@
     return { mean, sd: Math.sqrt(variance), n };
   }
 
-  function renderChurnMeanSdChart(canvasId, chartKey, pairs, yMin, yMax, xLabels) {
+  function renderChurnMeanSdChart(canvasId, chartKey, sigElementId, pairs, yMin, yMax, xLabels) {
     const el = document.getElementById(canvasId);
+    const sigEl = document.getElementById(sigElementId);
     if (!el) return;
 
     if (charts[chartKey]) {
       charts[chartKey].destroy();
       charts[chartKey] = null;
     }
+    if (sigEl) sigEl.textContent = '';
     if (!pairs || pairs.length === 0) return;
 
     const statsFirst = churnMeanSd(pairs.map(p => p.first));
     const statsLast = churnMeanSd(pairs.map(p => p.last));
+    const pValue = churnPairedTTestPValue(pairs.map(p => p.last - p.first));
+    const pValueText = churnFormatPValue(pValue);
+    const isSignificant = pValue !== null && pValue < 0.05;
+    if (sigEl) sigEl.textContent = isSignificant ? '' : `有意差なし (${pValueText})`;
     const COLOR_FIRST = '#f87171', COLOR_LAST = '#22d3ee';
 
     const errorBarPlugin = {
       id: `churnMeanSdPlugin_${canvasId}`,
       afterDatasetsDraw(chart) {
-        const { ctx } = chart;
+        const { ctx, chartArea } = chart;
         const xScale = chart.scales.x, yScale = chart.scales.y;
         const capWidth = 16;
         const drawErrorBar = (x, stats) => {
@@ -1001,6 +1009,22 @@
           ctx.stroke();
           ctx.restore();
         }
+
+        if (isSignificant) {
+          const x1 = xScale.getPixelForValue(0), x2 = xScale.getPixelForValue(1);
+          const yBracket = chartArea.top + 18;
+          ctx.save();
+          ctx.strokeStyle = '#374151'; ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x1, yBracket + 8); ctx.lineTo(x1, yBracket);
+          ctx.lineTo(x2, yBracket); ctx.lineTo(x2, yBracket + 8);
+          ctx.stroke();
+          ctx.fillStyle = '#374151';
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(pValueText, (x1 + x2) / 2, yBracket - 4);
+          ctx.restore();
+        }
       }
     };
 
@@ -1020,6 +1044,7 @@
       plugins: [errorBarPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 28 } },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -1080,8 +1105,8 @@
     const xLabels = windowWeeks === 2 ? ['最初の2週間', '最後の2週間'] : ['最初の週', '最後の週'];
     renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup, yMin, yMax, xLabels);
     renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup, yMin, yMax, xLabels);
-    renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', lowGroup, yMin, yMax, xLabels);
-    renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', highGroup, yMin, yMax, xLabels);
+    renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
+    renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
   }
 
   function showChurnHistogram(weekInfo, series) {
