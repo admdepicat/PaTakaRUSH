@@ -672,6 +672,23 @@
   }
 
   let churnMultiUserSelectedUid = null; // ヒートマップでクリックして選択中のuid
+  let churnPairedLowUidSet = new Set(); // 「4文字平均の変化」の0〜3日群に該当する現在のuid一覧(赤青折れ線グラフの選択色分けに使用)
+
+  // 「4文字平均の変化」の0〜3日群の現在の対象uidを再計算する(赤青の折れ線グラフで選択中ユーザーを青にするかどうかの判定に使う)
+  function churnUpdatePairedLowUidSet() {
+    const monthsInput = document.getElementById('churnPairedMonths');
+    const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
+    const windowWeeks = document.getElementById('churnPairedWindow2') && document.getElementById('churnPairedWindow2').checked ? 2 : 1;
+    const getRangeInput = (id, fallback) => {
+      const el = document.getElementById(id);
+      return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
+    };
+    const lowMin = getRangeInput('churnPairedLowMin', 0);
+    const lowMax = getRangeInput('churnPairedLowMax', 3);
+    const { stats } = computeChurnPairedUserStats(months, windowWeeks);
+    const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
+    churnPairedLowUidSet = new Set(lowGroup.map(p => p.uid));
+  }
   let churnHeatmapHoverEl = null; // 箱ひげ図の線ホバー中にハイライトしているヒートマップのuidセル
 
   function churnSetHeatmapUidHover(uid, containerId) {
@@ -701,9 +718,11 @@
         points.push({ x: w + 1, y: days });
       }
       const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
+      // 赤青の折れ線グラフでは、選択中のユーザーが「4文字平均の変化」の0〜3日群に該当する場合は青、それ以外(4〜7日群など)は赤で強調する
+      const selectedColor = (colorMode === 'redblue' && churnPairedLowUidSet.has(u.uid)) ? '#2563eb' : '#dc2626';
       const dataset = {
         type: 'line', label: u.uid, data: points,
-        borderColor: isSelected ? '#dc2626' : hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
+        borderColor: isSelected ? selectedColor : hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
         borderWidth: isSelected ? 3 : 1, pointRadius: 0, fill: false, tension: 0.2,
         order: isSelected ? -1 : 0 // 選択中の線を他より前面(上)に描画する
       };
@@ -830,6 +849,7 @@
 
   function renderChurnMultiUserCharts() {
     const users = getChurnMultiUserFilteredUsers();
+    churnUpdatePairedLowUidSet();
     churnSetMirrorText('multiUserCount', `対象: ${users.length}人`);
     churnSetMirrorText('heatmapCount', `ヒートマップ対象: ${users.length}人`);
     updateChurnMultiUserSelectCaption();
