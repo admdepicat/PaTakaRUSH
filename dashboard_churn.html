@@ -251,41 +251,41 @@
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">比較単位:</span>
     <label class="flex items-center gap-1 cursor-pointer font-normal">
-      <input type="radio" name="churnPairedWindowWeeksPanel" data-sync="window" data-sync-value="1" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <input type="radio" name="churnPairedWindowWeeksPanel" id="churnPairedWindowWeeks1" onchange="renderChurnPairedCharts()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
       <span>1週間</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer font-normal">
-      <input type="radio" name="churnPairedWindowWeeksPanel" data-sync="window" data-sync-value="2" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <input type="radio" name="churnPairedWindowWeeksPanel" id="churnPairedWindowWeeks2" onchange="renderChurnPairedCharts()" class="w-4 h-4 cursor-pointer accent-gray-600">
       <span>2週間平均</span>
     </label>
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
-    <input type="number" value="0" min="0" max="10" step="1" data-sync="yMin" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedYMinWeeks" value="0" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="10" min="0" max="10" step="1" data-sync="yMax" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedYMaxWeeks" value="10" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
 
     <div class="w-full"></div>
 
-    <span data-mirror="lowLabel" class="text-gray-500">0〜2日群</span>
-    <input type="number" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span data-mirror="lowLabelWeeks" class="text-gray-500">0〜2日群</span>
+    <input type="number" id="churnPairedLowMinWeeks" value="0" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="2" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedLowMaxWeeks" value="2" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="highLabel" class="text-gray-500">3〜7日群</span>
-    <input type="number" value="3" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span data-mirror="highLabelWeeks" class="text-gray-500">3〜7日群</span>
+    <input type="number" id="churnPairedHighMinWeeks" value="3" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedHighMaxWeeks" value="7" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
   </div>
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span data-mirror="lowLabel"></span>
+        <span data-mirror="lowLabelWeeks"></span>
         <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
@@ -301,7 +301,7 @@
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span data-mirror="highLabel"></span>
+        <span data-mirror="highLabelWeeks"></span>
         <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
@@ -1526,18 +1526,31 @@
     renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
 
-    // 週単位の期間指定版(箱ひげ図・平均値±SD)
+    // 週単位の期間指定版(箱ひげ図・平均値±SD) — 比較単位・Y軸・日数範囲は月次側とは独立
     const weeksPeriodInput = document.getElementById('churnPairedWeeksPeriod');
     const weeksPeriod = weeksPeriodInput && weeksPeriodInput.value ? Math.max(1, Math.min(24, parseInt(weeksPeriodInput.value, 10))) : 12;
-    const statsWeeks = computeChurnPairedUserStatsForWeeks(weeksPeriod, windowWeeks);
-    const lowGroupWeeks = filterChurnPairedGroup(statsWeeks, lowMin, lowMax);
-    const highGroupWeeks = filterChurnPairedGroup(statsWeeks, highMin, highMax);
+    const windowWeeksForWeeksPanel = document.getElementById('churnPairedWindowWeeks2') && document.getElementById('churnPairedWindowWeeks2').checked ? 2 : 1;
+    const lowMinWeeks = getRangeInput('churnPairedLowMinWeeks', 0);
+    const lowMaxWeeks = getRangeInput('churnPairedLowMaxWeeks', 2);
+    const highMinWeeks = getRangeInput('churnPairedHighMinWeeks', 3);
+    const highMaxWeeks = getRangeInput('churnPairedHighMaxWeeks', 7);
+    const yMinWeeksInput = document.getElementById('churnPairedYMinWeeks');
+    const yMaxWeeksInput = document.getElementById('churnPairedYMaxWeeks');
+    const yMinWeeks = yMinWeeksInput && yMinWeeksInput.value !== '' ? parseInt(yMinWeeksInput.value, 10) : 0;
+    const yMaxWeeks = yMaxWeeksInput && yMaxWeeksInput.value !== '' ? parseInt(yMaxWeeksInput.value, 10) : 10;
+    const xLabelsWeeksPanel = windowWeeksForWeeksPanel === 2 ? ['最初の2週間', '最後の2週間'] : ['最初の週', '最後の週'];
+
+    const statsWeeks = computeChurnPairedUserStatsForWeeks(weeksPeriod, windowWeeksForWeeksPanel);
+    const lowGroupWeeks = filterChurnPairedGroup(statsWeeks, lowMinWeeks, lowMaxWeeks);
+    const highGroupWeeks = filterChurnPairedGroup(statsWeeks, highMinWeeks, highMaxWeeks);
+    churnSetMirrorText('lowLabelWeeks', `${Math.min(lowMinWeeks, lowMaxWeeks)}〜${Math.max(lowMinWeeks, lowMaxWeeks)}日群`);
+    churnSetMirrorText('highLabelWeeks', `${Math.min(highMinWeeks, highMaxWeeks)}〜${Math.max(highMinWeeks, highMaxWeeks)}日群`);
     churnSetMirrorText('lowCountWeeks', `対象: ${lowGroupWeeks.length}人`);
     churnSetMirrorText('highCountWeeks', `対象: ${highGroupWeeks.length}人`);
-    renderChurnPairedBoxplot('churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeksSig', lowGroupWeeks, yMin, yMax, xLabels);
-    renderChurnPairedBoxplot('churnPairedBoxHighWeeks', 'churnPairedBoxHighWeeks', 'churnPairedBoxHighWeeksSig', highGroupWeeks, yMin, yMax, xLabels);
-    renderChurnMeanSdChart('churnPairedMeanSdLowWeeks', 'churnPairedMeanSdLowWeeks', 'churnPairedMeanSdLowWeeksSig', lowGroupWeeks, yMin, yMax, xLabels);
-    renderChurnMeanSdChart('churnPairedMeanSdHighWeeks', 'churnPairedMeanSdHighWeeks', 'churnPairedMeanSdHighWeeksSig', highGroupWeeks, yMin, yMax, xLabels);
+    renderChurnPairedBoxplot('churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeksSig', lowGroupWeeks, yMinWeeks, yMaxWeeks, xLabelsWeeksPanel);
+    renderChurnPairedBoxplot('churnPairedBoxHighWeeks', 'churnPairedBoxHighWeeks', 'churnPairedBoxHighWeeksSig', highGroupWeeks, yMinWeeks, yMaxWeeks, xLabelsWeeksPanel);
+    renderChurnMeanSdChart('churnPairedMeanSdLowWeeks', 'churnPairedMeanSdLowWeeks', 'churnPairedMeanSdLowWeeksSig', lowGroupWeeks, yMinWeeks, yMaxWeeks, xLabelsWeeksPanel);
+    renderChurnMeanSdChart('churnPairedMeanSdHighWeeks', 'churnPairedMeanSdHighWeeks', 'churnPairedMeanSdHighWeeksSig', highGroupWeeks, yMinWeeks, yMaxWeeks, xLabelsWeeksPanel);
 
     renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
     renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
