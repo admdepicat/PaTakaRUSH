@@ -968,7 +968,7 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         layout: { padding: { top: 28 } },
-        interaction: { mode: 'dataset', intersect: true },
+        interaction: { mode: 'dataset', intersect: false },
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
