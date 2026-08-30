@@ -595,6 +595,22 @@
   }
 
   let churnMultiUserSelectedUid = null; // ヒートマップでクリックして選択中のuid
+  let churnHeatmapHoverEl = null; // 箱ひげ図の線ホバー中にハイライトしているヒートマップのuidセル
+
+  function churnSetHeatmapUidHover(uid, containerId) {
+    if (churnHeatmapHoverEl) {
+      churnHeatmapHoverEl.classList.remove('bg-amber-100');
+      churnHeatmapHoverEl = null;
+    }
+    if (!uid) return;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const cell = container.querySelector(`.churn-uid-cell[data-uid="${CSS.escape(String(uid))}"]`);
+    if (cell && !cell.classList.contains('text-rose-600')) {
+      cell.classList.add('bg-amber-100');
+      churnHeatmapHoverEl = cell;
+    }
+  }
 
   function renderChurnMultiUserLineChart(users, chartKey, elementId, colorMode) {
     const el = document.getElementById(elementId);
@@ -869,14 +885,22 @@
     if (sigEl) sigEl.textContent = isSignificant ? '' : `有意差なし (${pValueText})`;
     const COLOR_FIRST = '#f87171', COLOR_LAST = '#22d3ee';
 
-    const lineDatasets = pairs.map(p => ({
-      type: 'line', label: p.uid, data: [{ x: 1, y: p.first }, { x: 2, y: p.last }],
-      borderColor: 'rgba(156, 163, 175, 0.5)', borderWidth: 1,
-      pointRadius: 3, pointHoverRadius: 5,
-      pointBackgroundColor: (ctx) => ctx.dataIndex === 0 ? COLOR_FIRST : COLOR_LAST,
-      pointBorderColor: (ctx) => ctx.dataIndex === 0 ? COLOR_FIRST : COLOR_LAST,
-      fill: false, tension: 0, order: 1
-    }));
+    const lineDatasets = pairs.map(p => {
+      const isSelected = churnMultiUserSelectedUid !== null && p.uid === churnMultiUserSelectedUid;
+      return {
+        type: 'line', label: p.uid, data: [{ x: 1, y: p.first }, { x: 2, y: p.last }],
+        borderColor: isSelected ? '#dc2626' : 'rgba(156, 163, 175, 0.5)', borderWidth: isSelected ? 3 : 1,
+        pointRadius: isSelected ? 5 : 3, pointHoverRadius: 6,
+        pointBackgroundColor: (ctx) => isSelected ? '#dc2626' : (ctx.dataIndex === 0 ? COLOR_FIRST : COLOR_LAST),
+        pointBorderColor: (ctx) => isSelected ? '#dc2626' : (ctx.dataIndex === 0 ? COLOR_FIRST : COLOR_LAST),
+        fill: false, tension: 0, order: isSelected ? -1 : 1
+      };
+    });
+    // 選択中の線を配列の末尾に移し、他の薄い線の上に重なって描画されるようにする
+    if (churnMultiUserSelectedUid !== null) {
+      const selectedIndex = lineDatasets.findIndex(ds => ds.label === churnMultiUserSelectedUid);
+      if (selectedIndex >= 0) lineDatasets.push(lineDatasets.splice(selectedIndex, 1)[0]);
+    }
 
     const boxPlugin = {
       id: `churnBoxPlugin_${canvasId}`,
@@ -944,6 +968,7 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         layout: { padding: { top: 28 } },
+        interaction: { mode: 'dataset', intersect: true },
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
@@ -951,6 +976,15 @@
         scales: {
           x: { type: 'linear', min: 0.5, max: 2.5, ticks: { stepSize: 1, callback: (v) => v === 1 ? xLabels[0] : (v === 2 ? xLabels[1] : '') } },
           y: { title: { display: true, text: '4文字平均(回/秒)' }, min: yMin, max: yMax, ticks: { stepSize: 1, precision: 0 } }
+        },
+        onHover: (evt, elements, chart) => {
+          const uid = elements.length > 0 ? chart.data.datasets[elements[0].datasetIndex].label : null;
+          churnSetHeatmapUidHover(uid, 'churnHeatmapRedBlueContainer');
+        },
+        onClick: (evt, elements, chart) => {
+          if (elements.length > 0) {
+            selectChurnMultiUserRow(chart.data.datasets[elements[0].datasetIndex].label);
+          }
         }
       }
     });
