@@ -176,9 +176,11 @@
         <span class="text-gray-500">日</span>
         <span id="churnPairedLowCount" class="text-gray-500 font-normal"></span>
       </div>
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
       <div class="chart-container" style="height: 380px;">
         <canvas id="churnPairedBoxLow"></canvas>
       </div>
+      <p id="churnPairedBoxLowSig" class="text-xs text-gray-500 mt-1"></p>
       <h5 class="text-xs font-bold text-gray-500 mt-4 mb-2">平均値±SD</h5>
       <div class="chart-container" style="height: 300px;">
         <canvas id="churnPairedMeanSdLow"></canvas>
@@ -194,9 +196,11 @@
         <span class="text-gray-500">日</span>
         <span id="churnPairedHighCount" class="text-gray-500 font-normal"></span>
       </div>
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
       <div class="chart-container" style="height: 380px;">
         <canvas id="churnPairedBoxHigh"></canvas>
       </div>
+      <p id="churnPairedBoxHighSig" class="text-xs text-gray-500 mt-1"></p>
       <h5 class="text-xs font-bold text-gray-500 mt-4 mb-2">平均値±SD</h5>
       <div class="chart-container" style="height: 300px;">
         <canvas id="churnPairedMeanSdHigh"></canvas>
@@ -843,14 +847,16 @@
     return `p = ${p.toFixed(3)}`;
   }
 
-  function renderChurnPairedBoxplot(canvasId, chartKey, pairs, yMin, yMax, xLabels) {
+  function renderChurnPairedBoxplot(canvasId, chartKey, sigElementId, pairs, yMin, yMax, xLabels) {
     const el = document.getElementById(canvasId);
+    const sigEl = document.getElementById(sigElementId);
     if (!el) return;
 
     if (charts[chartKey]) {
       charts[chartKey].destroy();
       charts[chartKey] = null;
     }
+    if (sigEl) sigEl.textContent = '';
     if (!pairs || pairs.length === 0) return;
 
     const firstValues = pairs.map(p => p.first);
@@ -859,6 +865,8 @@
     const statsLast = churnComputeBoxStats(lastValues);
     const pValue = churnPairedTTestPValue(pairs.map(p => p.last - p.first));
     const pValueText = churnFormatPValue(pValue);
+    const isSignificant = pValue !== null && pValue < 0.05;
+    if (sigEl) sigEl.textContent = isSignificant ? '' : `有意差なし (${pValueText})`;
     const COLOR_FIRST = '#f87171', COLOR_LAST = '#22d3ee';
 
     const lineDatasets = pairs.map(p => ({
@@ -910,8 +918,8 @@
           ctx.restore();
         }
 
-        // 対応のあるt検定のp値をブラケット付きで表示
-        if (pValueText) {
+        // 対応のあるt検定のp値をブラケット付きで表示(有意差がある場合のみ)
+        if (isSignificant) {
           const x1 = xScale.getPixelForValue(1), x2 = xScale.getPixelForValue(2);
           const yBracket = chartArea.top + 18;
           ctx.save();
@@ -1103,8 +1111,8 @@
     const yMax = yMaxInput && yMaxInput.value !== '' ? parseInt(yMaxInput.value, 10) : 10;
 
     const xLabels = windowWeeks === 2 ? ['最初の2週間', '最後の2週間'] : ['最初の週', '最後の週'];
-    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup, yMin, yMax, xLabels);
-    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup, yMin, yMax, xLabels);
+    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', 'churnPairedBoxLowSig', lowGroup, yMin, yMax, xLabels);
+    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', 'churnPairedBoxHighSig', highGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
   }
