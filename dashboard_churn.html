@@ -281,6 +281,11 @@
     <canvas id="churnSensitivityMonths"></canvas>
   </div>
 
+  <h4 class="text-sm font-bold text-gray-700 mb-2">期間(1〜24週)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
+  <div class="chart-container mb-8" style="height: 260px;">
+    <canvas id="churnSensitivityWeeks"></canvas>
+  </div>
+
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
@@ -885,8 +890,8 @@
     return values.reduce((s, v) => s + v, 0) / values.length;
   }
 
-  function computeChurnPairedUserStats(months, windowWeeks) {
-    const weeks = Math.max(1, Math.min(6, months || 1)) * CHURN_WEEKS_PER_MONTH;
+  // 指定週数ちょうどでの各ユーザーの平均利用日数/週・最初と最後のスコアを計算する
+  function computeChurnPairedUserStatsForWeeks(weeks, windowWeeks) {
     const win = Math.max(1, windowWeeks || 1);
     const users = getChurnMultiUserFilteredUsers();
     const stats = [];
@@ -901,7 +906,12 @@
       if (firstScore === null || lastScore === null) return;
       stats.push({ uid: u.uid, avgDays: avgDays, first: firstScore, last: lastScore });
     });
-    return { stats, weeks };
+    return stats;
+  }
+
+  function computeChurnPairedUserStats(months, windowWeeks) {
+    const weeks = Math.max(1, Math.min(6, months || 1)) * CHURN_WEEKS_PER_MONTH;
+    return { stats: computeChurnPairedUserStatsForWeeks(weeks, windowWeeks), weeks };
   }
 
   // 平均利用日数/週が[rangeMin, rangeMax]の範囲(両端含む)に該当するユーザーのペアだけを抽出する
@@ -1289,6 +1299,14 @@
     return { pValue, n: group.length };
   }
 
+  function churnComputeGroupPValueForWeeks(weeks, windowWeeks, rangeMin, rangeMax) {
+    const stats = computeChurnPairedUserStatsForWeeks(weeks, windowWeeks);
+    const group = filterChurnPairedGroup(stats, rangeMin, rangeMax);
+    if (group.length === 0) return { pValue: null, n: 0 };
+    const pValue = churnPairedTTestPValue(group.map(p => p.last - p.first));
+    return { pValue, n: group.length };
+  }
+
   const churnPValueRefLinesPlugin = {
     id: 'churnPValueRefLines',
     afterDraw(chart) {
@@ -1369,6 +1387,15 @@
     churnRenderSensitivityLineChart('churnSensitivityMonths', 'churnSensitivityMonths', monthsList.map(m => `${m}ヶ月`), lowValues, highValues, lowLabel, highLabel, '期間');
   }
 
+  function renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+    const maxWeeks = 6 * CHURN_WEEKS_PER_MONTH; // 6ヶ月分 = 24週
+    const weeksList = [];
+    for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
+    const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, lowMin, lowMax));
+    const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, highMin, highMax));
+    churnRenderSensitivityLineChart('churnSensitivityWeeks', 'churnSensitivityWeeks', weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)');
+  }
+
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
@@ -1410,6 +1437,7 @@
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
 
     renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
+    renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
   }
 
   function showChurnHistogram(weekInfo, series) {
