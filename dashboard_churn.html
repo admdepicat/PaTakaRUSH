@@ -197,6 +197,7 @@
     ※指定した期間における「平均利用日数/週」が、左右それぞれで指定した範囲に該当するユーザーを対象に、最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。左右の範囲は連続している必要はなく、独立して指定できます。灰色の線は同一ユーザーの変化、黒い太線は2群の中央値同士を結んだ線です。上部のp値は、最初の週と最後の週の差についての対応のあるt検定の結果です。
   </p>
 
+  <h4 class="text-sm font-bold text-gray-800 mb-2">■ 月次で比較(期間:_ヶ月)</h4>
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
@@ -213,21 +214,6 @@
         <canvas id="churnPairedMeanSdLow"></canvas>
       </div>
       <p id="churnPairedMeanSdLowSig" class="text-xs text-gray-500 mt-1"></p>
-
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mt-6 mb-2">
-        <span data-mirror="lowLabel"></span>
-        <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
-      </div>
-      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
-      <div class="chart-container" style="height: 380px;">
-        <canvas id="churnPairedBoxLowWeeks"></canvas>
-      </div>
-      <p id="churnPairedBoxLowWeeksSig" class="text-xs text-gray-500 mt-1"></p>
-      <h5 class="text-xs font-bold text-gray-500 mt-4 mb-2">平均値±SD(週次)</h5>
-      <div class="chart-container" style="height: 300px;">
-        <canvas id="churnPairedMeanSdLowWeeks"></canvas>
-      </div>
-      <p id="churnPairedMeanSdLowWeeksSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
@@ -244,8 +230,77 @@
         <canvas id="churnPairedMeanSdHigh"></canvas>
       </div>
       <p id="churnPairedMeanSdHighSig" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+  </div>
 
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mt-6 mb-2">
+  <h4 class="text-sm font-bold text-gray-800 mt-10 mb-2">■ 週次で比較(期間:_週)</h4>
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">0回が</span>
+    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週以上続いた人を除外</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
+
+    <div class="w-full"></div>
+
+    <span class="text-gray-500">期間(週次):</span>
+    <input type="number" value="12" min="1" max="24" step="1" data-sync="weeksPeriod" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">比較単位:</span>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="radio" name="churnPairedWindowWeeksPanel" data-sync="window" data-sync-value="1" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <span>1週間</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="radio" name="churnPairedWindowWeeksPanel" data-sync="window" data-sync-value="2" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <span>2週間平均</span>
+    </label>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">Y軸:</span>
+    <input type="number" value="0" min="0" max="10" step="1" data-sync="yMin" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" value="10" min="0" max="10" step="1" data-sync="yMax" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+
+    <div class="w-full"></div>
+
+    <span data-mirror="lowLabel" class="text-gray-500">0〜2日群</span>
+    <input type="number" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" value="2" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="highLabel" class="text-gray-500">3〜7日群</span>
+    <input type="number" value="3" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
+  </div>
+  <div class="flex flex-col lg:flex-row gap-6">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+        <span data-mirror="lowLabel"></span>
+        <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
+      </div>
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnPairedBoxLowWeeks"></canvas>
+      </div>
+      <p id="churnPairedBoxLowWeeksSig" class="text-xs text-gray-500 mt-1"></p>
+      <h5 class="text-xs font-bold text-gray-500 mt-4 mb-2">平均値±SD(週次)</h5>
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="churnPairedMeanSdLowWeeks"></canvas>
+      </div>
+      <p id="churnPairedMeanSdLowWeeksSig" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
         <span data-mirror="highLabel"></span>
         <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
