@@ -980,6 +980,7 @@
         onHover: (evt, elements, chart) => {
           const uid = elements.length > 0 ? chart.data.datasets[elements[0].datasetIndex].label : null;
           churnSetHeatmapUidHover(uid, 'churnHeatmapRedBlueContainer');
+          churnUpdateBoxplotHoverStyle(chart, uid);
         },
         onClick: (evt, elements, chart) => {
           if (elements.length > 0) {
@@ -988,6 +989,25 @@
         }
       }
     });
+  }
+
+  function churnUpdateBoxplotHoverStyle(chart, hoverUid) {
+    if (chart._churnHoverUid === hoverUid) return;
+    chart._churnHoverUid = hoverUid;
+    let changed = false;
+    chart.data.datasets.forEach(ds => {
+      const isSelected = churnMultiUserSelectedUid !== null && ds.label === churnMultiUserSelectedUid;
+      if (isSelected) return; // 選択中は常に濃い赤のまま変更しない
+      const isHovered = hoverUid !== null && ds.label === hoverUid;
+      const newColor = isHovered ? 'rgba(220, 38, 38, 0.6)' : 'rgba(156, 163, 175, 0.5)';
+      const newWidth = isHovered ? 2 : 1;
+      if (ds.borderColor !== newColor) {
+        ds.borderColor = newColor;
+        ds.borderWidth = newWidth;
+        changed = true;
+      }
+    });
+    if (changed) chart.update('none');
   }
 
   function churnMeanSd(values) {
