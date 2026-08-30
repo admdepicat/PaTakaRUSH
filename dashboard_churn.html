@@ -137,7 +137,7 @@
     <canvas id="churnMultiUserLineChartRedBlue"></canvas>
   </div>
 
-  <h3 id="churnPairedTitle" class="text-base font-bold text-gray-800 mt-8 mb-2">4文字平均の変化 (最初の週 → 最後の週、0〜3日群/4〜7日群別)</h3>
+  <h3 id="churnPairedTitle" class="text-base font-bold text-gray-800 mt-8 mb-2">4文字平均の変化 (最初の週 → 最後の週、0〜2日群/3〜7日群別)</h3>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
@@ -172,16 +172,16 @@
 
     <div class="w-full"></div>
 
-    <span data-mirror="lowLabel" class="text-gray-500">0〜3日群</span>
+    <span data-mirror="lowLabel" class="text-gray-500">0〜2日群</span>
     <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedLowMax" value="3" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedLowMax" value="2" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="highLabel" class="text-gray-500">4〜7日群</span>
-    <input type="number" id="churnPairedHighMin" value="4" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span data-mirror="highLabel" class="text-gray-500">3〜7日群</span>
+    <input type="number" id="churnPairedHighMin" value="3" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
@@ -229,7 +229,7 @@
 
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">感度分析 (p値の変化)</h3>
   <p class="text-sm text-gray-600 mb-4">
-    上記の「0〜3日群」「4〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
+    上記の「0〜2日群」「3〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -260,16 +260,16 @@
 
     <div class="w-full"></div>
 
-    <span data-mirror="lowLabel" class="text-gray-500">0〜3日群</span>
+    <span data-mirror="lowLabel" class="text-gray-500">0〜2日群</span>
     <input type="number" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="3" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" value="2" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="highLabel" class="text-gray-500">4〜7日群</span>
-    <input type="number" value="4" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span data-mirror="highLabel" class="text-gray-500">3〜7日群</span>
+    <input type="number" value="3" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
@@ -679,7 +679,7 @@
       return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
     };
     const lowMin = getRangeInput('churnPairedLowMin', 0);
-    const lowMax = getRangeInput('churnPairedLowMax', 3);
+    const lowMax = getRangeInput('churnPairedLowMax', 2);
     const { stats } = computeChurnPairedUserStats(months, windowWeeks);
     const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
     churnPairedLowUidSet = new Set(lowGroup.map(p => p.uid));
@@ -1381,8 +1381,8 @@
       return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
     };
     const lowMin = getRangeInput('churnPairedLowMin', 0);
-    const lowMax = getRangeInput('churnPairedLowMax', 3);
-    const highMin = getRangeInput('churnPairedHighMin', 4);
+    const lowMax = getRangeInput('churnPairedLowMax', 2);
+    const highMin = getRangeInput('churnPairedHighMin', 3);
     const highMax = getRangeInput('churnPairedHighMax', 7);
 
     const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
