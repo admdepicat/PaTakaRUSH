@@ -107,11 +107,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" onchange="churnSyncGapWeeksThreshold('churnGapWeeksThreshold')" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span id="churnMultiUserCount" class="text-emerald-600"></span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span id="churnHeatmapCount" class="text-emerald-600"></span>
+    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
@@ -141,51 +141,51 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" id="churnGapWeeksThresholdMirror" value="4" min="1" step="1" onchange="churnSyncGapWeeksThreshold('churnGapWeeksThresholdMirror')" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span id="churnMultiUserCountMirror" class="text-emerald-600"></span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span id="churnHeatmapCountMirror" class="text-emerald-600"></span>
+    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
 
     <div class="w-full"></div>
 
     <span class="text-gray-500">期間:</span>
-    <input type="number" id="churnPairedMonths" value="3" min="1" max="6" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedMonths" value="3" min="1" max="6" step="1" data-sync="months" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">比較単位:</span>
     <label class="flex items-center gap-1 cursor-pointer font-normal">
-      <input type="radio" name="churnPairedWindow" id="churnPairedWindow1" onchange="renderChurnPairedCharts()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <input type="radio" name="churnPairedWindow" id="churnPairedWindow1" data-sync="window" data-sync-value="1" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
       <span>1週間</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer font-normal">
-      <input type="radio" name="churnPairedWindow" id="churnPairedWindow2" onchange="renderChurnPairedCharts()" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <input type="radio" name="churnPairedWindow" id="churnPairedWindow2" data-sync="window" data-sync-value="2" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600">
       <span>2週間平均</span>
     </label>
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
-    <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" data-sync="yMin" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedYMax" value="10" min="0" max="10" step="1" onchange="renderChurnPairedCharts()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedYMax" value="10" min="0" max="10" step="1" data-sync="yMax" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
 
     <div class="w-full"></div>
 
-    <span id="churnPairedLowLabel" class="text-gray-500">0〜3日群</span>
-    <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span data-mirror="lowLabel" class="text-gray-500">0〜3日群</span>
+    <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedLowMax" value="3" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedLowMax" value="3" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
-    <span id="churnPairedLowCount" class="text-gray-500 font-normal"></span>
+    <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span id="churnPairedHighLabel" class="text-gray-500">4〜7日群</span>
-    <input type="number" id="churnPairedHighMin" value="4" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span data-mirror="highLabel" class="text-gray-500">4〜7日群</span>
+    <input type="number" id="churnPairedHighMin" value="4" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
-    <span id="churnPairedHighCount" class="text-gray-500 font-normal"></span>
+    <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
@@ -195,8 +195,8 @@
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span id="churnPairedLowLabelChart"></span>
-        <span id="churnPairedLowCountChart" class="text-gray-500 font-normal"></span>
+        <span data-mirror="lowLabel"></span>
+        <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
       </div>
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
       <div class="chart-container" style="height: 380px;">
@@ -211,8 +211,8 @@
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span id="churnPairedHighLabelChart"></span>
-        <span id="churnPairedHighCountChart" class="text-gray-500 font-normal"></span>
+        <span data-mirror="highLabel"></span>
+        <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
       </div>
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
       <div class="chart-container" style="height: 380px;">
@@ -231,6 +231,55 @@
   <p class="text-sm text-gray-600 mb-4">
     上記の「0〜3日群」「4〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
   </p>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">0回が</span>
+    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週以上続いた人を除外</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
+
+    <div class="w-full"></div>
+
+    <span class="text-gray-500">期間:</span>
+    <input type="number" value="3" min="1" max="6" step="1" data-sync="months" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">比較単位:</span>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="radio" name="churnPairedWindowSens" data-sync="window" data-sync-value="1" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <span>1週間</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="radio" name="churnPairedWindowSens" data-sync="window" data-sync-value="2" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <span>2週間平均</span>
+    </label>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">Y軸:</span>
+    <input type="number" value="0" min="0" max="10" step="1" data-sync="yMin" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" value="10" min="0" max="10" step="1" data-sync="yMax" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+
+    <div class="w-full"></div>
+
+    <span data-mirror="lowLabel" class="text-gray-500">0〜3日群</span>
+    <input type="number" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" value="3" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="highLabel" class="text-gray-500">4〜7日群</span>
+    <input type="number" value="4" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
+  </div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">① 期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
   <div class="chart-container mb-8" style="height: 260px;">
@@ -764,28 +813,30 @@
     caption.textContent = churnMultiUserSelectedUid ? `選択中: ${churnMultiUserSelectedUid}` : 'ヒートマップのuidをクリックしてください';
   }
 
-  // 上部と「4文字平均の変化」直上の操作パネルにある「0回が◯週以上続いた人を除外」の2つの入力欄を同期させる
-  function churnSyncGapWeeksThreshold(sourceId) {
-    const source = document.getElementById(sourceId);
-    if (!source) return;
-    const targetId = sourceId === 'churnGapWeeksThreshold' ? 'churnGapWeeksThresholdMirror' : 'churnGapWeeksThreshold';
-    const target = document.getElementById(targetId);
-    if (target) target.value = source.value;
+  // 複数箇所に複製された同じ入力欄(data-sync属性が同じもの)の値を同期させる汎用関数
+  function churnSyncField(el) {
+    const key = el.dataset.sync;
+    if (!key) return;
+    document.querySelectorAll(`[data-sync="${key}"]`).forEach(other => {
+      if (other === el) return;
+      if (el.type === 'radio') {
+        other.checked = (other.dataset.syncValue === el.dataset.syncValue);
+      } else {
+        other.value = el.value;
+      }
+    });
     renderChurnMultiUserCharts();
+  }
+
+  // data-mirror属性が同じ要素すべてに同じテキストを反映する(複数箇所に複製された人数表示などの同期用)
+  function churnSetMirrorText(key, text) {
+    document.querySelectorAll(`[data-mirror="${key}"]`).forEach(el => { el.textContent = text; });
   }
 
   function renderChurnMultiUserCharts() {
     const users = getChurnMultiUserFilteredUsers();
-    const countText = `対象: ${users.length}人`;
-    const heatmapCountText = `ヒートマップ対象: ${users.length}人`;
-    ['churnMultiUserCount', 'churnMultiUserCountMirror'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = countText;
-    });
-    ['churnHeatmapCount', 'churnHeatmapCountMirror'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = heatmapCountText;
-    });
+    churnSetMirrorText('multiUserCount', `対象: ${users.length}人`);
+    churnSetMirrorText('heatmapCount', `ヒートマップ対象: ${users.length}人`);
     updateChurnMultiUserSelectCaption();
     renderChurnMultiUserLineChart(users, 'churnMultiUserLine', 'churnMultiUserLineChart', 'green');
     renderChurnHeatmap(users, 'churnHeatmapContainer', 'green');
@@ -1318,23 +1369,10 @@
 
     const titleEl = document.getElementById('churnPairedTitle');
     if (titleEl) titleEl.textContent = `4文字平均の変化 (${windowLabel}、${lowLabel}/${highLabel}別)`;
-    const lowLabelEl = document.getElementById('churnPairedLowLabel');
-    if (lowLabelEl) lowLabelEl.textContent = lowLabel;
-    const highLabelEl = document.getElementById('churnPairedHighLabel');
-    if (highLabelEl) highLabelEl.textContent = highLabel;
-    const lowCountEl = document.getElementById('churnPairedLowCount');
-    if (lowCountEl) lowCountEl.textContent = `対象: ${lowGroup.length}人`;
-    const highCountEl = document.getElementById('churnPairedHighCount');
-    if (highCountEl) highCountEl.textContent = `対象: ${highGroup.length}人`;
-
-    const lowLabelChartEl = document.getElementById('churnPairedLowLabelChart');
-    if (lowLabelChartEl) lowLabelChartEl.textContent = lowLabel;
-    const highLabelChartEl = document.getElementById('churnPairedHighLabelChart');
-    if (highLabelChartEl) highLabelChartEl.textContent = highLabel;
-    const lowCountChartEl = document.getElementById('churnPairedLowCountChart');
-    if (lowCountChartEl) lowCountChartEl.textContent = `対象: ${lowGroup.length}人`;
-    const highCountChartEl = document.getElementById('churnPairedHighCountChart');
-    if (highCountChartEl) highCountChartEl.textContent = `対象: ${highGroup.length}人`;
+    churnSetMirrorText('lowLabel', lowLabel);
+    churnSetMirrorText('highLabel', highLabel);
+    churnSetMirrorText('lowCount', `対象: ${lowGroup.length}人`);
+    churnSetMirrorText('highCount', `対象: ${highGroup.length}人`);
 
     const yMinInput = document.getElementById('churnPairedYMin');
     const yMaxInput = document.getElementById('churnPairedYMax');
