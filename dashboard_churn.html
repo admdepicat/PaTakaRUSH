@@ -209,6 +209,40 @@
     </div>
   </div>
 
+  <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">感度分析 (p値の変化)</h3>
+  <p class="text-sm text-gray-600 mb-4">
+    上記の「0〜3日群」「4〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
+  </p>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">① 期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
+  <div class="chart-container mb-8" style="height: 260px;">
+    <canvas id="churnSensitivityMonths"></canvas>
+  </div>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">② 比較単位(1週間 / 2週間平均)を変えた場合のp値 (期間は現在の設定で固定)</h4>
+  <div class="chart-container mb-8" style="height: 260px;">
+    <canvas id="churnSensitivityWindow"></canvas>
+  </div>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">③ 日数範囲パターンを変えた場合のp値 (期間・比較単位は現在の設定で固定)</h4>
+  <div class="mb-3">
+    <table class="text-sm border-collapse w-full max-w-xl" id="churnRangePatternTable">
+      <thead>
+        <tr class="text-gray-500">
+          <th class="text-left font-normal pb-1">ラベル</th>
+          <th class="text-left font-normal pb-1">下限</th>
+          <th class="text-left font-normal pb-1">上限</th>
+          <th class="pb-1"></th>
+        </tr>
+      </thead>
+      <tbody id="churnRangePatternBody"></tbody>
+    </table>
+    <button onclick="addChurnRangePattern()" class="text-xs font-bold text-emerald-700 border border-emerald-300 rounded px-2 py-1 mt-2 hover:bg-emerald-50">+ 範囲パターンを追加</button>
+  </div>
+  <div class="chart-container mb-8" style="height: 260px;">
+    <canvas id="churnSensitivityRangePattern"></canvas>
+  </div>
+
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
@@ -1150,6 +1184,154 @@
     });
   }
 
+  function churnComputeGroupPValue(months, windowWeeks, rangeMin, rangeMax) {
+    const { stats } = computeChurnPairedUserStats(months, windowWeeks);
+    const group = filterChurnPairedGroup(stats, rangeMin, rangeMax);
+    if (group.length === 0) return { pValue: null, n: 0 };
+    const pValue = churnPairedTTestPValue(group.map(p => p.last - p.first));
+    return { pValue, n: group.length };
+  }
+
+  function churnRenderSensitivityLineChart(canvasId, chartKey, xLabels, lowValues, highValues, lowLabel, highLabel, xAxisTitle) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
+
+    const clampP = (p) => p === null ? null : Math.max(p, 0.0001);
+    const makeDataset = (label, lineColor, values) => ({
+      label,
+      data: values.map(v => clampP(v.pValue)),
+      borderColor: lineColor, backgroundColor: lineColor,
+      pointBackgroundColor: values.map(v => churnPValueColor(v.pValue)),
+      pointBorderColor: values.map(v => churnPValueColor(v.pValue)),
+      pointRadius: 5, pointHoverRadius: 7,
+      borderWidth: 2, tension: 0, fill: false, spanGaps: true
+    });
+
+    charts[chartKey] = new Chart(el, {
+      type: 'line',
+      data: {
+        labels: xLabels,
+        datasets: [
+          makeDataset(lowLabel, '#9ca3af', lowValues),
+          makeDataset(highLabel, '#4b5563', highValues)
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.datasetIndex === 0 ? lowValues[ctx.dataIndex] : highValues[ctx.dataIndex];
+                return `${ctx.dataset.label}: ${v.pValue === null ? 'データ不足' : churnFormatPValue(v.pValue)} (n=${v.n})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: xAxisTitle } },
+          y: { type: 'logarithmic', min: 0.0001, max: 1, title: { display: true, text: 'p値(対数軸)' } }
+        }
+      }
+    });
+  }
+
+  function renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+    const monthsList = [1, 2, 3, 4, 5, 6];
+    const lowValues = monthsList.map(m => churnComputeGroupPValue(m, windowWeeks, lowMin, lowMax));
+    const highValues = monthsList.map(m => churnComputeGroupPValue(m, windowWeeks, highMin, highMax));
+    churnRenderSensitivityLineChart('churnSensitivityMonths', 'churnSensitivityMonths', monthsList.map(m => `${m}ヶ月`), lowValues, highValues, lowLabel, highLabel, '期間');
+  }
+
+  function renderChurnSensitivityWindow(months, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+    const windows = [1, 2];
+    const lowValues = windows.map(w => churnComputeGroupPValue(months, w, lowMin, lowMax));
+    const highValues = windows.map(w => churnComputeGroupPValue(months, w, highMin, highMax));
+    churnRenderSensitivityLineChart('churnSensitivityWindow', 'churnSensitivityWindow', ['1週間', '2週間平均'], lowValues, highValues, lowLabel, highLabel, '比較単位');
+  }
+
+  let churnRangePatterns = [
+    { id: 1, label: '0〜3日', min: 0, max: 3 },
+    { id: 2, label: '1〜3日', min: 1, max: 3 },
+    { id: 3, label: '4〜7日', min: 4, max: 7 }
+  ];
+  let churnRangePatternNextId = 4;
+
+  function renderChurnRangePatternRows() {
+    const body = document.getElementById('churnRangePatternBody');
+    if (!body) return;
+    body.innerHTML = churnRangePatterns.map(p => `
+      <tr>
+        <td class="py-0.5 pr-2"><input type="text" value="${String(p.label).replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" onchange="updateChurnRangePattern(${p.id}, 'label', this.value)" class="w-24 p-1 border border-gray-300 rounded outline-none text-xs"></td>
+        <td class="py-0.5 pr-2"><input type="number" value="${p.min}" min="0" max="7" step="1" onchange="updateChurnRangePattern(${p.id}, 'min', this.value)" class="w-14 p-1 border border-gray-300 rounded outline-none text-xs text-center"></td>
+        <td class="py-0.5 pr-2"><input type="number" value="${p.max}" min="0" max="7" step="1" onchange="updateChurnRangePattern(${p.id}, 'max', this.value)" class="w-14 p-1 border border-gray-300 rounded outline-none text-xs text-center"></td>
+        <td class="py-0.5"><button onclick="removeChurnRangePattern(${p.id})" class="text-xs text-gray-400 hover:text-rose-600">✕</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function addChurnRangePattern() {
+    churnRangePatterns.push({ id: churnRangePatternNextId++, label: `パターン${churnRangePatterns.length + 1}`, min: 0, max: 7 });
+    renderChurnRangePatternRows();
+    renderChurnPairedCharts();
+  }
+
+  function removeChurnRangePattern(id) {
+    churnRangePatterns = churnRangePatterns.filter(p => p.id !== id);
+    renderChurnRangePatternRows();
+    renderChurnPairedCharts();
+  }
+
+  function updateChurnRangePattern(id, field, value) {
+    const pattern = churnRangePatterns.find(p => p.id === id);
+    if (!pattern) return;
+    pattern[field] = (field === 'label') ? value : parseInt(value, 10);
+    renderChurnPairedCharts();
+  }
+
+  function renderChurnSensitivityRangePattern(months, windowWeeks) {
+    const el = document.getElementById('churnSensitivityRangePattern');
+    const chartKey = 'churnSensitivityRangePattern';
+    if (!el) return;
+    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
+    if (churnRangePatterns.length === 0) return;
+
+    const values = churnRangePatterns.map(p => churnComputeGroupPValue(months, windowWeeks, p.min, p.max));
+
+    charts[chartKey] = new Chart(el, {
+      type: 'bar',
+      data: {
+        labels: churnRangePatterns.map(p => p.label),
+        datasets: [{
+          data: values.map(v => v.pValue === null ? null : Math.max(v.pValue, 0.0001)),
+          backgroundColor: values.map(v => churnPValueColor(v.pValue)),
+          borderColor: values.map(v => churnPValueColor(v.pValue)),
+          borderWidth: 1,
+          barPercentage: 0.5, categoryPercentage: 0.7
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = values[ctx.dataIndex];
+                return v.pValue === null ? 'データ不足' : `${churnFormatPValue(v.pValue)} (n=${v.n})`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: { type: 'logarithmic', min: 0.0001, max: 1, title: { display: true, text: 'p値(対数軸)' } }
+        }
+      }
+    });
+  }
+
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
@@ -1193,6 +1375,11 @@
     renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', 'churnPairedBoxHighSig', highGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
+
+    renderChurnRangePatternRows();
+    renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
+    renderChurnSensitivityWindow(months, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
+    renderChurnSensitivityRangePattern(months, windowWeeks);
   }
 
   function showChurnHistogram(weekInfo, series) {
