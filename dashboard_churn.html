@@ -726,10 +726,11 @@
       const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
       // 選択中のユーザーが「4文字平均の変化」の0〜3日群に該当する場合は青、それ以外(4〜7日群など)は赤で強調する
       const selectedColor = churnPairedLowUidSet.has(u.uid) ? '#2563eb' : '#dc2626';
+      const selectedWidth = colorMode === 'redblue' ? 5 : 3; // 赤青の折れ線グラフは選択中の線をより太く強調する
       const dataset = {
         type: 'line', label: u.uid, data: points,
         borderColor: isSelected ? selectedColor : hexToRgba('#059669', 0.15), backgroundColor: 'transparent',
-        borderWidth: isSelected ? 3 : 1, pointRadius: 0, fill: false, tension: 0.2,
+        borderWidth: isSelected ? selectedWidth : 1, pointRadius: 0, fill: false, tension: 0.2,
         order: isSelected ? -1 : 0 // 選択中の線を他より前面(上)に描画する
       };
       if (!isSelected && colorMode === 'redblue') {
@@ -795,7 +796,7 @@
       const isSelected = churnMultiUserSelectedUid !== null && u.uid === churnMultiUserSelectedUid;
       const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
       // 選択中のユーザーが0〜3日群に該当する場合は青、それ以外は赤で表示する
-      const rowCellClass = isSelected ? (churnPairedLowUidSet.has(u.uid) ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-600') : 'bg-white';
+      const rowCellClass = isSelected ? CHURN_HOVER_CLASSES[churnHoverColorKey(u.uid)].join(' ') : 'bg-white';
       html += `<tr><td class="churn-uid-cell sticky left-0 ${rowCellClass} px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10 cursor-pointer hover:underline font-bold" data-uid="${uidEscaped}">${u.uid}</td>`;
       for (let w = 0; w < weeksToCheck; w++) {
         const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
@@ -1161,9 +1162,10 @@
       const isHovered = hoverUid !== null && ds.label === hoverUid;
       if (isHovered) {
         const color = churnHoverRgba(hoverUid);
-        if (ds.borderColor !== color || ds.segment) {
+        const hoverWidth = colorMode === 'redblue' ? 4 : 2; // 赤青の折れ線グラフはホバー中の線もより太く強調する
+        if (ds.borderColor !== color || ds.borderWidth !== hoverWidth || ds.segment) {
           ds.borderColor = color;
-          ds.borderWidth = 2;
+          ds.borderWidth = hoverWidth;
           delete ds.segment;
           changed = true;
         }
