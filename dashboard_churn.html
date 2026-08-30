@@ -946,6 +946,99 @@
     });
   }
 
+  function churnMeanSd(values) {
+    const n = values.length;
+    if (n === 0) return null;
+    const mean = values.reduce((a, b) => a + b, 0) / n;
+    if (n === 1) return { mean, sd: 0, n };
+    const variance = values.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (n - 1);
+    return { mean, sd: Math.sqrt(variance), n };
+  }
+
+  function renderChurnMeanSdChart(canvasId, chartKey, pairs, yMin, yMax, xLabels) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+
+    if (charts[chartKey]) {
+      charts[chartKey].destroy();
+      charts[chartKey] = null;
+    }
+    if (!pairs || pairs.length === 0) return;
+
+    const statsFirst = churnMeanSd(pairs.map(p => p.first));
+    const statsLast = churnMeanSd(pairs.map(p => p.last));
+    const COLOR_FIRST = '#f87171', COLOR_LAST = '#22d3ee';
+
+    const errorBarPlugin = {
+      id: `churnMeanSdPlugin_${canvasId}`,
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const xScale = chart.scales.x, yScale = chart.scales.y;
+        const capWidth = 16;
+        const drawErrorBar = (x, stats) => {
+          if (!stats) return;
+          const xPix = xScale.getPixelForValue(x);
+          const yTop = yScale.getPixelForValue(stats.mean + stats.sd);
+          const yBottom = yScale.getPixelForValue(stats.mean - stats.sd);
+          ctx.save();
+          ctx.strokeStyle = '#374151'; ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(xPix, yTop); ctx.lineTo(xPix, yBottom);
+          ctx.moveTo(xPix - capWidth / 2, yTop); ctx.lineTo(xPix + capWidth / 2, yTop);
+          ctx.moveTo(xPix - capWidth / 2, yBottom); ctx.lineTo(xPix + capWidth / 2, yBottom);
+          ctx.stroke();
+          ctx.restore();
+        };
+        drawErrorBar(1, statsFirst);
+        drawErrorBar(2, statsLast);
+
+        if (statsFirst && statsLast) {
+          ctx.save();
+          ctx.strokeStyle = '#111827'; ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(xScale.getPixelForValue(1), yScale.getPixelForValue(statsFirst.mean));
+          ctx.lineTo(xScale.getPixelForValue(2), yScale.getPixelForValue(statsLast.mean));
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    };
+
+    charts[chartKey] = new Chart(el, {
+      type: 'bar',
+      data: {
+        labels: [xLabels[0], xLabels[1]],
+        datasets: [{
+          data: [statsFirst ? statsFirst.mean : null, statsLast ? statsLast.mean : null],
+          backgroundColor: [COLOR_FIRST, COLOR_LAST],
+          borderColor: [COLOR_FIRST, COLOR_LAST],
+          borderWidth: 1,
+          barPercentage: 0.4,
+          categoryPercentage: 0.6
+        }]
+      },
+      plugins: [errorBarPlugin],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const s = ctx.dataIndex === 0 ? statsFirst : statsLast;
+                return s ? `平均 ${s.mean.toFixed(2)} ± SD ${s.sd.toFixed(2)} (n=${s.n})` : '';
+              }
+            }
+          }
+        },
+        scales: {
+          x: { type: 'category' },
+          y: { title: { display: true, text: '4文字平均(回/秒)' }, min: yMin, max: yMax, ticks: { stepSize: 1, precision: 0 } }
+        }
+      }
+    });
+  }
+
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
@@ -987,6 +1080,8 @@
     const xLabels = windowWeeks === 2 ? ['最初の2週間', '最後の2週間'] : ['最初の週', '最後の週'];
     renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', lowGroup, yMin, yMax, xLabels);
     renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', highGroup, yMin, yMax, xLabels);
+    renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', lowGroup, yMin, yMax, xLabels);
+    renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', highGroup, yMin, yMax, xLabels);
   }
 
   function showChurnHistogram(weekInfo, series) {
