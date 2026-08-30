@@ -1151,49 +1151,14 @@
     if (changed) chart.update('none');
   }
 
-  // 「複数ユーザーの利用頻度推移」の緑・赤青の折れ線グラフをホバーに応じて更新する(選択中の線は変更しない)
-  function churnApplyLineHoverStyle(chart, hoverUid, colorMode) {
-    if (!chart) return;
-    let changed = false;
-    const defaultColor = hexToRgba('#059669', 0.15);
-    chart.data.datasets.forEach(ds => {
-      const isSelected = churnMultiUserSelectedUid !== null && ds.label === churnMultiUserSelectedUid;
-      if (isSelected) return;
-      const isHovered = hoverUid !== null && ds.label === hoverUid;
-      if (isHovered) {
-        const color = churnHoverRgba(hoverUid);
-        const hoverWidth = colorMode === 'redblue' ? 4 : 2; // 赤青の折れ線グラフはホバー中の線もより太く強調する
-        if (ds.borderColor !== color || ds.borderWidth !== hoverWidth || ds.segment) {
-          ds.borderColor = color;
-          ds.borderWidth = hoverWidth;
-          delete ds.segment;
-          changed = true;
-        }
-      } else {
-        if (ds.borderColor !== defaultColor || ds.borderWidth !== 1) {
-          ds.borderColor = defaultColor;
-          ds.borderWidth = 1;
-          changed = true;
-        }
-        if (colorMode === 'redblue' && !ds.segment) {
-          ds.segment = { borderColor: (ctx) => churnHeatmapCellColor(ctx.p1.parsed.y, 'redblue') };
-          changed = true;
-        }
-      }
-    });
-    if (changed) chart.update('none');
-  }
-
-  // 箱ひげ図の線ホバーを起点に、箱ひげ図(低/高群)・折れ線グラフ(緑/赤青)・ヒートマップ(緑/赤青)すべてを連動させる
+  // 箱ひげ図の線ホバーを起点に、箱ひげ図(低/高群)同士を連動させる
   function churnUpdatePairedHover(hoverUid) {
     if (churnPairedHoverUid === hoverUid) return;
     churnPairedHoverUid = hoverUid;
     // 該当uidが存在しない側は自動的にハイライトなし(通常色)になる
-    // ヒートマップ(緑・赤青)はホバーでは色付けしない(クリック確定時のみ色付けする)
+    // ヒートマップ(緑・赤青)・折れ線グラフ(緑・赤青)はホバーでは色付けしない(箱ひげ図同士の連動とクリック確定時の色付けのみ)
     churnApplyPairedHoverStyle(charts['churnPairedBoxLow'], hoverUid);
     churnApplyPairedHoverStyle(charts['churnPairedBoxHigh'], hoverUid);
-    churnApplyLineHoverStyle(charts['churnMultiUserLine'], hoverUid, 'green');
-    churnApplyLineHoverStyle(charts['churnMultiUserLineRedBlue'], hoverUid, 'redblue');
   }
 
   function churnMeanSd(values) {
