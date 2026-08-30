@@ -1187,12 +1187,11 @@
     if (churnPairedHoverUid === hoverUid) return;
     churnPairedHoverUid = hoverUid;
     // 該当uidが存在しない側は自動的にハイライトなし(通常色)になる
+    // ヒートマップ(緑・赤青)はホバーでは色付けしない(クリック確定時のみ色付けする)
     churnApplyPairedHoverStyle(charts['churnPairedBoxLow'], hoverUid);
     churnApplyPairedHoverStyle(charts['churnPairedBoxHigh'], hoverUid);
     churnApplyLineHoverStyle(charts['churnMultiUserLine'], hoverUid, 'green');
     churnApplyLineHoverStyle(charts['churnMultiUserLineRedBlue'], hoverUid, 'redblue');
-    churnSetHeatmapUidHover(hoverUid, 'churnHeatmapContainer');
-    churnSetHeatmapUidHover(hoverUid, 'churnHeatmapRedBlueContainer');
   }
 
   function churnMeanSd(values) {
