@@ -154,6 +154,11 @@
     <span class="text-gray-500">ヶ月 (1ヶ月=4週間換算)</span>
 
     <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">期間(週次):</span>
+    <input type="number" id="churnPairedWeeksPeriod" value="12" min="1" max="24" step="1" data-sync="weeksPeriod" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+
+    <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">比較単位:</span>
     <label class="flex items-center gap-1 cursor-pointer font-normal">
       <input type="radio" name="churnPairedWindow" id="churnPairedWindow1" data-sync="window" data-sync-value="1" onchange="churnSyncField(this)" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
@@ -208,6 +213,21 @@
         <canvas id="churnPairedMeanSdLow"></canvas>
       </div>
       <p id="churnPairedMeanSdLowSig" class="text-xs text-gray-500 mt-1"></p>
+
+      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mt-6 mb-2">
+        <span data-mirror="lowLabel"></span>
+        <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
+      </div>
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnPairedBoxLowWeeks"></canvas>
+      </div>
+      <p id="churnPairedBoxLowWeeksSig" class="text-xs text-gray-500 mt-1"></p>
+      <h5 class="text-xs font-bold text-gray-500 mt-4 mb-2">平均値±SD(週次)</h5>
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="churnPairedMeanSdLowWeeks"></canvas>
+      </div>
+      <p id="churnPairedMeanSdLowWeeksSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
@@ -224,6 +244,21 @@
         <canvas id="churnPairedMeanSdHigh"></canvas>
       </div>
       <p id="churnPairedMeanSdHighSig" class="text-xs text-gray-500 mt-1"></p>
+
+      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mt-6 mb-2">
+        <span data-mirror="highLabel"></span>
+        <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
+      </div>
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnPairedBoxHighWeeks"></canvas>
+      </div>
+      <p id="churnPairedBoxHighWeeksSig" class="text-xs text-gray-500 mt-1"></p>
+      <h5 class="text-xs font-bold text-gray-500 mt-4 mb-2">平均値±SD(週次)</h5>
+      <div class="chart-container" style="height: 300px;">
+        <canvas id="churnPairedMeanSdHighWeeks"></canvas>
+      </div>
+      <p id="churnPairedMeanSdHighWeeksSig" class="text-xs text-gray-500 mt-1"></p>
     </div>
   </div>
 
@@ -1435,6 +1470,19 @@
     renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', 'churnPairedBoxHighSig', highGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
+
+    // 週単位の期間指定版(箱ひげ図・平均値±SD)
+    const weeksPeriodInput = document.getElementById('churnPairedWeeksPeriod');
+    const weeksPeriod = weeksPeriodInput && weeksPeriodInput.value ? Math.max(1, Math.min(24, parseInt(weeksPeriodInput.value, 10))) : 12;
+    const statsWeeks = computeChurnPairedUserStatsForWeeks(weeksPeriod, windowWeeks);
+    const lowGroupWeeks = filterChurnPairedGroup(statsWeeks, lowMin, lowMax);
+    const highGroupWeeks = filterChurnPairedGroup(statsWeeks, highMin, highMax);
+    churnSetMirrorText('lowCountWeeks', `対象: ${lowGroupWeeks.length}人`);
+    churnSetMirrorText('highCountWeeks', `対象: ${highGroupWeeks.length}人`);
+    renderChurnPairedBoxplot('churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeksSig', lowGroupWeeks, yMin, yMax, xLabels);
+    renderChurnPairedBoxplot('churnPairedBoxHighWeeks', 'churnPairedBoxHighWeeks', 'churnPairedBoxHighWeeksSig', highGroupWeeks, yMin, yMax, xLabels);
+    renderChurnMeanSdChart('churnPairedMeanSdLowWeeks', 'churnPairedMeanSdLowWeeks', 'churnPairedMeanSdLowWeeksSig', lowGroupWeeks, yMin, yMax, xLabels);
+    renderChurnMeanSdChart('churnPairedMeanSdHighWeeks', 'churnPairedMeanSdHighWeeks', 'churnPairedMeanSdHighWeeksSig', highGroupWeeks, yMin, yMax, xLabels);
 
     renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
     renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
