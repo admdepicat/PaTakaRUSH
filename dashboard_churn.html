@@ -281,14 +281,9 @@
     <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
   </div>
 
-  <h4 class="text-sm font-bold text-gray-700 mb-2">① 期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
+  <h4 class="text-sm font-bold text-gray-700 mb-2">期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
   <div class="chart-container mb-8" style="height: 260px;">
     <canvas id="churnSensitivityMonths"></canvas>
-  </div>
-
-  <h4 class="text-sm font-bold text-gray-700 mb-2">② 比較単位(1週間 / 2週間平均)を変えた場合のp値 (期間は現在の設定で固定)</h4>
-  <div class="chart-container mb-8" style="height: 260px;">
-    <canvas id="churnSensitivityWindow"></canvas>
   </div>
 
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
@@ -1338,13 +1333,6 @@
     churnRenderSensitivityLineChart('churnSensitivityMonths', 'churnSensitivityMonths', monthsList.map(m => `${m}ヶ月`), lowValues, highValues, lowLabel, highLabel, '期間');
   }
 
-  function renderChurnSensitivityWindow(months, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
-    const windows = [1, 2];
-    const lowValues = windows.map(w => churnComputeGroupPValue(months, w, lowMin, lowMax));
-    const highValues = windows.map(w => churnComputeGroupPValue(months, w, highMin, highMax));
-    churnRenderSensitivityLineChart('churnSensitivityWindow', 'churnSensitivityWindow', ['1週間', '2週間平均'], lowValues, highValues, lowLabel, highLabel, '比較単位');
-  }
-
   function renderChurnPairedCharts() {
     const monthsInput = document.getElementById('churnPairedMonths');
     const months = monthsInput && monthsInput.value ? parseInt(monthsInput.value, 10) : 3;
@@ -1386,7 +1374,6 @@
     renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
 
     renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
-    renderChurnSensitivityWindow(months, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
   }
 
   function showChurnHistogram(weekInfo, series) {
