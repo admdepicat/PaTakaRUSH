@@ -989,15 +989,15 @@
           ctx.stroke();
           ctx.restore();
         };
-        drawErrorBar(1, statsFirst);
-        drawErrorBar(2, statsLast);
+        drawErrorBar(0, statsFirst);
+        drawErrorBar(1, statsLast);
 
         if (statsFirst && statsLast) {
           ctx.save();
           ctx.strokeStyle = '#111827'; ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.moveTo(xScale.getPixelForValue(1), yScale.getPixelForValue(statsFirst.mean));
-          ctx.lineTo(xScale.getPixelForValue(2), yScale.getPixelForValue(statsLast.mean));
+          ctx.moveTo(xScale.getPixelForValue(0), yScale.getPixelForValue(statsFirst.mean));
+          ctx.lineTo(xScale.getPixelForValue(1), yScale.getPixelForValue(statsLast.mean));
           ctx.stroke();
           ctx.restore();
         }
