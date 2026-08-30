@@ -1192,6 +1192,32 @@
     return { pValue, n: group.length };
   }
 
+  const churnPValueRefLinesPlugin = {
+    id: 'churnPValueRefLines',
+    afterDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      const yScale = scales.y;
+      if (!yScale) return;
+      const drawLine = (value, color, label) => {
+        const y = yScale.getPixelForValue(value);
+        if (y < chartArea.top || y > chartArea.bottom) return;
+        ctx.save();
+        ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(chartArea.left, y); ctx.lineTo(chartArea.right, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = color;
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(label, chartArea.left + 2, y - 2);
+        ctx.restore();
+      };
+      drawLine(0.05, '#16a34a', 'p=0.05');
+      drawLine(0.01, '#2563eb', 'p=0.01');
+    }
+  };
+
   function churnRenderSensitivityLineChart(canvasId, chartKey, xLabels, lowValues, highValues, lowLabel, highLabel, xAxisTitle) {
     const el = document.getElementById(canvasId);
     if (!el) return;
@@ -1217,6 +1243,7 @@
           makeDataset(highLabel, '#4b5563', highValues)
         ]
       },
+      plugins: [churnPValueRefLinesPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
@@ -1312,6 +1339,7 @@
           barPercentage: 0.5, categoryPercentage: 0.7
         }]
       },
+      plugins: [churnPValueRefLinesPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
