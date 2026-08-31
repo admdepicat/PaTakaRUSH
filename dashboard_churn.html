@@ -1507,7 +1507,16 @@
         },
         scales: {
           x: { title: { display: true, text: xAxisTitle } },
-          y: { type: 'logarithmic', min: 0.00003, max: 1.3, title: { display: true, text: 'p値(対数軸)' } }
+          y: {
+            type: 'logarithmic', min: 0.00003, max: 1.3, title: { display: true, text: 'p値(対数軸)' },
+            ticks: {
+              callback: (value) => {
+                const fixedTicks = [1, 0.1, 0.01, 0.001, 0.0001];
+                const match = fixedTicks.find(f => Math.abs(value - f) / f < 1e-6);
+                return match !== undefined ? match.toFixed(5) : '';
+              }
+            }
+          }
         }
       }
     });
