@@ -1462,7 +1462,19 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: true, position: 'top' },
+          legend: {
+            display: true, position: 'top',
+            onClick: (e, legendItem, legend) => {
+              const idx = legendItem.datasetIndex;
+              const newVisible = !legend.chart.isDatasetVisible(idx);
+              churnSensitivityChartKeys().forEach(key => {
+                const c = charts[key];
+                if (!c) return;
+                c.setDatasetVisibility(idx, newVisible);
+                c.update();
+              });
+            }
+          },
           tooltip: {
             callbacks: {
               label: (ctx) => {
@@ -1507,6 +1519,13 @@
   ];
 
   // 年齢層ごとのグラフ枠を(初回のみ)生成する
+  // 「感度分析」セクション内の全グラフ(期間別・年齢層別)のchart keyの一覧
+  function churnSensitivityChartKeys() {
+    const keys = ['churnSensitivityWeeks', 'churnSensitivityMonths'];
+    CHURN_AGE_BRACKETS.forEach(b => keys.push(`churnSensitivityWeeks${b.id}`, `churnSensitivityMonths${b.id}`));
+    return keys;
+  }
+
   function churnRenderAgeBracketContainers() {
     const container = document.getElementById('churnSensitivityAgeBrackets');
     if (!container || container.dataset.rendered === '1') return;
