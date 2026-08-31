@@ -1433,7 +1433,7 @@
     }
   };
 
-  function churnRenderSensitivityLineChart(canvasId, chartKey, xLabels, lowValues, highValues, lowLabel, highLabel, xAxisTitle, showPointCounts) {
+  function churnRenderSensitivityLineChart(canvasId, chartKey, xLabels, lowValues, highValues, lowLabel, highLabel, xAxisTitle, countCaptionId) {
     const el = document.getElementById(canvasId);
     if (!el) return;
     if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
@@ -1449,34 +1449,15 @@
       borderWidth: 2, tension: 0, fill: false, spanGaps: true
     });
 
-    // 各点の対象人数(n)を点の近くに小さく描画する(showPointCounts指定時のみ)
-    const churnPointCountPlugin = {
-      id: `churnPointCount_${canvasId}`,
-      afterDatasetsDraw(chart) {
-        if (!showPointCounts) return;
-        const { ctx } = chart;
-        ctx.save();
-        ctx.font = '9px sans-serif';
-        ctx.textAlign = 'center';
-        if (chart.isDatasetVisible(0)) {
-          chart.getDatasetMeta(0).data.forEach((point, i) => {
-            const v = lowValues[i];
-            if (!v) return;
-            ctx.fillStyle = '#6b7280';
-            ctx.fillText(`n=${v.n}`, point.x, point.y - 10);
-          });
-        }
-        if (chart.isDatasetVisible(1)) {
-          chart.getDatasetMeta(1).data.forEach((point, i) => {
-            const v = highValues[i];
-            if (!v) return;
-            ctx.fillStyle = '#6b7280';
-            ctx.fillText(`n=${v.n}`, point.x, point.y + 14);
-          });
-        }
-        ctx.restore();
+    // 各点の対象人数(n)をグラフ直下にテキストで一覧表示する(countCaptionId指定時のみ)
+    if (countCaptionId) {
+      const captionEl = document.getElementById(countCaptionId);
+      if (captionEl) {
+        const lowText = `${lowLabel}: ` + xLabels.map((x, i) => `${x}=${lowValues[i] ? lowValues[i].n : 0}人`).join('、');
+        const highText = `${highLabel}: ` + xLabels.map((x, i) => `${x}=${highValues[i] ? highValues[i].n : 0}人`).join('、');
+        captionEl.textContent = `対象人数 ${lowText} / ${highText}`;
       }
-    };
+    }
 
     charts[chartKey] = new Chart(el, {
       type: 'line',
@@ -1487,7 +1468,7 @@
           makeDataset(highLabel, '#4b5563', highValues)
         ]
       },
-      plugins: [churnPValueRefLinesPlugin, churnPointCountPlugin],
+      plugins: [churnPValueRefLinesPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
@@ -1537,7 +1518,7 @@
     const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, lowMin, lowMax, ageMin, ageMax));
     const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, highMin, highMax, ageMin, ageMax));
     // 年齢層別グラフ(suffixあり)のみ、各点の対象人数(n)を表示する
-    churnRenderSensitivityLineChart(`churnSensitivityWeeks${suffix}`, `churnSensitivityWeeks${suffix}`, weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)', !!suffix);
+    churnRenderSensitivityLineChart(`churnSensitivityWeeks${suffix}`, `churnSensitivityWeeks${suffix}`, weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)', suffix ? `churnSensitivityWeeksCount${suffix}` : null);
   }
 
   const CHURN_AGE_BRACKETS = [
@@ -1568,6 +1549,7 @@
           <div class="chart-container" style="height: 240px;">
             <canvas id="churnSensitivityWeeks${b.id}"></canvas>
           </div>
+          <p id="churnSensitivityWeeksCount${b.id}" class="text-xs text-gray-500 mt-1"></p>
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-xs text-gray-500 mb-1">期間(月)</p>
