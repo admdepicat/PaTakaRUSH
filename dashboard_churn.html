@@ -430,6 +430,7 @@
   <div class="chart-container mb-8" style="height: 260px; max-width: 900px;">
     <canvas id="churnNewGroupSensitivity"></canvas>
   </div>
+  <div id="churnNewGroupSensitivityCount" class="overflow-x-auto -mt-4 mb-8"></div>
 
 </div>
 
@@ -1573,10 +1574,27 @@
   }
 
   // 単一グループ(2群比較ではない)のp値の推移を表示する折れ線グラフ
-  function churnRenderSingleSensitivityLineChart(canvasId, chartKey, xLabels, values, label, xAxisTitle) {
+  function churnRenderSingleSensitivityLineChart(canvasId, chartKey, xLabels, values, label, xAxisTitle, countCaptionId) {
     const el = document.getElementById(canvasId);
     if (!el) return;
     if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
+
+    // 各点の対象人数(n)をグラフ直下に表形式で、各列がグラフの点(x軸の値)と対応するように表示する
+    if (countCaptionId) {
+      const captionEl = document.getElementById(countCaptionId);
+      if (captionEl) {
+        const headerCells = xLabels.map(x => `<th class="px-1 py-0.5 text-center font-normal text-gray-500 border-b border-gray-200" style="min-width:26px;">${x}</th>`).join('');
+        const valueCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center">${values[i] ? values[i].n : 0}</td>`).join('');
+        captionEl.innerHTML = `
+          <table class="text-xs border-collapse">
+            <thead><tr><th class="px-1 py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap">対象人数</th>${headerCells}</tr></thead>
+            <tbody>
+              <tr><td class="px-1 py-0.5 text-left text-gray-500 whitespace-nowrap">${label}</td>${valueCells}</tr>
+            </tbody>
+          </table>
+        `;
+      }
+    }
 
     const clampP = (p) => p === null ? null : Math.min(Math.max(p, 0.0001), 0.9);
     const dataset = {
@@ -1639,7 +1657,7 @@
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
     const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, dayMin, dayMax, 50, 80));
-    churnRenderSingleSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', weeksList.map(w => `${w}週`), values, `50〜80歳・週${dayMin}〜${dayMax}日`, '期間(週)');
+    churnRenderSingleSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', weeksList.map(w => `${w}週`), values, `50〜80歳・週${dayMin}〜${dayMax}日`, '期間(週)', 'churnNewGroupSensitivityCount');
   }
 
   function renderChurnNewGroup() {
