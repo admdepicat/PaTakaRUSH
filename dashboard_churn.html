@@ -1449,13 +1449,22 @@
       borderWidth: 2, tension: 0, fill: false, spanGaps: true
     });
 
-    // 各点の対象人数(n)をグラフ直下にテキストで一覧表示する(countCaptionId指定時のみ)
+    // 各点の対象人数(n)をグラフ直下に表形式で、各列がグラフの点(x軸の値)と対応するように表示する(countCaptionId指定時のみ)
     if (countCaptionId) {
       const captionEl = document.getElementById(countCaptionId);
       if (captionEl) {
-        const lowText = `${lowLabel}: ` + xLabels.map((x, i) => `${x}=${lowValues[i] ? lowValues[i].n : 0}人`).join('、');
-        const highText = `${highLabel}: ` + xLabels.map((x, i) => `${x}=${highValues[i] ? highValues[i].n : 0}人`).join('、');
-        captionEl.textContent = `対象人数 ${lowText} / ${highText}`;
+        const headerCells = xLabels.map(x => `<th class="px-1 py-0.5 text-center font-normal text-gray-500 border-b border-gray-200" style="min-width:26px;">${x}</th>`).join('');
+        const lowCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center border-b border-gray-100">${lowValues[i] ? lowValues[i].n : 0}</td>`).join('');
+        const highCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center">${highValues[i] ? highValues[i].n : 0}</td>`).join('');
+        captionEl.innerHTML = `
+          <table class="text-xs border-collapse">
+            <thead><tr><th class="px-1 py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap">対象人数</th>${headerCells}</tr></thead>
+            <tbody>
+              <tr><td class="px-1 py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap">${lowLabel}</td>${lowCells}</tr>
+              <tr><td class="px-1 py-0.5 text-left text-gray-500 whitespace-nowrap">${highLabel}</td>${highCells}</tr>
+            </tbody>
+          </table>
+        `;
       }
     }
 
@@ -1549,7 +1558,7 @@
           <div class="chart-container" style="height: 240px;">
             <canvas id="churnSensitivityWeeks${b.id}"></canvas>
           </div>
-          <p id="churnSensitivityWeeksCount${b.id}" class="text-xs text-gray-500 mt-1"></p>
+          <div id="churnSensitivityWeeksCount${b.id}" class="overflow-x-auto mt-1"></div>
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-xs text-gray-500 mb-1">期間(月)</p>
