@@ -109,13 +109,16 @@
     <span class="text-gray-500">0回が</span>
     <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
+    <span class="text-gray-500">◯週まで表示:</span>
+    <input type="number" id="churnMultiUserWeeks" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
   </div>
 
   <p class="text-sm text-gray-600 mb-6">
-    ※初回検査から24週目まで到達しているユーザー(612名)のうち、24週間のどこかで「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
+    ※初回検査から指定週数(「◯週まで表示」)まで到達しているユーザーのうち、その期間内で「0回が指定週数以上連続」した人を除外した残りのユーザーについて、週ごとの検査日数(生データ)を上段は折れ線を重ねて、下段はヒートマップ(色が濃いほど検査日数が多い)で表示しています。<br>
     ※下のヒートマップのuidをクリックすると、そのユーザーの線が上の折れ線グラフで赤く強調表示されます（もう一度クリックすると解除されます）。
   </p>
 
@@ -143,9 +146,12 @@
     <span class="text-gray-500">0回が</span>
     <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
+    <span class="text-gray-500">◯週まで表示:</span>
+    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
 
     <div class="w-full"></div>
 
@@ -238,9 +244,12 @@
     <span class="text-gray-500">0回が</span>
     <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
+    <span class="text-gray-500">◯週まで表示:</span>
+    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
 
     <div class="w-full"></div>
 
@@ -326,9 +335,12 @@
     <span class="text-gray-500">0回が</span>
     <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
-    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="heatmapCount" class="text-emerald-600"></span>
+    <span class="text-gray-500">◯週まで表示:</span>
+    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
 
     <div class="w-full"></div>
 
@@ -738,7 +750,11 @@
     }
   }
 
-  const CHURN_USER_SELECT_MIN_WEEKS = 24; // 対象者が多すぎるため、当面は24週目まで到達しているユーザーのみに絞る
+  // 表示・母集団の絞り込みに使う週数(「◯週まで表示」入力欄から取得、デフォルト24週)
+  function churnGetMultiUserWeeks() {
+    const el = document.getElementById('churnMultiUserWeeks');
+    return el && el.value ? Math.max(1, Math.min(104, parseInt(el.value, 10))) : 24;
+  }
 
   // ===== 複数ユーザーの利用頻度推移 (0回が続いた人を除外) =====
   // 指定した週数分の範囲(0始まりインデックス)で、0回の週がthreshold週以上連続しているかどうかを判定する
@@ -760,7 +776,7 @@
     if (!rawData || !rawData.usersChurn) return [];
     const thresholdInput = document.getElementById('churnGapWeeksThreshold');
     const threshold = thresholdInput && thresholdInput.value ? Math.max(1, parseInt(thresholdInput.value, 10)) : 4;
-    const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
+    const weeksToCheck = churnGetMultiUserWeeks();
     return rawData.usersChurn
       .filter(u => u.accountAgeDays >= weeksToCheck * 7)
       .filter(u => !churnHasLongZeroStreak(u, weeksToCheck, threshold))
@@ -816,7 +832,7 @@
   function renderChurnMultiUserLineChart(users, chartKey, elementId, colorMode) {
     const el = document.getElementById(elementId);
     if (!el) return;
-    const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
+    const weeksToCheck = churnGetMultiUserWeeks();
 
     const newDatasets = users.map(u => {
       const points = [];
@@ -877,7 +893,7 @@
   function renderChurnHeatmap(users, containerId, colorMode) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    const weeksToCheck = CHURN_USER_SELECT_MIN_WEEKS;
+    const weeksToCheck = churnGetMultiUserWeeks();
 
     // 濃い(利用日数の合計が多い)人から薄い人の順に並べる
     const totalDaysOf = (u) => {
@@ -960,7 +976,6 @@
     const users = getChurnMultiUserFilteredUsers();
     churnUpdatePairedLowUidSet();
     churnSetMirrorText('multiUserCount', `対象: ${users.length}人`);
-    churnSetMirrorText('heatmapCount', `ヒートマップ対象: ${users.length}人`);
     updateChurnMultiUserSelectCaption();
     renderChurnMultiUserLineChart(users, 'churnMultiUserLine', 'churnMultiUserLineChart', 'green');
     renderChurnHeatmap(users, 'churnHeatmapContainer', 'green');
