@@ -1511,7 +1511,7 @@
     if (!container || container.dataset.rendered === '1') return;
     container.dataset.rendered = '1';
     container.innerHTML = CHURN_AGE_BRACKETS.map(b => `
-      <h5 class="text-sm font-bold text-gray-700 mt-6 mb-2">${b.label}</h5>
+      <h5 class="text-sm font-bold text-gray-700 mt-6 mb-2">${b.label} <span id="churnAgeBracketCount${b.id}" class="text-gray-500 font-normal"></span></h5>
       <div class="flex flex-col lg:flex-row gap-6 mb-4">
         <div class="flex-1 min-w-0">
           <p class="text-xs text-gray-500 mb-1">期間(週)</p>
@@ -1531,7 +1531,11 @@
 
   function renderChurnSensitivityByAge(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
     churnRenderAgeBracketContainers();
+    const users = getChurnMultiUserFilteredUsers();
     CHURN_AGE_BRACKETS.forEach(b => {
+      const count = users.filter(u => u.age > 0 && u.age >= b.min && u.age < b.max).length;
+      const countEl = document.getElementById(`churnAgeBracketCount${b.id}`);
+      if (countEl) countEl.textContent = `(対象: ${count}人)`;
       renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, b.id, b.min, b.max);
       renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, b.id, b.min, b.max);
     });
