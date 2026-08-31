@@ -397,6 +397,40 @@
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
+  <hr class="my-8 border-gray-200">
+
+  <h2 class="text-lg font-bold text-gray-800 mb-4">50歳以上80歳未満・週◯日以上利用ユーザーの変化</h2>
+  <p class="text-sm text-gray-600 mb-4">
+    年齢50歳以上80歳未満で、指定した期間中の平均利用日数が指定した範囲(週◯日〜◯日)に該当するユーザーを対象に、最初の週と最後の週の4文字平均スコアを比較します。
+  </p>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">期間:</span>
+    <input type="number" id="churnNewGroupWeeks" value="12" min="1" max="104" step="1" onchange="renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">週</span>
+    <input type="number" id="churnNewGroupDayMin" value="1" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" id="churnNewGroupDayMax" value="7" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日以上利用</span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="churnNewGroupCount" class="text-emerald-600"></span>
+  </div>
+
+  <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
+  <div class="chart-container" style="height: 380px; max-width: 600px;">
+    <canvas id="churnNewGroupBox"></canvas>
+  </div>
+  <p id="churnNewGroupBoxSig" class="text-xs text-gray-500 mt-1"></p>
+
+  <h5 class="text-sm font-bold text-gray-700 mt-8 mb-2">期間(週)を変えた場合のp値</h5>
+  <div class="chart-container mb-8" style="height: 260px; max-width: 900px;">
+    <canvas id="churnNewGroupSensitivity"></canvas>
+  </div>
+
 </div>
 
 <script>
@@ -982,6 +1016,7 @@
     renderChurnMultiUserLineChart(users, 'churnMultiUserLineRedBlue', 'churnMultiUserLineChartRedBlue', 'redblue');
     renderChurnHeatmap(users, 'churnHeatmapRedBlueContainer', 'redblue');
     renderChurnPairedCharts();
+    renderChurnNewGroup();
   }
 
   // ===== 4文字平均の変化 (最初の週 → 最後の週、0〜3日群/4〜7日群別) =====
@@ -1535,6 +1570,86 @@
         }
       }
     });
+  }
+
+  // 単一グループ(2群比較ではない)のp値の推移を表示する折れ線グラフ
+  function churnRenderSingleSensitivityLineChart(canvasId, chartKey, xLabels, values, label, xAxisTitle) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
+
+    const clampP = (p) => p === null ? null : Math.min(Math.max(p, 0.0001), 0.9);
+    const dataset = {
+      label,
+      data: values.map(v => clampP(v.pValue)),
+      borderColor: '#4b5563', backgroundColor: '#4b5563',
+      pointBackgroundColor: values.map(v => churnPValueColor(v.pValue)),
+      pointBorderColor: values.map(v => churnPValueColor(v.pValue)),
+      pointRadius: 5, pointHoverRadius: 7,
+      borderWidth: 2, tension: 0, fill: false, spanGaps: true
+    };
+
+    charts[chartKey] = new Chart(el, {
+      type: 'line',
+      data: { labels: xLabels, datasets: [dataset] },
+      plugins: [churnPValueRefLinesPlugin],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = values[ctx.dataIndex];
+                return `${label}: ${v.pValue === null ? 'データ不足' : churnFormatPValue(v.pValue)} (n=${v.n})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: xAxisTitle } },
+          y: {
+            type: 'logarithmic', min: 0.00003, max: 1.3, title: { display: true, text: 'p値(対数軸)' },
+            ticks: {
+              callback: (value) => {
+                const fixedTicks = [1, 0.1, 0.01, 0.001, 0.0001];
+                const match = fixedTicks.find(f => Math.abs(value - f) / f < 1e-6);
+                return match !== undefined ? match.toFixed(5) : '';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ===== 50歳以上80歳未満・週◯日以上利用ユーザーの変化 =====
+  function getChurnNewGroupControls() {
+    const weeksInput = document.getElementById('churnNewGroupWeeks');
+    const weeks = weeksInput && weeksInput.value ? Math.max(1, Math.min(104, parseInt(weeksInput.value, 10))) : 12;
+    const dayMinInput = document.getElementById('churnNewGroupDayMin');
+    const dayMaxInput = document.getElementById('churnNewGroupDayMax');
+    const dayMin = dayMinInput && dayMinInput.value !== '' ? parseInt(dayMinInput.value, 10) : 1;
+    const dayMax = dayMaxInput && dayMaxInput.value !== '' ? parseInt(dayMaxInput.value, 10) : 7;
+    return { weeks, dayMin: Math.min(dayMin, dayMax), dayMax: Math.max(dayMin, dayMax) };
+  }
+
+  function renderChurnNewGroupSensitivity(dayMin, dayMax) {
+    const maxWeeks = churnGetMultiUserWeeks();
+    const weeksList = [];
+    for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
+    const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, dayMin, dayMax, 50, 80));
+    churnRenderSingleSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', weeksList.map(w => `${w}週`), values, `50〜80歳・週${dayMin}〜${dayMax}日`, '期間(週)');
+  }
+
+  function renderChurnNewGroup() {
+    const { weeks, dayMin, dayMax } = getChurnNewGroupControls();
+    const stats = computeChurnPairedUserStatsForWeeks(weeks, 1, 50, 80);
+    const group = filterChurnPairedGroup(stats, dayMin, dayMax);
+    const countEl = document.getElementById('churnNewGroupCount');
+    if (countEl) countEl.textContent = `対象: ${group.length}人`;
+    renderChurnPairedBoxplot('churnNewGroupBox', 'churnNewGroupBox', 'churnNewGroupBoxSig', group, 0, 10, ['最初の週', '最後の週']);
+    renderChurnNewGroupSensitivity(dayMin, dayMax);
   }
 
   function renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, suffix, ageMin, ageMax) {
