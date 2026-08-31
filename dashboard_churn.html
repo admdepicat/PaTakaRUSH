@@ -1455,13 +1455,15 @@
       if (captionEl) {
         const headerCells = xLabels.map(x => `<th class="px-1 py-0.5 text-center font-normal text-gray-500 border-b border-gray-200" style="min-width:26px;">${x}</th>`).join('');
         const lowCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center border-b border-gray-100">${lowValues[i] ? lowValues[i].n : 0}</td>`).join('');
-        const highCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center">${highValues[i] ? highValues[i].n : 0}</td>`).join('');
+        const highCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center border-b border-gray-100">${highValues[i] ? highValues[i].n : 0}</td>`).join('');
+        const totalCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center font-bold">${(lowValues[i] ? lowValues[i].n : 0) + (highValues[i] ? highValues[i].n : 0)}</td>`).join('');
         captionEl.innerHTML = `
           <table class="text-xs border-collapse">
             <thead><tr><th class="px-1 py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap">対象人数</th>${headerCells}</tr></thead>
             <tbody>
               <tr><td class="px-1 py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap">${lowLabel}</td>${lowCells}</tr>
-              <tr><td class="px-1 py-0.5 text-left text-gray-500 whitespace-nowrap">${highLabel}</td>${highCells}</tr>
+              <tr><td class="px-1 py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap">${highLabel}</td>${highCells}</tr>
+              <tr><td class="px-1 py-0.5 text-left text-gray-700 font-bold whitespace-nowrap">合計</td>${totalCells}</tr>
             </tbody>
           </table>
         `;
