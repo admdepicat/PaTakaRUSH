@@ -376,6 +376,12 @@
     <canvas id="churnSensitivityMonths"></canvas>
   </div>
 
+  <h4 class="text-sm font-bold text-gray-800 mt-8 mb-2">■ 年齢層別のp値(どれくらい継続すると有意差が出るか)</h4>
+  <p class="text-sm text-gray-600 mb-4">
+    「3歳以上18歳未満」「18歳以上50歳未満」「50歳以上65歳未満」「65歳以上80歳未満」の年齢層ごとに、期間を変えた場合のp値を表示します。年齢が未入力のユーザーはいずれの年齢層にも含まれません。
+  </p>
+  <div id="churnSensitivityAgeBrackets"></div>
+
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">ヒートマップ (0〜3日=青4段階 / 4〜7日=赤4段階)</h3>
   <div id="churnHeatmapRedBlueContainer" class="mt-2" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
@@ -981,9 +987,13 @@
   }
 
   // 指定週数ちょうどでの各ユーザーの平均利用日数/週・最初と最後のスコアを計算する
-  function computeChurnPairedUserStatsForWeeks(weeks, windowWeeks) {
+  // ageMin/ageMaxを指定すると年齢層[ageMin, ageMax)(ageMax未満)で絞り込む。省略時は全年齢が対象。
+  function computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax) {
     const win = Math.max(1, windowWeeks || 1);
-    const users = getChurnMultiUserFilteredUsers();
+    let users = getChurnMultiUserFilteredUsers();
+    if (ageMin !== undefined && ageMax !== undefined) {
+      users = users.filter(u => u.age > 0 && u.age >= ageMin && u.age < ageMax);
+    }
     const stats = [];
     users.forEach(u => {
       if (!u.data || !u.scores) return;
@@ -999,9 +1009,9 @@
     return stats;
   }
 
-  function computeChurnPairedUserStats(months, windowWeeks) {
+  function computeChurnPairedUserStats(months, windowWeeks, ageMin, ageMax) {
     const weeks = Math.max(1, Math.min(6, months || 1)) * CHURN_WEEKS_PER_MONTH;
-    return { stats: computeChurnPairedUserStatsForWeeks(weeks, windowWeeks), weeks };
+    return { stats: computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax), weeks };
   }
 
   // 平均利用日数/週が[rangeMin, rangeMax]の範囲(両端含む)に該当するユーザーのペアだけを抽出する
@@ -1381,16 +1391,16 @@
     });
   }
 
-  function churnComputeGroupPValue(months, windowWeeks, rangeMin, rangeMax) {
-    const { stats } = computeChurnPairedUserStats(months, windowWeeks);
+  function churnComputeGroupPValue(months, windowWeeks, rangeMin, rangeMax, ageMin, ageMax) {
+    const { stats } = computeChurnPairedUserStats(months, windowWeeks, ageMin, ageMax);
     const group = filterChurnPairedGroup(stats, rangeMin, rangeMax);
     if (group.length === 0) return { pValue: null, n: 0 };
     const pValue = churnPairedTTestPValue(group.map(p => p.last - p.first));
     return { pValue, n: group.length };
   }
 
-  function churnComputeGroupPValueForWeeks(weeks, windowWeeks, rangeMin, rangeMax) {
-    const stats = computeChurnPairedUserStatsForWeeks(weeks, windowWeeks);
+  function churnComputeGroupPValueForWeeks(weeks, windowWeeks, rangeMin, rangeMax, ageMin, ageMax) {
+    const stats = computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax);
     const group = filterChurnPairedGroup(stats, rangeMin, rangeMax);
     if (group.length === 0) return { pValue: null, n: 0 };
     const pValue = churnPairedTTestPValue(group.map(p => p.last - p.first));
@@ -1470,20 +1480,61 @@
     });
   }
 
-  function renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+  function renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, suffix, ageMin, ageMax) {
+    suffix = suffix || '';
     const monthsList = [1, 2, 3, 4, 5, 6];
-    const lowValues = monthsList.map(m => churnComputeGroupPValue(m, windowWeeks, lowMin, lowMax));
-    const highValues = monthsList.map(m => churnComputeGroupPValue(m, windowWeeks, highMin, highMax));
-    churnRenderSensitivityLineChart('churnSensitivityMonths', 'churnSensitivityMonths', monthsList.map(m => `${m}ヶ月`), lowValues, highValues, lowLabel, highLabel, '期間');
+    const lowValues = monthsList.map(m => churnComputeGroupPValue(m, windowWeeks, lowMin, lowMax, ageMin, ageMax));
+    const highValues = monthsList.map(m => churnComputeGroupPValue(m, windowWeeks, highMin, highMax, ageMin, ageMax));
+    churnRenderSensitivityLineChart(`churnSensitivityMonths${suffix}`, `churnSensitivityMonths${suffix}`, monthsList.map(m => `${m}ヶ月`), lowValues, highValues, lowLabel, highLabel, '期間');
   }
 
-  function renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+  function renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, suffix, ageMin, ageMax) {
+    suffix = suffix || '';
     const maxWeeks = 6 * CHURN_WEEKS_PER_MONTH; // 6ヶ月分 = 24週
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
-    const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, lowMin, lowMax));
-    const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, highMin, highMax));
-    churnRenderSensitivityLineChart('churnSensitivityWeeks', 'churnSensitivityWeeks', weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)');
+    const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, lowMin, lowMax, ageMin, ageMax));
+    const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, highMin, highMax, ageMin, ageMax));
+    churnRenderSensitivityLineChart(`churnSensitivityWeeks${suffix}`, `churnSensitivityWeeks${suffix}`, weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)');
+  }
+
+  const CHURN_AGE_BRACKETS = [
+    { id: 'Age1', label: '3歳以上18歳未満', min: 3, max: 18 },
+    { id: 'Age2', label: '18歳以上50歳未満', min: 18, max: 50 },
+    { id: 'Age3', label: '50歳以上65歳未満', min: 50, max: 65 },
+    { id: 'Age4', label: '65歳以上80歳未満', min: 65, max: 80 }
+  ];
+
+  // 年齢層ごとのグラフ枠を(初回のみ)生成する
+  function churnRenderAgeBracketContainers() {
+    const container = document.getElementById('churnSensitivityAgeBrackets');
+    if (!container || container.dataset.rendered === '1') return;
+    container.dataset.rendered = '1';
+    container.innerHTML = CHURN_AGE_BRACKETS.map(b => `
+      <h5 class="text-sm font-bold text-gray-700 mt-6 mb-2">${b.label}</h5>
+      <div class="flex flex-col lg:flex-row gap-6 mb-4">
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-gray-500 mb-1">期間(週)</p>
+          <div class="chart-container" style="height: 240px;">
+            <canvas id="churnSensitivityWeeks${b.id}"></canvas>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-gray-500 mb-1">期間(月)</p>
+          <div class="chart-container" style="height: 240px;">
+            <canvas id="churnSensitivityMonths${b.id}"></canvas>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderChurnSensitivityByAge(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+    churnRenderAgeBracketContainers();
+    CHURN_AGE_BRACKETS.forEach(b => {
+      renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, b.id, b.min, b.max);
+      renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, b.id, b.min, b.max);
+    });
   }
 
   function renderChurnPairedCharts() {
@@ -1554,6 +1605,7 @@
 
     renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
     renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
+    renderChurnSensitivityByAge(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
   }
 
   function showChurnHistogram(weekInfo, series) {
