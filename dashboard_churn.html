@@ -106,6 +106,49 @@
 
   <hr class="my-8 border-gray-200">
 
+  <h2 class="text-lg font-bold text-gray-800 mb-4">週次利用日数の推移 (0回が続いた人を除外後)</h2>
+
+  <p class="text-sm text-gray-600 mb-4">
+    ※下の「複数ユーザーの利用頻度推移」と同じ除外基準(「0回が◯週続いた人を除外」「◯週まで表示」、下の設定欄と連動)を適用した対象ユーザーについて、週ごとの「利用日数(平均)」または「継続率」の推移を表示しています(性別・管理区分の内訳はありません)。
+  </p>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500 mr-1">表示:</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="churnFilteredMetricMode" id="churnFilteredMetricAvg" onchange="onChurnFilteredMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <span class="text-gray-700">利用日数(平均)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="churnFilteredMetricMode" id="churnFilteredMetricRetentionRate" onchange="onChurnFilteredMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <span class="text-gray-700">継続率(1日以上実施した割合)</span>
+    </label>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="churnFilteredChkBgBars" onchange="renderChurnFilteredChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+      <span class="text-gray-700">人数(背景棒)</span>
+    </label>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="flex items-center gap-1 whitespace-nowrap">
+      <span class="text-gray-500">Y軸最大値:</span>
+      <input type="number" id="churnFilteredYMax" placeholder="100" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnFilteredChart()" min="1" max="100" step="1">
+    </span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="flex items-center gap-1 whitespace-nowrap">
+      <span class="text-gray-500">対象人数Y軸最大値:</span>
+      <input type="number" id="churnFilteredCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnFilteredChart()" min="1" step="1">
+    </span>
+  </div>
+
+  <div class="chart-container" style="height: 380px; max-width: 900px;">
+    <canvas id="churnFilteredWeeklyChart"></canvas>
+  </div>
+  <div id="churnFilteredWeeklyCountTable" class="overflow-x-auto mt-2" style="max-width: 900px;"></div>
+
+  <hr class="my-8 border-gray-200">
+
   <h2 class="text-lg font-bold text-gray-800 mb-4">複数ユーザーの利用頻度推移 (0回が続いた人を除外)</h2>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -663,6 +706,216 @@
     renderChurnChart();
   }
 
+  // ===== 週次利用日数の推移 (0回が続いた人を除外後) =====
+  // 「複数ユーザーの利用頻度推移」と同じ除外基準(getChurnMultiUserFilteredUsers)を適用した対象者について、
+  // 性別・管理区分の内訳なしで週次の利用日数(平均)・継続率を表示するシンプル版
+  function getChurnFilteredMetricMode() {
+    if (document.getElementById('churnFilteredMetricAvg') && document.getElementById('churnFilteredMetricAvg').checked) return 'avg';
+    return 'retentionRate';
+  }
+
+  let churnFilteredYMaxByMode = { avg: '', retentionRate: '' };
+  let churnFilteredPrevMetricMode = 'retentionRate';
+
+  function onChurnFilteredMetricModeChange() {
+    const yMaxInput = document.getElementById('churnFilteredYMax');
+    const newMode = getChurnFilteredMetricMode();
+    if (yMaxInput) {
+      churnFilteredYMaxByMode[churnFilteredPrevMetricMode] = yMaxInput.value;
+      const isRetentionRate = newMode === 'retentionRate';
+      const newMax = isRetentionRate ? 100 : 7;
+      yMaxInput.placeholder = String(newMax);
+      yMaxInput.max = String(newMax);
+      const remembered = churnFilteredYMaxByMode[newMode];
+      const rememberedNum = remembered ? parseInt(remembered, 10) : null;
+      yMaxInput.value = (rememberedNum !== null && rememberedNum >= 1 && rememberedNum <= newMax) ? remembered : '';
+    }
+    churnFilteredPrevMetricMode = newMode;
+    renderChurnFilteredChart();
+  }
+
+  // 「複数ユーザーの利用頻度推移」の除外基準を通過した対象者(users)について、週ごとの利用日数(平均)・継続率・対象人数を集計する
+  function computeChurnFilteredWeeklyStats(users) {
+    const weeksToCheck = churnGetMultiUserWeeks();
+    const weekly = [];
+    for (let w = 0; w < weeksToCheck; w++) {
+      let activeUsers = 0, sumDays = 0;
+      const hist = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
+      users.forEach(u => {
+        if (u.accountAgeDays >= w * 7) {
+          activeUsers++;
+          const days = u.data && u.data[w] ? u.data[w] : 0;
+          sumDays += days;
+          hist[days] = (hist[days] || 0) + 1;
+        }
+      });
+      if (activeUsers === 0) break;
+      const retentionRate = (activeUsers - (hist[0] || 0)) / activeUsers * 100;
+      weekly.push({ week: w + 1, avg: sumDays / activeUsers, retentionRate: retentionRate, activeUsers: activeUsers, hist: hist });
+    }
+    return weekly;
+  }
+
+  function renderChurnFilteredChart(users) {
+    try {
+      const el = document.getElementById('churnFilteredWeeklyChart');
+      if (!el) return;
+      if (!users) users = getChurnMultiUserFilteredUsers();
+      const weekly = computeChurnFilteredWeeklyStats(users);
+      const color = '#059669';
+
+      const metricMode = getChurnFilteredMetricMode();
+      const yMaxStr = document.getElementById('churnFilteredYMax') ? document.getElementById('churnFilteredYMax').value : '';
+      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : (metricMode === 'retentionRate' ? 100 : 7);
+      const yAxisTitle = metricMode === 'retentionRate' ? '継続率 (%)' : '利用日数 (日/週)';
+      const yTickStepSize = metricMode === 'retentionRate' ? 10 : 1;
+
+      const lastWeek = weekly.length > 0 ? weekly[weekly.length - 1].week : 1;
+      const xMin = 0.5;
+      const xMax = lastWeek + 0.5;
+
+      const dataPoints = weekly.map(w => ({ x: w.week, y: metricMode === 'retentionRate' ? w.retentionRate : w.avg }));
+      const newDatasets = [{
+        type: 'line', label: '対象(0回除外後)', data: dataPoints,
+        borderColor: color, backgroundColor: hexToRgba(color, 0.15),
+        borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBackgroundColor: color, pointBorderColor: color,
+        fill: false, tension: 0, yAxisID: 'y', clip: false
+      }];
+
+      const showBgBars = document.getElementById('churnFilteredChkBgBars') && document.getElementById('churnFilteredChkBgBars').checked;
+      if (showBgBars) {
+        const testedPoints = [], notTestedPoints = [];
+        weekly.forEach(w => {
+          const tested = Math.max(0, w.activeUsers - (w.hist[0] || 0));
+          const notTested = w.hist[0] || 0;
+          testedPoints.push({ x: w.week, y: tested });
+          notTestedPoints.push({ x: w.week, y: notTested });
+        });
+        newDatasets.push({
+          type: 'bar', label: '対象(0回除外後)(その週実施)', data: testedPoints,
+          backgroundColor: hexToRgba(color, 0.75), borderColor: hexToRgba(color, 0.9), borderWidth: 1,
+          yAxisID: 'yCount', order: 10, barThickness: 6, stack: 'churnFilteredCountStack'
+        });
+        newDatasets.push({
+          type: 'bar', label: '対象(0回除外後)(未実施)', data: notTestedPoints,
+          backgroundColor: hexToRgba(color, 0.2), borderColor: hexToRgba(color, 0.4), borderWidth: 1,
+          yAxisID: 'yCount', order: 10, barThickness: 6, stack: 'churnFilteredCountStack'
+        });
+      }
+
+      const countYMaxStr = document.getElementById('churnFilteredCountYMax') ? document.getElementById('churnFilteredCountYMax').value : '';
+      const countYMax = countYMaxStr ? parseInt(countYMaxStr, 10) : undefined;
+
+      if (!charts.churnFiltered) {
+        charts.churnFiltered = new Chart(el, {
+          type: 'line',
+          data: { datasets: newDatasets },
+          options: {
+            layout: { padding: { top: 8 } },
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                labels: {
+                  usePointStyle: true,
+                  generateLabels: (chart) => {
+                    const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                    labels.forEach((label, i) => {
+                      const ds = chart.data.datasets[i];
+                      if (ds && ds.type === 'line') label.pointStyle = 'line';
+                    });
+                    return labels;
+                  }
+                }
+              },
+              tooltip: {
+                mode: 'x', intersect: false,
+                itemSort: (a, b) => {
+                  const order = ['未実施', 'その週実施'];
+                  const kindOf = (item) => { const m = item.dataset.label.match(/\(([^)]+)\)$/); return m ? order.indexOf(m[1]) : -1; };
+                  return kindOf(a) - kindOf(b);
+                },
+                callbacks: {
+                  title: (items) => {
+                    if (!items || items.length === 0) return '';
+                    const week = items[0].parsed.x;
+                    const weekInfo = weekly[items[0].dataIndex];
+                    return `${week}週目 (対象 ${weekInfo ? weekInfo.activeUsers.toLocaleString() : '-'}人)`;
+                  },
+                  label: (ctx) => {
+                    if (ctx.dataset.type === 'bar') {
+                      const m = ctx.dataset.label.match(/\(([^)]+)\)$/);
+                      const kind = m ? m[1] : ctx.dataset.label;
+                      return `${kind}: ${ctx.raw.y}人`;
+                    }
+                    const weekInfo = weekly[ctx.dataIndex];
+                    const valueText = ctx.raw.y !== null && ctx.raw.y !== undefined ? (metricMode === 'retentionRate' ? `${ctx.raw.y.toFixed(1)}%` : `${ctx.raw.y.toFixed(2)} 日/週`) : '-';
+                    return `${valueText} (対象 ${weekInfo ? weekInfo.activeUsers : 0}人)`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                type: 'linear', title: { display: true, text: '週目' }, min: xMin, max: xMax,
+                afterBuildTicks: (axis) => {
+                  const lo = Math.max(1, Math.ceil(axis.min));
+                  const hi = Math.floor(axis.max);
+                  const ticks = [];
+                  for (let v = lo; v <= hi; v++) ticks.push({ value: v });
+                  axis.ticks = ticks;
+                },
+                ticks: { precision: 0 }
+              },
+              y: { title: { display: true, text: yAxisTitle }, min: 0, max: yMax, ticks: { stepSize: yTickStepSize, precision: 0 } },
+              yCount: { position: 'right', title: { display: true, text: '対象人数 (人)' }, min: 0, max: countYMax, stacked: true, grid: { drawOnChartArea: false } }
+            }
+          }
+        });
+      } else {
+        const chart = charts.churnFiltered;
+        chart.data.datasets = newDatasets;
+        chart.options.scales.x.min = xMin;
+        chart.options.scales.x.max = xMax;
+        chart.options.scales.y.max = yMax;
+        chart.options.scales.y.title.text = yAxisTitle;
+        chart.options.scales.y.ticks.stepSize = yTickStepSize;
+        chart.options.scales.yCount.max = countYMax;
+        chart.update();
+      }
+
+      churnRenderFilteredWeeklyCountTable(weekly);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // churnRenderWeeklyCountTableと同様、グラフのchartAreaを使って列幅を実際の描画位置に合わせた実人数の表を表示する
+  function churnRenderFilteredWeeklyCountTable(weekly) {
+    const captionEl = document.getElementById('churnFilteredWeeklyCountTable');
+    if (!captionEl) return;
+    const chart = charts.churnFiltered;
+    if (!chart || !weekly || weekly.length === 0) { captionEl.innerHTML = ''; return; }
+
+    const weeksList = weekly.map(w => w.week);
+    const n = weeksList.length;
+    const chartArea = chart.chartArea;
+    const labelColWidth = Math.round(chartArea.left);
+    const colWidth = (chartArea.right - chartArea.left) / n;
+    const colgroup = `<colgroup><col style="width:${labelColWidth}px">` +
+      weeksList.map(() => `<col style="width:${colWidth}px">`).join('') + `</colgroup>`;
+    const headerCells = weeksList.map(w => `<th class="py-0.5 text-center font-normal text-gray-500 border-b border-gray-200 overflow-hidden">${w}</th>`).join('');
+    const cells = weekly.map(w => `<td class="py-0.5 text-center border-b border-gray-100">${w.activeUsers}</td>`).join('');
+
+    captionEl.innerHTML = `
+      <table class="text-xs border-collapse" style="table-layout:fixed; width:${labelColWidth + colWidth * n}px;">
+        ${colgroup}
+        <thead><tr><th class="py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap overflow-hidden">実人数</th>${headerCells}</tr></thead>
+        <tbody><tr><td class="py-0.5 text-left font-bold border-b border-gray-100 whitespace-nowrap overflow-hidden" style="color:#059669;">対象(0回除外後)</td>${cells}</tr></tbody>
+      </table>
+    `;
+  }
+
   // 現在の性別×管理チェックボックスの組み合わせごとに、週次データの系列を生成する
   function computeChurnSeriesList() {
     const genderFilters = getChurnGenderFilters();
@@ -1149,6 +1402,7 @@
 
   function renderChurnMultiUserCharts() {
     const users = getChurnMultiUserFilteredUsers();
+    renderChurnFilteredChart(users);
     churnUpdatePairedLowUidSet();
     churnSetMirrorText('multiUserCount', `対象: ${users.length}人`);
     updateChurnMultiUserSelectCaption();
