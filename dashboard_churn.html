@@ -406,15 +406,15 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">期間:</span>
-    <input type="number" id="churnNewGroupWeeks" value="12" min="1" max="104" step="1" onchange="renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnNewGroupWeeks" value="4" min="1" max="104" step="1" onchange="renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
 
     <div class="w-full"></div>
 
-    <span id="churnNewGroupLowLabel" class="text-gray-500">1〜3日群</span>
-    <input type="number" id="churnNewGroupLowMin" value="1" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span id="churnNewGroupLowLabel" class="text-gray-500">0〜1日群</span>
+    <input type="number" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnNewGroupLowMax" value="3" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnNewGroupLowMax" value="1" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span id="churnNewGroupLowCount" class="text-gray-500 font-normal"></span>
 
@@ -1703,13 +1703,13 @@
   // ===== 50歳以上80歳未満・週◯日以上利用ユーザーの変化 =====
   function getChurnNewGroupControls() {
     const weeksInput = document.getElementById('churnNewGroupWeeks');
-    const weeks = weeksInput && weeksInput.value ? Math.max(1, Math.min(104, parseInt(weeksInput.value, 10))) : 12;
+    const weeks = weeksInput && weeksInput.value ? Math.max(1, Math.min(104, parseInt(weeksInput.value, 10))) : 4;
     const getRangeInput = (id, fallback) => {
       const el = document.getElementById(id);
       return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
     };
-    const lowMin = getRangeInput('churnNewGroupLowMin', 1);
-    const lowMax = getRangeInput('churnNewGroupLowMax', 3);
+    const lowMin = getRangeInput('churnNewGroupLowMin', 0);
+    const lowMax = getRangeInput('churnNewGroupLowMax', 1);
     const highMin = getRangeInput('churnNewGroupHighMin', 4);
     const highMax = getRangeInput('churnNewGroupHighMax', 7);
     return {
