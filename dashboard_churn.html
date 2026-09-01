@@ -140,7 +140,7 @@
     <canvas id="churnMultiUserLineChartRedBlue"></canvas>
   </div>
 
-  <h3 id="churnPairedTitle" class="text-base font-bold text-gray-800 mt-8 mb-2">4文字平均の変化 (最初の週 → 最後の週、0〜2日群/3〜7日群別)</h3>
+  <h3 id="churnPairedTitle" class="text-base font-bold text-gray-800 mt-8 mb-2">4文字平均の変化 (最初の週 → 最後の週、低日数群/高日数群別)</h3>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
@@ -183,7 +183,7 @@
 
     <div class="w-full"></div>
 
-    <span data-mirror="lowLabel" class="text-gray-500">0〜2日群</span>
+    <span data-mirror="lowLabel" class="text-gray-500">低日数群</span>
     <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedLowMax" value="2" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -191,7 +191,7 @@
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="highLabel" class="text-gray-500">3〜7日群</span>
+    <span data-mirror="highLabel" class="text-gray-500">高日数群</span>
     <input type="number" id="churnPairedHighMin" value="3" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -208,8 +208,7 @@
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">低日数群</span>
-        <span data-mirror="lowLabel" class="text-gray-500 font-normal"></span>
+        <span data-mirror="lowLabel" class="text-gray-800"></span>
         <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 380px;">
@@ -219,8 +218,7 @@
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">高日数群</span>
-        <span data-mirror="highLabel" class="text-gray-500 font-normal"></span>
+        <span data-mirror="highLabel" class="text-gray-800"></span>
         <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 380px;">
@@ -234,8 +232,7 @@
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">低日数群</span>
-        <span data-mirror="lowLabel" class="text-gray-500 font-normal"></span>
+        <span data-mirror="lowLabel" class="text-gray-800"></span>
         <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 300px;">
@@ -245,8 +242,7 @@
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">高日数群</span>
-        <span data-mirror="highLabel" class="text-gray-500 font-normal"></span>
+        <span data-mirror="highLabel" class="text-gray-800"></span>
         <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 300px;">
@@ -293,7 +289,7 @@
 
     <div class="w-full"></div>
 
-    <span data-mirror="lowLabelWeeks" class="text-gray-500">0〜2日群</span>
+    <span data-mirror="lowLabelWeeks" class="text-gray-500">低日数群</span>
     <input type="number" id="churnPairedLowMinWeeks" value="0" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedLowMaxWeeks" value="2" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -301,7 +297,7 @@
     <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="highLabelWeeks" class="text-gray-500">3〜7日群</span>
+    <span data-mirror="highLabelWeeks" class="text-gray-500">高日数群</span>
     <input type="number" id="churnPairedHighMinWeeks" value="3" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnPairedHighMaxWeeks" value="7" min="0" max="7" step="1" onchange="renderChurnPairedCharts()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -312,8 +308,7 @@
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">低日数群</span>
-        <span data-mirror="lowLabelWeeks" class="text-gray-500 font-normal"></span>
+        <span data-mirror="lowLabelWeeks" class="text-gray-800"></span>
         <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 380px;">
@@ -323,8 +318,7 @@
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">高日数群</span>
-        <span data-mirror="highLabelWeeks" class="text-gray-500 font-normal"></span>
+        <span data-mirror="highLabelWeeks" class="text-gray-800"></span>
         <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 380px;">
@@ -338,8 +332,7 @@
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">低日数群</span>
-        <span data-mirror="lowLabelWeeks" class="text-gray-500 font-normal"></span>
+        <span data-mirror="lowLabelWeeks" class="text-gray-800"></span>
         <span data-mirror="lowCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 300px;">
@@ -349,8 +342,7 @@
     </div>
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span class="text-gray-800">高日数群</span>
-        <span data-mirror="highLabelWeeks" class="text-gray-500 font-normal"></span>
+        <span data-mirror="highLabelWeeks" class="text-gray-800"></span>
         <span data-mirror="highCountWeeks" class="text-gray-500 font-normal"></span>
       </div>
       <div class="chart-container" style="height: 300px;">
@@ -362,7 +354,7 @@
 
   <h3 class="text-base font-bold text-gray-800 mt-8 mb-2">感度分析 (p値の変化)</h3>
   <p class="text-sm text-gray-600 mb-4">
-    上記の「0〜2日群」「3〜7日群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
+    上記の「低日数群」「高日数群」の設定(日数範囲・期間・比較単位)を条件ごとに変化させたときのp値の推移を比較できます。色は上記グラフと同じ有意水準の色分け(青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05)です。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -396,7 +388,7 @@
 
     <div class="w-full"></div>
 
-    <span data-mirror="lowLabel" class="text-gray-500">0〜2日群</span>
+    <span data-mirror="lowLabel" class="text-gray-500">低日数群</span>
     <input type="number" value="0" min="0" max="7" step="1" data-sync="lowMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" value="2" min="0" max="7" step="1" data-sync="lowMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -404,7 +396,7 @@
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span data-mirror="highLabel" class="text-gray-500">3〜7日群</span>
+    <span data-mirror="highLabel" class="text-gray-500">高日数群</span>
     <input type="number" value="3" min="0" max="7" step="1" data-sync="highMin" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" value="7" min="0" max="7" step="1" data-sync="highMax" onchange="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -445,7 +437,7 @@
 
     <div class="w-full"></div>
 
-    <span id="churnNewGroupLowLabel" class="text-gray-500">0〜2日群</span>
+    <span id="churnNewGroupLowLabel" class="text-gray-500">低日数群</span>
     <input type="number" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnNewGroupLowMax" value="2" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -453,7 +445,7 @@
     <span id="churnNewGroupLowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span id="churnNewGroupHighLabel" class="text-gray-500">4〜7日群</span>
+    <span id="churnNewGroupHighLabel" class="text-gray-500">高日数群</span>
     <input type="number" id="churnNewGroupHighMin" value="4" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
     <input type="number" id="churnNewGroupHighMax" value="7" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -1998,8 +1990,8 @@
     const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
     const highGroup = filterChurnPairedGroup(stats, highMin, highMax);
 
-    const lowLabel = `${Math.min(lowMin, lowMax)}〜${Math.max(lowMin, lowMax)}日群`;
-    const highLabel = `${Math.min(highMin, highMax)}〜${Math.max(highMin, highMax)}日群`;
+    const lowLabel = '低日数群';
+    const highLabel = '高日数群';
 
     const titleEl = document.getElementById('churnPairedTitle');
     if (titleEl) titleEl.textContent = `4文字平均の変化 (${windowLabel}、${lowLabel}/${highLabel}別)`;
@@ -2036,8 +2028,8 @@
     const statsWeeks = computeChurnPairedUserStatsForWeeks(weeksPeriod, windowWeeksForWeeksPanel);
     const lowGroupWeeks = filterChurnPairedGroup(statsWeeks, lowMinWeeks, lowMaxWeeks);
     const highGroupWeeks = filterChurnPairedGroup(statsWeeks, highMinWeeks, highMaxWeeks);
-    churnSetMirrorText('lowLabelWeeks', `${Math.min(lowMinWeeks, lowMaxWeeks)}〜${Math.max(lowMinWeeks, lowMaxWeeks)}日群`);
-    churnSetMirrorText('highLabelWeeks', `${Math.min(highMinWeeks, highMaxWeeks)}〜${Math.max(highMinWeeks, highMaxWeeks)}日群`);
+    churnSetMirrorText('lowLabelWeeks', '低日数群');
+    churnSetMirrorText('highLabelWeeks', '高日数群');
     churnSetMirrorText('lowCountWeeks', `対象: ${lowGroupWeeks.length}人`);
     churnSetMirrorText('highCountWeeks', `対象: ${highGroupWeeks.length}人`);
     renderChurnPairedBoxplot('churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeks', 'churnPairedBoxLowWeeksSig', lowGroupWeeks, yMinWeeks, yMaxWeeks, xLabelsWeeksPanel);
