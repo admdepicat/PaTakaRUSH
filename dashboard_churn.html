@@ -87,8 +87,11 @@
   </p>
 
   <div class="flex flex-col lg:flex-row gap-6">
-    <div class="flex-1 min-w-0 chart-container" style="height: 380px;">
-      <canvas id="churnWeeklyChart"></canvas>
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnWeeklyChart"></canvas>
+      </div>
+      <div id="churnWeeklyCountTable" class="overflow-x-auto mt-2"></div>
     </div>
     <div class="w-full lg:w-80 shrink-0">
       <div class="chart-container" style="height: 380px;">
@@ -869,6 +872,8 @@
         chart.update();
       }
 
+      churnRenderWeeklyCountTable(seriesList, xMinWeek, xMaxWeek);
+
       // 選択中の点が今の系列一覧にまだ存在すれば、ヒストグラムの内容を追随させる。無くなっていれば選択を解除する
       if (churnLastClicked) {
         const series = churnWeeklyCache[churnLastClicked.datasetIndex];
@@ -884,6 +889,41 @@
     } catch (error) {
       console.error(error);
     }
+  }
+
+  // 「週次利用日数の推移」グラフの下に、週目ごとの実人数(対象人数)を表で表示する。
+  // グラフの点(週目)とテーブルの列がずれないよう、グラフの実際の描画位置(chartArea)を使って列幅を合わせる。
+  function churnRenderWeeklyCountTable(seriesList, xMinWeek, xMaxWeek) {
+    const captionEl = document.getElementById('churnWeeklyCountTable');
+    if (!captionEl) return;
+    const chart = charts.churn;
+    if (!chart || !seriesList || seriesList.length === 0) { captionEl.innerHTML = ''; return; }
+
+    const weeksList = [];
+    for (let w = xMinWeek; w <= xMaxWeek; w++) weeksList.push(w);
+    const n = weeksList.length;
+    if (n === 0) { captionEl.innerHTML = ''; return; }
+
+    const chartArea = chart.chartArea;
+    const labelColWidth = Math.round(chartArea.left);
+    const colWidth = (chartArea.right - chartArea.left) / n;
+    const colgroup = `<colgroup><col style="width:${labelColWidth}px">` +
+      weeksList.map(() => `<col style="width:${colWidth}px">`).join('') + `</colgroup>`;
+    const headerCells = weeksList.map(w => `<th class="py-0.5 text-center font-normal text-gray-500 border-b border-gray-200 overflow-hidden">${w}</th>`).join('');
+    const rows = seriesList.map(series => {
+      const map = {};
+      series.weekly.forEach(w => { map[w.week] = w.activeUsers; });
+      const cells = weeksList.map(w => `<td class="py-0.5 text-center border-b border-gray-100">${map[w] !== undefined ? map[w] : '-'}</td>`).join('');
+      return `<tr><td class="py-0.5 text-left font-bold border-b border-gray-100 whitespace-nowrap overflow-hidden" style="color:${series.color};">${series.label}</td>${cells}</tr>`;
+    }).join('');
+
+    captionEl.innerHTML = `
+      <table class="text-xs border-collapse" style="table-layout:fixed; width:${labelColWidth + colWidth * n}px;">
+        ${colgroup}
+        <thead><tr><th class="py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap overflow-hidden">実人数</th>${headerCells}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
   }
 
   // 表示・母集団の絞り込みに使う週数(「◯週まで表示」入力欄から取得、デフォルト24週)
