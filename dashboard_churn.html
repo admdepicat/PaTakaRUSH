@@ -73,7 +73,7 @@
           <span class="text-gray-500">週(X軸):</span>
           <input type="number" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
           <span class="text-gray-500">〜</span>
-          <input type="number" id="churnXMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
+          <input type="number" id="churnXMax" placeholder="24" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="renderChurnChart()" min="1" step="1">
           <span class="text-gray-500">週</span>
         </span>
       </div>
@@ -718,8 +718,7 @@
       const xMinStr = document.getElementById('churnXMin') ? document.getElementById('churnXMin').value : '';
       const xMaxStr = document.getElementById('churnXMax') ? document.getElementById('churnXMax').value : '';
       const xMinWeek = xMinStr ? parseInt(xMinStr, 10) : 1;
-      const lastWeeks = seriesList.map(s => s.weekly.length > 0 ? s.weekly[s.weekly.length - 1].week : 0);
-      const xMaxWeek = xMaxStr ? parseInt(xMaxStr, 10) : Math.max(xMinWeek, ...lastWeeks);
+      const xMaxWeek = xMaxStr ? parseInt(xMaxStr, 10) : 24;
       // 最初/最後の点が左右の端で半分隠れないよう、指定した週の範囲より少し余白を持たせる
       const xMin = xMinWeek - 0.5;
       const xMax = xMaxWeek + 0.5;
