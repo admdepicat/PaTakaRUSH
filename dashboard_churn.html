@@ -466,6 +466,22 @@
   </div>
   <div id="churnNewGroupSensitivityCount" class="overflow-x-auto -mt-4 mb-8"></div>
 
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 mb-4">
+    <span class="text-gray-500">下の「期間(週)を変えた場合のp値」の管理区分:</span>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupManagedTotal2" onchange="renderChurnNewGroupSensitivity2FromControls()" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <span class="text-gray-700">全体</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupManagedNo2" onchange="renderChurnNewGroupSensitivity2FromControls()" class="w-4 h-4 cursor-pointer accent-orange-500" checked>
+      <span class="text-orange-500">管理無</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupManagedYes2" onchange="renderChurnNewGroupSensitivity2FromControls()" class="w-4 h-4 cursor-pointer accent-purple-600" checked>
+      <span class="text-purple-600">管理有</span>
+    </label>
+  </div>
+
   <h5 class="text-sm font-bold text-gray-700 mt-8 mb-2">期間(週)を変えた場合のp値</h5>
   <div class="chart-container mb-8" style="height: 260px; max-width: 900px;">
     <canvas id="churnNewGroupSensitivity2"></canvas>
@@ -1638,6 +1654,7 @@
       label: s.label,
       data: s.values.map(v => clampP(v.pValue)),
       borderColor: s.color, backgroundColor: s.color,
+      borderDash: s.dash || [],
       pointBackgroundColor: s.values.map(v => churnPValueColor(v.pValue)),
       pointBorderColor: s.values.map(v => churnPValueColor(v.pValue)),
       pointRadius: 5, pointHoverRadius: 7,
@@ -1691,7 +1708,9 @@
         const headerCells = xLabels.map(x => `<th class="py-0.5 text-center font-normal text-gray-500 border-b border-gray-200 overflow-hidden">${x}</th>`).join('');
         const rows = series.map(s => {
           const cells = xLabels.map((x, i) => `<td class="py-0.5 text-center border-b border-gray-100">${s.values[i] ? s.values[i].n : 0}</td>`).join('');
-          return `<tr><td class="py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap overflow-hidden">${s.label}</td>${cells}</tr>`;
+          const labelStyle = s.labelColor ? ` style="color:${s.labelColor};"` : '';
+          const labelClass = s.labelColor ? 'font-bold' : 'text-gray-500';
+          return `<tr><td class="py-0.5 text-left ${labelClass} border-b border-gray-100 whitespace-nowrap overflow-hidden"${labelStyle}>${s.label}</td>${cells}</tr>`;
         }).join('');
         const totalCells = xLabels.map((x, i) => `<td class="py-0.5 text-center font-bold">${series.reduce((sum, s) => sum + (s.values[i] ? s.values[i].n : 0), 0)}</td>`).join('');
         const totalRow = `<tr><td class="py-0.5 text-left text-gray-700 font-bold whitespace-nowrap overflow-hidden">合計</td>${totalCells}</tr>`;
@@ -1734,30 +1753,54 @@
     return filters.length > 0 ? filters : ['total'];
   }
 
+  // 下段(2つ目)のグラフ専用の管理区分チェックボックスで選択中のフィルタ一覧を返す(未選択なら全体扱い)
+  function getChurnNewGroupManagedFilters2() {
+    const filters = [];
+    if (document.getElementById('churnNewGroupManagedTotal2') && document.getElementById('churnNewGroupManagedTotal2').checked) filters.push('total');
+    if (document.getElementById('churnNewGroupManagedYes2') && document.getElementById('churnNewGroupManagedYes2').checked) filters.push('managed');
+    if (document.getElementById('churnNewGroupManagedNo2') && document.getElementById('churnNewGroupManagedNo2').checked) filters.push('unmanaged');
+    return filters.length > 0 ? filters : ['total'];
+  }
+
   const CHURN_NEW_GROUP_MANAGED_LABEL = { total: '', managed: '管理有', unmanaged: '管理無' };
   // 日数群(低/高)×管理区分の組み合わせごとの色。日数群を色の濃淡、管理区分を色相で区別する
   const CHURN_NEW_GROUP_COLOR = {
     low: { total: '#9ca3af', managed: '#a855f7', unmanaged: '#fb923c' },
     high: { total: '#4b5563', managed: '#7e22ce', unmanaged: '#c2410c' }
   };
+  // 表の系列ラベル文字色(管理有=紫、管理無=オレンジ)
+  const CHURN_NEW_GROUP_LABEL_COLOR = { managed: '#7e22ce', unmanaged: '#c2410c' };
 
-  function renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+  // managedFilters・低日数群の破線指定・表ラベルの色分け指定を受け取ってseries配列を組み立てる
+  function buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, opts) {
+    opts = opts || {};
     const maxWeeks = churnGetMultiUserWeeks();
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
-    const xLabels = weeksList.map(w => `${w}週`);
-    const managedFilters = getChurnNewGroupManagedFilters();
-
     const series = [];
     [{ key: 'low', min: lowMin, max: lowMax, label: lowLabel }, { key: 'high', min: highMin, max: highMax, label: highLabel }].forEach(g => {
       managedFilters.forEach(mf => {
         const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, g.min, g.max, 50, 80, mf === 'total' ? undefined : mf));
         const label = mf === 'total' ? g.label : `${g.label}(${CHURN_NEW_GROUP_MANAGED_LABEL[mf]})`;
-        series.push({ label, values, color: CHURN_NEW_GROUP_COLOR[g.key][mf] });
+        const s = { label, values, color: CHURN_NEW_GROUP_COLOR[g.key][mf] };
+        if (opts.dashLow && g.key === 'low') s.dash = [6, 4];
+        if (opts.colorLabels && (mf === 'managed' || mf === 'unmanaged')) s.labelColor = CHURN_NEW_GROUP_LABEL_COLOR[mf];
+        series.push(s);
       });
     });
 
+    return { xLabels, series };
+  }
+
+  function renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+    const managedFilters = getChurnNewGroupManagedFilters();
+    const { xLabels, series } = buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, {});
     churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount');
+  }
+
+  function renderChurnNewGroupSensitivity2(lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
+    const managedFilters = getChurnNewGroupManagedFilters2();
+    const { xLabels, series } = buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, { dashLow: true, colorLabels: true });
     churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity2', 'churnNewGroupSensitivity2', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount2');
   }
 
@@ -1765,6 +1808,12 @@
   function renderChurnNewGroupSensitivityFromControls() {
     const { lowMin, lowMax, highMin, highMax } = getChurnNewGroupControls();
     renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, '低日数群', '高日数群');
+  }
+
+  // 下段(2つ目)グラフの管理区分チェックボックス変更時は、そのグラフだけ軽量に再描画する
+  function renderChurnNewGroupSensitivity2FromControls() {
+    const { lowMin, lowMax, highMin, highMax } = getChurnNewGroupControls();
+    renderChurnNewGroupSensitivity2(lowMin, lowMax, highMin, highMax, '低日数群', '高日数群');
   }
 
   function renderChurnNewGroup() {
@@ -1785,6 +1834,7 @@
     renderChurnPairedBoxplot('churnNewGroupBoxLow', 'churnNewGroupBoxLow', 'churnNewGroupBoxLowSig', lowGroup, 0, 10, ['最初の週', '最後の週']);
     renderChurnPairedBoxplot('churnNewGroupBoxHigh', 'churnNewGroupBoxHigh', 'churnNewGroupBoxHighSig', highGroup, 0, 10, ['最初の週', '最後の週']);
     renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
+    renderChurnNewGroupSensitivity2(lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
   }
 
   function renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, suffix, ageMin, ageMax) {
