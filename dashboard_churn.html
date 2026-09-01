@@ -1777,6 +1777,7 @@
     const maxWeeks = churnGetMultiUserWeeks();
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
+    const xLabels = weeksList.map(w => `${w}週`);
     const series = [];
     [{ key: 'low', min: lowMin, max: lowMax, label: lowLabel }, { key: 'high', min: highMin, max: highMax, label: highLabel }].forEach(g => {
       managedFilters.forEach(mf => {
