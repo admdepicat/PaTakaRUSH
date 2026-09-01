@@ -401,7 +401,7 @@
 
   <h2 class="text-lg font-bold text-gray-800 mb-4">50歳以上80歳未満・週◯日以上利用ユーザーの変化</h2>
   <p class="text-sm text-gray-600 mb-4">
-    年齢50歳以上80歳未満で、指定した期間中の平均利用日数が指定した範囲(週◯日〜◯日)に該当するユーザーを対象に、最初の週と最後の週の4文字平均スコアを比較します。
+    年齢50歳以上80歳未満で、指定した期間中の平均利用日数が、左右それぞれで指定した範囲に該当するユーザーを対象に、最初の週と最後の週の4文字平均スコアを比較します。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -409,22 +409,40 @@
     <input type="number" id="churnNewGroupWeeks" value="12" min="1" max="104" step="1" onchange="renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
 
-    <span class="text-gray-300 mx-1">|</span>
-    <span class="text-gray-500">週</span>
-    <input type="number" id="churnNewGroupDayMin" value="1" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <div class="w-full"></div>
+
+    <span id="churnNewGroupLowLabel" class="text-gray-500">1〜3日群</span>
+    <input type="number" id="churnNewGroupLowMin" value="1" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnNewGroupDayMax" value="7" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
-    <span class="text-gray-500">日以上利用</span>
+    <input type="number" id="churnNewGroupLowMax" value="3" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span id="churnNewGroupLowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span id="churnNewGroupCount" class="text-emerald-600"></span>
+    <span id="churnNewGroupHighLabel" class="text-gray-500">4〜7日群</span>
+    <input type="number" id="churnNewGroupHighMin" value="4" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜</span>
+    <input type="number" id="churnNewGroupHighMax" value="7" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">日</span>
+    <span id="churnNewGroupHighCount" class="text-gray-500 font-normal"></span>
   </div>
 
-  <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
-  <div class="chart-container" style="height: 380px; max-width: 600px;">
-    <canvas id="churnNewGroupBox"></canvas>
+  <div class="flex flex-col lg:flex-row gap-6">
+    <div class="flex-1 min-w-0">
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnNewGroupBoxLow"></canvas>
+      </div>
+      <p id="churnNewGroupBoxLowSig" class="text-xs text-gray-500 mt-1"></p>
+    </div>
+    <div class="flex-1 min-w-0">
+      <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
+      <div class="chart-container" style="height: 380px;">
+        <canvas id="churnNewGroupBoxHigh"></canvas>
+      </div>
+      <p id="churnNewGroupBoxHighSig" class="text-xs text-gray-500 mt-1"></p>
+    </div>
   </div>
-  <p id="churnNewGroupBoxSig" class="text-xs text-gray-500 mt-1"></p>
 
   <h5 class="text-sm font-bold text-gray-700 mt-8 mb-2">期間(週)を変えた場合のp値</h5>
   <div class="chart-container mb-8" style="height: 260px; max-width: 900px;">
@@ -1573,101 +1591,52 @@
     });
   }
 
-  // 単一グループ(2群比較ではない)のp値の推移を表示する折れ線グラフ
-  function churnRenderSingleSensitivityLineChart(canvasId, chartKey, xLabels, values, label, xAxisTitle, countCaptionId) {
-    const el = document.getElementById(canvasId);
-    if (!el) return;
-    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
-
-    // 各点の対象人数(n)をグラフ直下に表形式で、各列がグラフの点(x軸の値)と対応するように表示する
-    if (countCaptionId) {
-      const captionEl = document.getElementById(countCaptionId);
-      if (captionEl) {
-        const headerCells = xLabels.map(x => `<th class="px-1 py-0.5 text-center font-normal text-gray-500 border-b border-gray-200" style="min-width:26px;">${x}</th>`).join('');
-        const valueCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center">${values[i] ? values[i].n : 0}</td>`).join('');
-        captionEl.innerHTML = `
-          <table class="text-xs border-collapse">
-            <thead><tr><th class="px-1 py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap">対象人数</th>${headerCells}</tr></thead>
-            <tbody>
-              <tr><td class="px-1 py-0.5 text-left text-gray-500 whitespace-nowrap">${label}</td>${valueCells}</tr>
-            </tbody>
-          </table>
-        `;
-      }
-    }
-
-    const clampP = (p) => p === null ? null : Math.min(Math.max(p, 0.0001), 0.9);
-    const dataset = {
-      label,
-      data: values.map(v => clampP(v.pValue)),
-      borderColor: '#4b5563', backgroundColor: '#4b5563',
-      pointBackgroundColor: values.map(v => churnPValueColor(v.pValue)),
-      pointBorderColor: values.map(v => churnPValueColor(v.pValue)),
-      pointRadius: 5, pointHoverRadius: 7,
-      borderWidth: 2, tension: 0, fill: false, spanGaps: true
-    };
-
-    charts[chartKey] = new Chart(el, {
-      type: 'line',
-      data: { labels: xLabels, datasets: [dataset] },
-      plugins: [churnPValueRefLinesPlugin],
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: true, position: 'top' },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => {
-                const v = values[ctx.dataIndex];
-                return `${label}: ${v.pValue === null ? 'データ不足' : churnFormatPValue(v.pValue)} (n=${v.n})`;
-              }
-            }
-          }
-        },
-        scales: {
-          x: { title: { display: true, text: xAxisTitle } },
-          y: {
-            type: 'logarithmic', min: 0.00003, max: 1.3, title: { display: true, text: 'p値(対数軸)' },
-            ticks: {
-              callback: (value) => {
-                const fixedTicks = [1, 0.1, 0.01, 0.001, 0.0001];
-                const match = fixedTicks.find(f => Math.abs(value - f) / f < 1e-6);
-                return match !== undefined ? match.toFixed(5) : '';
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
   // ===== 50歳以上80歳未満・週◯日以上利用ユーザーの変化 =====
   function getChurnNewGroupControls() {
     const weeksInput = document.getElementById('churnNewGroupWeeks');
     const weeks = weeksInput && weeksInput.value ? Math.max(1, Math.min(104, parseInt(weeksInput.value, 10))) : 12;
-    const dayMinInput = document.getElementById('churnNewGroupDayMin');
-    const dayMaxInput = document.getElementById('churnNewGroupDayMax');
-    const dayMin = dayMinInput && dayMinInput.value !== '' ? parseInt(dayMinInput.value, 10) : 1;
-    const dayMax = dayMaxInput && dayMaxInput.value !== '' ? parseInt(dayMaxInput.value, 10) : 7;
-    return { weeks, dayMin: Math.min(dayMin, dayMax), dayMax: Math.max(dayMin, dayMax) };
+    const getRangeInput = (id, fallback) => {
+      const el = document.getElementById(id);
+      return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
+    };
+    const lowMin = getRangeInput('churnNewGroupLowMin', 1);
+    const lowMax = getRangeInput('churnNewGroupLowMax', 3);
+    const highMin = getRangeInput('churnNewGroupHighMin', 4);
+    const highMax = getRangeInput('churnNewGroupHighMax', 7);
+    return {
+      weeks,
+      lowMin: Math.min(lowMin, lowMax), lowMax: Math.max(lowMin, lowMax),
+      highMin: Math.min(highMin, highMax), highMax: Math.max(highMin, highMax)
+    };
   }
 
-  function renderChurnNewGroupSensitivity(dayMin, dayMax) {
+  function renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
     const maxWeeks = churnGetMultiUserWeeks();
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
-    const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, dayMin, dayMax, 50, 80));
-    churnRenderSingleSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', weeksList.map(w => `${w}週`), values, `50〜80歳・週${dayMin}〜${dayMax}日`, '期間(週)', 'churnNewGroupSensitivityCount');
+    const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, lowMin, lowMax, 50, 80));
+    const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, highMin, highMax, 50, 80));
+    churnRenderSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)', 'churnNewGroupSensitivityCount');
   }
 
   function renderChurnNewGroup() {
-    const { weeks, dayMin, dayMax } = getChurnNewGroupControls();
+    const { weeks, lowMin, lowMax, highMin, highMax } = getChurnNewGroupControls();
     const stats = computeChurnPairedUserStatsForWeeks(weeks, 1, 50, 80);
-    const group = filterChurnPairedGroup(stats, dayMin, dayMax);
-    const countEl = document.getElementById('churnNewGroupCount');
-    if (countEl) countEl.textContent = `対象: ${group.length}人`;
-    renderChurnPairedBoxplot('churnNewGroupBox', 'churnNewGroupBox', 'churnNewGroupBoxSig', group, 0, 10, ['最初の週', '最後の週']);
-    renderChurnNewGroupSensitivity(dayMin, dayMax);
+    const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
+    const highGroup = filterChurnPairedGroup(stats, highMin, highMax);
+    const lowLabel = `${lowMin}〜${lowMax}日群`;
+    const highLabel = `${highMin}〜${highMax}日群`;
+    const lowLabelEl = document.getElementById('churnNewGroupLowLabel');
+    if (lowLabelEl) lowLabelEl.textContent = lowLabel;
+    const highLabelEl = document.getElementById('churnNewGroupHighLabel');
+    if (highLabelEl) highLabelEl.textContent = highLabel;
+    const lowCountEl = document.getElementById('churnNewGroupLowCount');
+    if (lowCountEl) lowCountEl.textContent = `対象: ${lowGroup.length}人`;
+    const highCountEl = document.getElementById('churnNewGroupHighCount');
+    if (highCountEl) highCountEl.textContent = `対象: ${highGroup.length}人`;
+    renderChurnPairedBoxplot('churnNewGroupBoxLow', 'churnNewGroupBoxLow', 'churnNewGroupBoxLowSig', lowGroup, 0, 10, ['最初の週', '最後の週']);
+    renderChurnPairedBoxplot('churnNewGroupBoxHigh', 'churnNewGroupBoxHigh', 'churnNewGroupBoxHighSig', highGroup, 0, 10, ['最初の週', '最後の週']);
+    renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, lowLabel, highLabel);
   }
 
   function renderChurnSensitivityMonths(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, suffix, ageMin, ageMax) {
