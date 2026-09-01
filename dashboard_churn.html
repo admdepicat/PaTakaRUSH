@@ -482,6 +482,18 @@
     </label>
   </div>
 
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 mb-4">
+    <span class="text-gray-500">下の「期間(週)を変えた場合のp値」の日数群:</span>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupShowLow2" onchange="renderChurnNewGroupSensitivity2FromControls()" class="w-4 h-4 cursor-pointer accent-gray-600">
+      <span class="text-gray-700">低日数群</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupShowHigh2" onchange="renderChurnNewGroupSensitivity2FromControls()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <span class="text-gray-700">高日数群</span>
+    </label>
+  </div>
+
   <h5 class="text-sm font-bold text-gray-700 mt-8 mb-2">期間(週)を変えた場合のp値</h5>
   <div class="chart-container mb-8" style="height: 260px; max-width: 900px;">
     <canvas id="churnNewGroupSensitivity2"></canvas>
@@ -1774,12 +1786,15 @@
   // managedFilters・低日数群の破線指定・表ラベルの色分け指定を受け取ってseries配列を組み立てる
   function buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, opts) {
     opts = opts || {};
+    const groupKeys = opts.groupKeys || ['low', 'high']; // 表示する日数群(低/高)を絞り込む場合に指定
     const maxWeeks = churnGetMultiUserWeeks();
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
     const xLabels = weeksList.map(w => `${w}週`);
     const series = [];
-    [{ key: 'low', min: lowMin, max: lowMax, label: lowLabel }, { key: 'high', min: highMin, max: highMax, label: highLabel }].forEach(g => {
+    [{ key: 'low', min: lowMin, max: lowMax, label: lowLabel }, { key: 'high', min: highMin, max: highMax, label: highLabel }]
+      .filter(g => groupKeys.includes(g.key))
+      .forEach(g => {
       managedFilters.forEach(mf => {
         const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, g.min, g.max, 50, 80, mf === 'total' ? undefined : mf));
         const label = mf === 'total' ? g.label : `${g.label}(${CHURN_NEW_GROUP_MANAGED_LABEL[mf]})`;
@@ -1799,9 +1814,18 @@
     churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount');
   }
 
+  // 下段(2つ目)グラフの日数群チェックボックスで選択中のキー一覧を返す(未選択なら両方扱い)
+  function getChurnNewGroupShowKeys2() {
+    const keys = [];
+    if (document.getElementById('churnNewGroupShowLow2') && document.getElementById('churnNewGroupShowLow2').checked) keys.push('low');
+    if (document.getElementById('churnNewGroupShowHigh2') && document.getElementById('churnNewGroupShowHigh2').checked) keys.push('high');
+    return keys.length > 0 ? keys : ['low', 'high'];
+  }
+
   function renderChurnNewGroupSensitivity2(lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
     const managedFilters = getChurnNewGroupManagedFilters2();
-    const { xLabels, series } = buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, { dashLow: true, colorLabels: true });
+    const groupKeys = getChurnNewGroupShowKeys2();
+    const { xLabels, series } = buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, { dashLow: true, colorLabels: true, groupKeys });
     churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity2', 'churnNewGroupSensitivity2', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount2');
   }
 
