@@ -411,10 +411,10 @@
 
     <div class="w-full"></div>
 
-    <span id="churnNewGroupLowLabel" class="text-gray-500">0〜1日群</span>
+    <span id="churnNewGroupLowLabel" class="text-gray-500">0〜2日群</span>
     <input type="number" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnNewGroupLowMax" value="1" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="number" id="churnNewGroupLowMax" value="2" min="0" max="7" step="1" onchange="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span id="churnNewGroupLowCount" class="text-gray-500 font-normal"></span>
 
@@ -465,6 +465,12 @@
     <canvas id="churnNewGroupSensitivity"></canvas>
   </div>
   <div id="churnNewGroupSensitivityCount" class="overflow-x-auto -mt-4 mb-8"></div>
+
+  <h5 class="text-sm font-bold text-gray-700 mt-8 mb-2">期間(週)を変えた場合のp値</h5>
+  <div class="chart-container mb-8" style="height: 260px; max-width: 900px;">
+    <canvas id="churnNewGroupSensitivity2"></canvas>
+  </div>
+  <div id="churnNewGroupSensitivityCount2" class="overflow-x-auto -mt-4 mb-8"></div>
 
 </div>
 
@@ -1709,7 +1715,7 @@
       return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
     };
     const lowMin = getRangeInput('churnNewGroupLowMin', 0);
-    const lowMax = getRangeInput('churnNewGroupLowMax', 1);
+    const lowMax = getRangeInput('churnNewGroupLowMax', 2);
     const highMin = getRangeInput('churnNewGroupHighMin', 4);
     const highMax = getRangeInput('churnNewGroupHighMax', 7);
     return {
@@ -1752,6 +1758,7 @@
     });
 
     churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount');
+    churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity2', 'churnNewGroupSensitivity2', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount2');
   }
 
   // 管理区分チェックボックス変更時は、p値グラフだけ軽量に再描画する
