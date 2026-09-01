@@ -1910,7 +1910,7 @@
 
   function renderChurnSensitivityWeeks(windowWeeks, lowMin, lowMax, highMin, highMax, lowLabel, highLabel, suffix, ageMin, ageMax) {
     suffix = suffix || '';
-    const maxWeeks = 6 * CHURN_WEEKS_PER_MONTH; // 6ヶ月分 = 24週
+    const maxWeeks = churnGetMultiUserWeeks(); // 「◯週まで表示」の設定に合わせる
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
     const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, lowMin, lowMax, ageMin, ageMax));
