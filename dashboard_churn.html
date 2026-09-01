@@ -427,6 +427,22 @@
     <span id="churnNewGroupHighCount" class="text-gray-500 font-normal"></span>
   </div>
 
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 mb-4">
+    <span class="text-gray-500">下の「期間(週)を変えた場合のp値」の管理区分:</span>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupManagedTotal" onchange="renderChurnNewGroupSensitivityFromControls()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
+      <span class="text-gray-700">全体</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupManagedNo" onchange="renderChurnNewGroupSensitivityFromControls()" class="w-4 h-4 cursor-pointer accent-orange-500">
+      <span class="text-orange-500">管理無</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer font-normal">
+      <input type="checkbox" id="churnNewGroupManagedYes" onchange="renderChurnNewGroupSensitivityFromControls()" class="w-4 h-4 cursor-pointer accent-purple-600">
+      <span class="text-purple-600">管理有</span>
+    </label>
+  </div>
+
   <div class="flex flex-col lg:flex-row gap-6">
     <div class="flex-1 min-w-0">
       <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図(週次)</h5>
@@ -1057,11 +1073,15 @@
 
   // 指定週数ちょうどでの各ユーザーの平均利用日数/週・最初と最後のスコアを計算する
   // ageMin/ageMaxを指定すると年齢層[ageMin, ageMax)(ageMax未満)で絞り込む。省略時は全年齢が対象。
-  function computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax) {
+  // managedFilterは 'managed' または 'unmanaged' を指定すると管理区分で絞り込む(省略時は絞り込みなし)
+  function computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax, managedFilter) {
     const win = Math.max(1, windowWeeks || 1);
     let users = getChurnMultiUserFilteredUsers();
     if (ageMin !== undefined && ageMax !== undefined) {
       users = users.filter(u => u.age > 0 && u.age >= ageMin && u.age < ageMax);
+    }
+    if (managedFilter) {
+      users = users.filter(u => u.groupType === managedFilter);
     }
     const stats = [];
     users.forEach(u => {
@@ -1468,8 +1488,8 @@
     return { pValue, n: group.length };
   }
 
-  function churnComputeGroupPValueForWeeks(weeks, windowWeeks, rangeMin, rangeMax, ageMin, ageMax) {
-    const stats = computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax);
+  function churnComputeGroupPValueForWeeks(weeks, windowWeeks, rangeMin, rangeMax, ageMin, ageMax, managedFilter) {
+    const stats = computeChurnPairedUserStatsForWeeks(weeks, windowWeeks, ageMin, ageMax, managedFilter);
     const group = filterChurnPairedGroup(stats, rangeMin, rangeMax);
     if (group.length === 0) return { pValue: null, n: 0 };
     const pValue = churnPairedTTestPValue(group.map(p => p.last - p.first));
@@ -1600,6 +1620,84 @@
     }
   }
 
+  // 任意の数の系列(series = [{label, values, color}, ...])のp値推移を表示する折れ線グラフ。
+  // churnRenderSensitivityLineChartの2系列固定版とは別に、管理区分などで系列数が可変になるグラフ向け。
+  function churnRenderMultiSensitivityLineChart(canvasId, chartKey, xLabels, series, xAxisTitle, countCaptionId) {
+    const el = document.getElementById(canvasId);
+    if (!el) return;
+    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
+
+    const clampP = (p) => p === null ? null : Math.min(Math.max(p, 0.0001), 0.9);
+    const datasets = series.map(s => ({
+      label: s.label,
+      data: s.values.map(v => clampP(v.pValue)),
+      borderColor: s.color, backgroundColor: s.color,
+      pointBackgroundColor: s.values.map(v => churnPValueColor(v.pValue)),
+      pointBorderColor: s.values.map(v => churnPValueColor(v.pValue)),
+      pointRadius: 5, pointHoverRadius: 7,
+      borderWidth: 2, tension: 0, fill: false, spanGaps: true
+    }));
+
+    charts[chartKey] = new Chart(el, {
+      type: 'line',
+      data: { labels: xLabels, datasets },
+      plugins: [churnPValueRefLinesPlugin],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = series[ctx.datasetIndex].values[ctx.dataIndex];
+                return `${ctx.dataset.label}: ${v.pValue === null ? 'データ不足' : churnFormatPValue(v.pValue)} (n=${v.n})`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: xAxisTitle } },
+          y: {
+            type: 'logarithmic', min: 0.00003, max: 1.3, title: { display: true, text: 'p値(対数軸)' },
+            ticks: {
+              callback: (value) => {
+                const fixedTicks = [1, 0.1, 0.01, 0.001, 0.0001];
+                const match = fixedTicks.find(f => Math.abs(value - f) / f < 1e-6);
+                return match !== undefined ? match.toFixed(5) : '';
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 各点の対象人数(n)をグラフ直下に表形式で、グラフの実描画座標に列を合わせて表示する
+    if (countCaptionId) {
+      const captionEl = document.getElementById(countCaptionId);
+      if (captionEl) {
+        const chart = charts[chartKey];
+        const chartArea = chart.chartArea;
+        const n = xLabels.length;
+        const labelColWidth = Math.round(chartArea.left);
+        const colWidth = (chartArea.right - chartArea.left) / n;
+        const colgroup = `<colgroup><col style="width:${labelColWidth}px">` +
+          xLabels.map(() => `<col style="width:${colWidth}px">`).join('') + `</colgroup>`;
+        const headerCells = xLabels.map(x => `<th class="py-0.5 text-center font-normal text-gray-500 border-b border-gray-200 overflow-hidden">${x}</th>`).join('');
+        const rows = series.map(s => {
+          const cells = xLabels.map((x, i) => `<td class="py-0.5 text-center border-b border-gray-100">${s.values[i] ? s.values[i].n : 0}</td>`).join('');
+          return `<tr><td class="py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap overflow-hidden">${s.label}</td>${cells}</tr>`;
+        }).join('');
+        captionEl.innerHTML = `
+          <table class="text-xs border-collapse" style="table-layout:fixed; width:${labelColWidth + colWidth * n}px;">
+            ${colgroup}
+            <thead><tr><th class="py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap overflow-hidden">対象人数</th>${headerCells}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      }
+    }
+  }
+
   // ===== 50歳以上80歳未満・週◯日以上利用ユーザーの変化 =====
   function getChurnNewGroupControls() {
     const weeksInput = document.getElementById('churnNewGroupWeeks');
@@ -1619,13 +1717,45 @@
     };
   }
 
+  // 「期間(週)を変えた場合のp値」の管理区分チェックボックスで選択中のフィルタ一覧を返す(未選択なら全体扱い)
+  function getChurnNewGroupManagedFilters() {
+    const filters = [];
+    if (document.getElementById('churnNewGroupManagedTotal') && document.getElementById('churnNewGroupManagedTotal').checked) filters.push('total');
+    if (document.getElementById('churnNewGroupManagedYes') && document.getElementById('churnNewGroupManagedYes').checked) filters.push('managed');
+    if (document.getElementById('churnNewGroupManagedNo') && document.getElementById('churnNewGroupManagedNo').checked) filters.push('unmanaged');
+    return filters.length > 0 ? filters : ['total'];
+  }
+
+  const CHURN_NEW_GROUP_MANAGED_LABEL = { total: '', managed: '管理有', unmanaged: '管理無' };
+  // 日数群(低/高)×管理区分の組み合わせごとの色。日数群を色の濃淡、管理区分を色相で区別する
+  const CHURN_NEW_GROUP_COLOR = {
+    low: { total: '#9ca3af', managed: '#a855f7', unmanaged: '#fb923c' },
+    high: { total: '#4b5563', managed: '#7e22ce', unmanaged: '#c2410c' }
+  };
+
   function renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, lowLabel, highLabel) {
     const maxWeeks = churnGetMultiUserWeeks();
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
-    const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, lowMin, lowMax, 50, 80));
-    const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, highMin, highMax, 50, 80));
-    churnRenderSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)', 'churnNewGroupSensitivityCount');
+    const xLabels = weeksList.map(w => `${w}週`);
+    const managedFilters = getChurnNewGroupManagedFilters();
+
+    const series = [];
+    [{ key: 'low', min: lowMin, max: lowMax, label: lowLabel }, { key: 'high', min: highMin, max: highMax, label: highLabel }].forEach(g => {
+      managedFilters.forEach(mf => {
+        const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, g.min, g.max, 50, 80, mf === 'total' ? undefined : mf));
+        const label = mf === 'total' ? g.label : `${g.label}(${CHURN_NEW_GROUP_MANAGED_LABEL[mf]})`;
+        series.push({ label, values, color: CHURN_NEW_GROUP_COLOR[g.key][mf] });
+      });
+    });
+
+    churnRenderMultiSensitivityLineChart('churnNewGroupSensitivity', 'churnNewGroupSensitivity', xLabels, series, '期間(週)', 'churnNewGroupSensitivityCount');
+  }
+
+  // 管理区分チェックボックス変更時は、p値グラフだけ軽量に再描画する
+  function renderChurnNewGroupSensitivityFromControls() {
+    const { lowMin, lowMax, highMin, highMax } = getChurnNewGroupControls();
+    renderChurnNewGroupSensitivity(lowMin, lowMax, highMin, highMax, '低日数群', '高日数群');
   }
 
   function renderChurnNewGroup() {
@@ -1633,8 +1763,8 @@
     const stats = computeChurnPairedUserStatsForWeeks(weeks, 1, 50, 80);
     const lowGroup = filterChurnPairedGroup(stats, lowMin, lowMax);
     const highGroup = filterChurnPairedGroup(stats, highMin, highMax);
-    const lowLabel = `${lowMin}〜${lowMax}日群`;
-    const highLabel = `${highMin}〜${highMax}日群`;
+    const lowLabel = '低日数群';
+    const highLabel = '高日数群';
     const lowLabelEl = document.getElementById('churnNewGroupLowLabel');
     if (lowLabelEl) lowLabelEl.textContent = lowLabel;
     const highLabelEl = document.getElementById('churnNewGroupHighLabel');
