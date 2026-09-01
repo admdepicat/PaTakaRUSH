@@ -1518,27 +1518,6 @@
       borderWidth: 2, tension: 0, fill: false, spanGaps: true
     });
 
-    // 各点の対象人数(n)をグラフ直下に表形式で、各列がグラフの点(x軸の値)と対応するように表示する(countCaptionId指定時のみ)
-    if (countCaptionId) {
-      const captionEl = document.getElementById(countCaptionId);
-      if (captionEl) {
-        const headerCells = xLabels.map(x => `<th class="px-1 py-0.5 text-center font-normal text-gray-500 border-b border-gray-200" style="min-width:26px;">${x}</th>`).join('');
-        const lowCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center border-b border-gray-100">${lowValues[i] ? lowValues[i].n : 0}</td>`).join('');
-        const highCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center border-b border-gray-100">${highValues[i] ? highValues[i].n : 0}</td>`).join('');
-        const totalCells = xLabels.map((x, i) => `<td class="px-1 py-0.5 text-center font-bold">${(lowValues[i] ? lowValues[i].n : 0) + (highValues[i] ? highValues[i].n : 0)}</td>`).join('');
-        captionEl.innerHTML = `
-          <table class="text-xs border-collapse">
-            <thead><tr><th class="px-1 py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap">対象人数</th>${headerCells}</tr></thead>
-            <tbody>
-              <tr><td class="px-1 py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap">${lowLabel}</td>${lowCells}</tr>
-              <tr><td class="px-1 py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap">${highLabel}</td>${highCells}</tr>
-              <tr><td class="px-1 py-0.5 text-left text-gray-700 font-bold whitespace-nowrap">合計</td>${totalCells}</tr>
-            </tbody>
-          </table>
-        `;
-      }
-    }
-
     charts[chartKey] = new Chart(el, {
       type: 'line',
       data: {
@@ -1589,6 +1568,36 @@
         }
       }
     });
+
+    // 各点の対象人数(n)をグラフ直下に表形式で表示する(countCaptionId指定時のみ)。
+    // グラフの実際の描画位置(chartArea/x軸目盛りのピクセル位置)を使って列幅を合わせ、グラフの点と表の列がずれないようにする。
+    if (countCaptionId) {
+      const captionEl = document.getElementById(countCaptionId);
+      if (captionEl) {
+        const chart = charts[chartKey];
+        const chartArea = chart.chartArea;
+        const n = xLabels.length;
+        const labelColWidth = Math.round(chartArea.left);
+        const colWidth = (chartArea.right - chartArea.left) / n;
+        const colgroup = `<colgroup><col style="width:${labelColWidth}px">` +
+          xLabels.map(() => `<col style="width:${colWidth}px">`).join('') + `</colgroup>`;
+        const headerCells = xLabels.map(x => `<th class="py-0.5 text-center font-normal text-gray-500 border-b border-gray-200 overflow-hidden">${x}</th>`).join('');
+        const lowCells = xLabels.map((x, i) => `<td class="py-0.5 text-center border-b border-gray-100">${lowValues[i] ? lowValues[i].n : 0}</td>`).join('');
+        const highCells = xLabels.map((x, i) => `<td class="py-0.5 text-center border-b border-gray-100">${highValues[i] ? highValues[i].n : 0}</td>`).join('');
+        const totalCells = xLabels.map((x, i) => `<td class="py-0.5 text-center font-bold">${(lowValues[i] ? lowValues[i].n : 0) + (highValues[i] ? highValues[i].n : 0)}</td>`).join('');
+        captionEl.innerHTML = `
+          <table class="text-xs border-collapse" style="table-layout:fixed; width:${labelColWidth + colWidth * n}px;">
+            ${colgroup}
+            <thead><tr><th class="py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap overflow-hidden">対象人数</th>${headerCells}</tr></thead>
+            <tbody>
+              <tr><td class="py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap overflow-hidden">${lowLabel}</td>${lowCells}</tr>
+              <tr><td class="py-0.5 text-left text-gray-500 border-b border-gray-100 whitespace-nowrap overflow-hidden">${highLabel}</td>${highCells}</tr>
+              <tr><td class="py-0.5 text-left text-gray-700 font-bold whitespace-nowrap overflow-hidden">合計</td>${totalCells}</tr>
+            </tbody>
+          </table>
+        `;
+      }
+    }
   }
 
   // ===== 50歳以上80歳未満・週◯日以上利用ユーザーの変化 =====
