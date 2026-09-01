@@ -1667,6 +1667,7 @@
       data: s.values.map(v => clampP(v.pValue)),
       borderColor: s.color, backgroundColor: s.color,
       borderDash: s.dash || [],
+      hidden: s.hidden || false,
       pointBackgroundColor: s.values.map(v => churnPValueColor(v.pValue)),
       pointBorderColor: s.values.map(v => churnPValueColor(v.pValue)),
       pointRadius: 5, pointHoverRadius: 7,
@@ -1786,14 +1787,13 @@
   // managedFilters・低日数群の破線指定・表ラベルの色分け指定を受け取ってseries配列を組み立てる
   function buildChurnNewGroupSeries(lowMin, lowMax, highMin, highMax, lowLabel, highLabel, managedFilters, opts) {
     opts = opts || {};
-    const groupKeys = opts.groupKeys || ['low', 'high']; // 表示する日数群(低/高)を絞り込む場合に指定
+    const visibleGroupKeys = opts.groupKeys || ['low', 'high']; // 初期表示する日数群(低/高)。含まれない日数群も系列自体は残し、初期状態を非表示にするだけ
     const maxWeeks = churnGetMultiUserWeeks();
     const weeksList = [];
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
     const xLabels = weeksList.map(w => `${w}週`);
     const series = [];
     [{ key: 'low', min: lowMin, max: lowMax, label: lowLabel }, { key: 'high', min: highMin, max: highMax, label: highLabel }]
-      .filter(g => groupKeys.includes(g.key))
       .forEach(g => {
       managedFilters.forEach(mf => {
         const values = weeksList.map(w => churnComputeGroupPValueForWeeks(w, 1, g.min, g.max, 50, 80, mf === 'total' ? undefined : mf));
@@ -1801,6 +1801,7 @@
         const s = { label, values, color: CHURN_NEW_GROUP_COLOR[g.key][mf] };
         if (opts.dashLow && g.key === 'low') s.dash = [6, 4];
         if (opts.colorLabels && (mf === 'managed' || mf === 'unmanaged')) s.labelColor = CHURN_NEW_GROUP_LABEL_COLOR[mf];
+        if (!visibleGroupKeys.includes(g.key)) s.hidden = true;
         series.push(s);
       });
     });
