@@ -59,21 +59,21 @@
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">Y軸最大値:</span>
-          <input type="text" inputmode="numeric" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" max="7" step="1">
+          <input type="text" inputmode="numeric" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" max="7" step="1"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
         </span>
 
         <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">対象人数Y軸最大値:</span>
-          <input type="text" inputmode="numeric" id="churnCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1">
+          <input type="text" inputmode="numeric" id="churnCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
         </span>
 
         <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">週(X軸):</span>
-          <input type="text" inputmode="numeric" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1">
+          <input type="text" inputmode="numeric" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
           <span class="text-gray-500">〜</span>
-          <input type="text" inputmode="numeric" id="churnXMax" placeholder="24" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1">
+          <input type="text" inputmode="numeric" id="churnXMax" placeholder="24" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
           <span class="text-gray-500">週</span>
         </span>
       </div>
@@ -114,11 +114,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -144,13 +144,13 @@
     <span class="text-gray-300 mx-1">|</span>
     <span class="flex items-center gap-1 whitespace-nowrap">
       <span class="text-gray-500">Y軸最大値:</span>
-      <input type="text" inputmode="numeric" id="churnFilteredYMax" placeholder="100" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnFilteredChart()" min="1" max="100" step="1">
+      <input type="text" inputmode="numeric" id="churnFilteredYMax" placeholder="100" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnFilteredChart()" min="1" max="100" step="1"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     </span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="flex items-center gap-1 whitespace-nowrap">
       <span class="text-gray-500">対象人数Y軸最大値:</span>
-      <input type="text" inputmode="numeric" id="churnFilteredCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnFilteredChart()" min="1" step="1">
+      <input type="text" inputmode="numeric" id="churnFilteredCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnFilteredChart()" min="1" step="1"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     </span>
   </div>
 
@@ -165,11 +165,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="text" inputmode="numeric" id="churnGapWeeksThreshold" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnGapWeeksThreshold" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="text" inputmode="numeric" id="churnMultiUserWeeks" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnMultiUserWeeks" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -202,11 +202,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -214,7 +214,7 @@
     <div class="w-full"></div>
 
     <span class="text-gray-500">期間(週次):</span>
-    <input type="text" inputmode="numeric" id="churnPairedWeeksPeriod" value="12" min="1" max="24" step="1" data-sync="weeksPeriod" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedWeeksPeriod" value="12" min="1" max="24" step="1" data-sync="weeksPeriod" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
 
     <span class="text-gray-300 mx-1">|</span>
@@ -230,24 +230,24 @@
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
-    <input type="text" inputmode="numeric" id="churnPairedYMin" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedYMin" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" id="churnPairedYMax" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedYMax" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
 
     <div class="w-full"></div>
 
     <span data-mirror="lowLabel" class="text-gray-500">低日数群</span>
-    <input type="text" inputmode="numeric" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" id="churnPairedLowMax" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedLowMax" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="highLabel" class="text-gray-500">高日数群</span>
-    <input type="text" inputmode="numeric" id="churnPairedHighMin" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedHighMin" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
     <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
   </div>
@@ -311,11 +311,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -334,24 +334,24 @@
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
-    <input type="text" inputmode="numeric" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
 
     <div class="w-full"></div>
 
     <span data-mirror="lowLabel" class="text-gray-500">低日数群</span>
-    <input type="text" inputmode="numeric" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="highLabel" class="text-gray-500">高日数群</span>
-    <input type="text" inputmode="numeric" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
     <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
   </div>
@@ -384,23 +384,23 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">期間:</span>
-    <input type="text" inputmode="numeric" id="churnNewGroupWeeks" value="4" min="1" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupWeeks" value="4" min="1" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
 
     <div class="w-full"></div>
 
     <span id="churnNewGroupLowLabel" class="text-gray-500">低日数群</span>
-    <input type="text" inputmode="numeric" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" id="churnNewGroupLowMax" value="2" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupLowMax" value="2" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
     <span id="churnNewGroupLowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span id="churnNewGroupHighLabel" class="text-gray-500">高日数群</span>
-    <input type="text" inputmode="numeric" id="churnNewGroupHighMin" value="4" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupHighMin" value="4" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
-    <input type="text" inputmode="numeric" id="churnNewGroupHighMax" value="7" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupHighMax" value="7" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
     <span id="churnNewGroupHighCount" class="text-gray-500 font-normal"></span>
   </div>
@@ -1298,6 +1298,24 @@
     if (!el || typeof el.value !== 'string') return;
     const normalized = el.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
     if (normalized !== el.value) el.value = normalized;
+  }
+
+  // type="text"化した数値入力欄に付けた▲▼ボタン用のステップ関数。押されるたびに
+  // min/max/stepを尊重して値を1段階増減させ、input要素に対して実際の'input'イベントを
+  // 発火させることで、その入力欄に元々設定されているoninputハンドラ(同期・再描画)を
+  // そのまま呼び出す(ロジックを重複させない)。
+  function churnStepNumberInput(input, direction) {
+    if (!input) return;
+    churnNormalizeNumberInput(input);
+    const min = input.min !== '' && input.min !== undefined ? parseFloat(input.min) : -Infinity;
+    const max = input.max !== '' && input.max !== undefined ? parseFloat(input.max) : Infinity;
+    const step = input.step ? parseFloat(input.step) : 1;
+    const current = input.value !== '' ? parseFloat(input.value) : (isFinite(min) ? min : 0);
+    let next = (isNaN(current) ? (isFinite(min) ? min : 0) : current) + direction * step;
+    if (next < min) next = min;
+    if (next > max) next = max;
+    input.value = String(next);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
   // 複数箇所に複製された同じ入力欄(data-sync属性が同じもの)の値を同期させる汎用関数
