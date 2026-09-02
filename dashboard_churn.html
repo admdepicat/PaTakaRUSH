@@ -1990,8 +1990,12 @@
           const labelClass = s.labelColor ? 'font-bold' : 'text-gray-500';
           return `<tr><td class="py-0.5 text-left ${labelClass} border-b border-gray-100 whitespace-nowrap overflow-hidden"${labelStyle}>${s.label}</td>${cells}</tr>`;
         }).join('');
-        const totalCells = xLabels.map((x, i) => `<td class="py-0.5 text-center font-bold">${series.reduce((sum, s) => sum + (s.values[i] ? s.values[i].n : 0), 0)}</td>`).join('');
-        const totalRow = `<tr><td class="py-0.5 text-left text-gray-700 font-bold whitespace-nowrap overflow-hidden">合計</td>${totalCells}</tr>`;
+        // 系列が1つだけの場合、「合計」は上の行と全く同じ数字になり意味を持たないため省略する
+        let totalRow = '';
+        if (series.length > 1) {
+          const totalCells = xLabels.map((x, i) => `<td class="py-0.5 text-center font-bold">${series.reduce((sum, s) => sum + (s.values[i] ? s.values[i].n : 0), 0)}</td>`).join('');
+          totalRow = `<tr><td class="py-0.5 text-left text-gray-700 font-bold whitespace-nowrap overflow-hidden">合計</td>${totalCells}</tr>`;
+        }
         captionEl.innerHTML = `
           <table class="text-xs border-collapse" style="table-layout:fixed; width:${labelColWidth + colWidth * n}px;">
             ${colgroup}
