@@ -2048,10 +2048,13 @@
           const exRow = `<tr><td class="py-0.5 pl-3 text-left text-gray-400 border-b border-gray-100 whitespace-nowrap overflow-hidden">${s.label}(除外)</td>${exCells}</tr>`;
           return mainRow + exRow;
         }).join('');
-        // 系列が1つだけの場合、「合計」は上の行と全く同じ数字になり意味を持たないため省略する
+        // 「合計」は互いに排反な系列同士を足し上げるためのもの。s.excludeFromTotalを立てた系列
+        // (例:「全体」のように他の系列を包含してしまうもの)は合計の対象から除く。
+        // 合計に含められる系列が1つ以下の場合、上の行と同じ数字になり意味を持たないため省略する。
         let totalRow = '';
-        if (series.length > 1) {
-          const totalCells = xLabels.map((x, i) => `<td class="py-0.5 text-center font-bold">${series.reduce((sum, s) => sum + (s.values[i] ? s.values[i].n : 0), 0)}</td>`).join('');
+        const totalSeries = series.filter(s => !s.excludeFromTotal);
+        if (totalSeries.length > 1) {
+          const totalCells = xLabels.map((x, i) => `<td class="py-0.5 text-center font-bold">${totalSeries.reduce((sum, s) => sum + (s.values[i] ? s.values[i].n : 0), 0)}</td>`).join('');
           totalRow = `<tr><td class="py-0.5 text-left text-gray-700 font-bold whitespace-nowrap overflow-hidden">合計</td>${totalCells}</tr>`;
         }
         captionEl.innerHTML = `

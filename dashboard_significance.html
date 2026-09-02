@@ -205,7 +205,8 @@
       const series = groupDefs.map(g => ({
         label: g.label, color: g.color, labelColor: g.color,
         values: computeSigWeeklyPValues(rawData.usersChurn, maxWeeks, g.filter),
-        hidden: !visibleGroups.includes(g.key)
+        hidden: !visibleGroups.includes(g.key),
+        excludeFromTotal: g.key === 'total' // 「全体」は低/高日数群を包含するため、表の「合計」の足し上げからは除く
       }));
 
       const showCountBarsEl = document.getElementById('sigShowCountBars');
