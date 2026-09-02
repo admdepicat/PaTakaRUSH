@@ -6,7 +6,7 @@
   <h2 class="text-lg font-bold text-gray-800 mb-4">有意差</h2>
 
   <p class="text-sm text-gray-600 mb-4">
-    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目と対象週の両方の利用日数が指定した範囲に収まる人で判定しており、対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。
+    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目から対象週まで毎週ずっと利用日数が指定した範囲に収まっている人で判定しています(範囲内で1回も検査していない人は除きます)。対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -104,14 +104,19 @@
     return (v === null || v === undefined) ? null : v;
   }
 
-  // 「低日数群」「高日数群」の判定: 1週目と対象週(w, 1始まり)の両方の利用日数が[min, max]の範囲(両端含む)に
-  // 収まっているかどうか。日数群は対象週ごとに変わりうる(同じユーザーでも週によって群が変わる)。
+  // 「低日数群」「高日数群」の判定: 1週目から対象週(w, 1始まり)まで、途切れずに毎週の利用日数が
+  // [min, max]の範囲(両端含む)に収まり続けているかどうか。ただしずっと0回では意味が無いため、
+  // その中で1回以上検査している週が最低1つは必要。日数群は対象週ごとに変わりうる
+  // (同じユーザーでも、ある週で範囲を外れればそれ以降その週の群には入らない)。
   function sigUserInGroupForWeek(user, w, min, max) {
     const lo = Math.min(min, max), hi = Math.max(min, max);
-    const d1 = sigDaysAt(user, 0);
-    const dw = sigDaysAt(user, w - 1);
-    if (d1 === null || dw === null) return false;
-    return d1 >= lo && d1 <= hi && dw >= lo && dw <= hi;
+    let hasNonZero = false;
+    for (let wi = 0; wi < w; wi++) {
+      const d = sigDaysAt(user, wi);
+      if (d === null || d < lo || d > hi) return false;
+      if (d > 0) hasNonZero = true;
+    }
+    return hasNonZero;
   }
 
   // 対象週ごとに、1週目のスコアと対象週のスコアが両方そろっているユーザーのうち、
