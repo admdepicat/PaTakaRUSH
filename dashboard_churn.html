@@ -59,21 +59,21 @@
       <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 whitespace-nowrap">
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">Y軸最大値:</span>
-          <input type="number" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="renderChurnChart()" min="1" max="7" step="1">
+          <input type="text" inputmode="numeric" id="churnYMax" placeholder="7" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" max="7" step="1">
         </span>
 
         <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">対象人数Y軸最大値:</span>
-          <input type="number" id="churnCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="renderChurnChart()" min="1" step="1">
+          <input type="text" inputmode="numeric" id="churnCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1">
         </span>
 
         <span class="text-gray-300 mx-1">|</span>
         <span class="flex items-center gap-1 whitespace-nowrap">
           <span class="text-gray-500">週(X軸):</span>
-          <input type="number" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="renderChurnChart()" min="1" step="1">
+          <input type="text" inputmode="numeric" id="churnXMin" placeholder="1" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1">
           <span class="text-gray-500">〜</span>
-          <input type="number" id="churnXMax" placeholder="24" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="renderChurnChart()" min="1" step="1">
+          <input type="text" inputmode="numeric" id="churnXMax" placeholder="24" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnChart()" min="1" step="1">
           <span class="text-gray-500">週</span>
         </span>
       </div>
@@ -114,11 +114,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -144,13 +144,13 @@
     <span class="text-gray-300 mx-1">|</span>
     <span class="flex items-center gap-1 whitespace-nowrap">
       <span class="text-gray-500">Y軸最大値:</span>
-      <input type="number" id="churnFilteredYMax" placeholder="100" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="renderChurnFilteredChart()" min="1" max="100" step="1">
+      <input type="text" inputmode="numeric" id="churnFilteredYMax" placeholder="100" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnFilteredChart()" min="1" max="100" step="1">
     </span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="flex items-center gap-1 whitespace-nowrap">
       <span class="text-gray-500">対象人数Y軸最大値:</span>
-      <input type="number" id="churnFilteredCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="renderChurnFilteredChart()" min="1" step="1">
+      <input type="text" inputmode="numeric" id="churnFilteredCountYMax" placeholder="自動" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" oninput="churnNormalizeNumberInput(this); renderChurnFilteredChart()" min="1" step="1">
     </span>
   </div>
 
@@ -165,11 +165,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" id="churnGapWeeksThreshold" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnGapWeeksThreshold" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="number" id="churnMultiUserWeeks" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnMultiUserWeeks" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -202,11 +202,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -214,7 +214,7 @@
     <div class="w-full"></div>
 
     <span class="text-gray-500">期間(週次):</span>
-    <input type="number" id="churnPairedWeeksPeriod" value="12" min="1" max="24" step="1" data-sync="weeksPeriod" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedWeeksPeriod" value="12" min="1" max="24" step="1" data-sync="weeksPeriod" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
 
     <span class="text-gray-300 mx-1">|</span>
@@ -230,24 +230,24 @@
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
-    <input type="number" id="churnPairedYMin" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedYMin" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedYMax" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedYMax" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
 
     <div class="w-full"></div>
 
     <span data-mirror="lowLabel" class="text-gray-500">低日数群</span>
-    <input type="number" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedLowMin" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedLowMax" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedLowMax" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="highLabel" class="text-gray-500">高日数群</span>
-    <input type="number" id="churnPairedHighMin" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedHighMin" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnPairedHighMax" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
   </div>
@@ -311,11 +311,11 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
-    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="4" min="1" step="1" data-sync="gapWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週以上続いた人を除外</span>
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">◯週まで表示:</span>
-    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="multiUserCount" class="text-emerald-600"></span>
@@ -334,24 +334,24 @@
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">Y軸:</span>
-    <input type="number" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="0" min="0" max="10" step="1" data-sync="yMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="10" min="0" max="10" step="1" data-sync="yMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
 
     <div class="w-full"></div>
 
     <span data-mirror="lowLabel" class="text-gray-500">低日数群</span>
-    <input type="number" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="0" min="0" max="7" step="1" data-sync="lowMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="2" min="0" max="7" step="1" data-sync="lowMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span data-mirror="highLabel" class="text-gray-500">高日数群</span>
-    <input type="number" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="3" min="0" max="7" step="1" data-sync="highMin" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" value="7" min="0" max="7" step="1" data-sync="highMax" oninput="churnNormalizeNumberInput(this); churnSyncField(this)" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
   </div>
@@ -384,23 +384,23 @@
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">期間:</span>
-    <input type="number" id="churnNewGroupWeeks" value="4" min="1" max="104" step="1" oninput="renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupWeeks" value="4" min="1" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">週</span>
 
     <div class="w-full"></div>
 
     <span id="churnNewGroupLowLabel" class="text-gray-500">低日数群</span>
-    <input type="number" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" oninput="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupLowMin" value="0" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnNewGroupLowMax" value="2" min="0" max="7" step="1" oninput="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupLowMax" value="2" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span id="churnNewGroupLowCount" class="text-gray-500 font-normal"></span>
 
     <span class="text-gray-300 mx-1">|</span>
     <span id="churnNewGroupHighLabel" class="text-gray-500">高日数群</span>
-    <input type="number" id="churnNewGroupHighMin" value="4" min="0" max="7" step="1" oninput="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupHighMin" value="4" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">〜</span>
-    <input type="number" id="churnNewGroupHighMax" value="7" min="0" max="7" step="1" oninput="renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <input type="text" inputmode="numeric" id="churnNewGroupHighMax" value="7" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderChurnNewGroup()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="text-gray-500">日</span>
     <span id="churnNewGroupHighCount" class="text-gray-500 font-normal"></span>
   </div>
@@ -1289,6 +1289,15 @@
     const caption = document.getElementById('churnMultiUserSelectCaption');
     if (!caption) return;
     caption.textContent = churnMultiUserSelectedUid ? `選択中: ${churnMultiUserSelectedUid}` : 'ヒートマップのuidをクリックしてください';
+  }
+
+  // 数値入力欄(type="text" inputmode="numeric")に全角数字が入力された場合、半角に変換してその場でvalueを書き換える。
+  // type="number"のままだとIME(全角入力)経由でタイプした際にブラウザ側で無効な値として扱われ空になってしまうことがあるため、
+  // type="text"にした上でこの関数により半角化して受け付けるようにしている。
+  function churnNormalizeNumberInput(el) {
+    if (!el || typeof el.value !== 'string') return;
+    const normalized = el.value.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    if (normalized !== el.value) el.value = normalized;
   }
 
   // 複数箇所に複製された同じ入力欄(data-sync属性が同じもの)の値を同期させる汎用関数
