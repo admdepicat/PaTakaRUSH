@@ -1986,7 +1986,10 @@
               generateLabels: (chart) => {
                 const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
                 labels.forEach((label, i) => {
-                  if (chart.data.datasets[i] && chart.data.datasets[i].type === 'line') label.pointStyle = 'line';
+                  const ds = chart.data.datasets[i];
+                  if (!ds) return;
+                  if (ds.type === 'line') label.pointStyle = 'line';
+                  else if (ds.type === 'bar') label.pointStyle = 'rect';
                 });
                 return labels;
               }
