@@ -1944,6 +1944,17 @@
       };
     });
 
+    // 人数(背景棒): opts.showCountBarsを立てた場合、各系列のn(対象人数)を右軸の棒グラフとして重ねて表示する
+    if (opts.showCountBars) {
+      series.forEach(s => {
+        datasets.push({
+          type: 'bar', label: `${s.label}(人数)`, data: s.values.map(v => v.n),
+          backgroundColor: hexToRgba(s.color, 0.25), borderColor: hexToRgba(s.color, 0.5), borderWidth: 1,
+          yAxisID: 'yCount', order: 10, hidden: s.hidden || false
+        });
+      });
+    }
+
     charts[chartKey] = new Chart(el, {
       type: 'line',
       data: { labels: xLabels, datasets },
@@ -1951,8 +1962,10 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         onClick: (evt, elements) => {
+          // 人数(背景棒)の要素がクリックされた場合はp値系列ではないので無視する(datasetIndexがseries.lengthを超えるものは棒グラフ)
           if (!opts.onPointClick || !elements || elements.length === 0) return;
           const el0 = elements[0];
+          if (el0.datasetIndex >= series.length) return;
           opts.onPointClick(el0.datasetIndex, el0.index);
         },
         plugins: {
@@ -1962,7 +1975,9 @@
               usePointStyle: true,
               generateLabels: (chart) => {
                 const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                labels.forEach(label => { label.pointStyle = 'line'; });
+                labels.forEach((label, i) => {
+                  if (chart.data.datasets[i] && chart.data.datasets[i].type === 'line') label.pointStyle = 'line';
+                });
                 return labels;
               }
             }
@@ -1970,6 +1985,7 @@
           tooltip: {
             callbacks: {
               label: (ctx) => {
+                if (ctx.dataset.type === 'bar') return `${ctx.dataset.label}: ${ctx.raw}人`;
                 const v = series[ctx.datasetIndex].values[ctx.dataIndex];
                 return `${ctx.dataset.label}: ${v.pValue === null ? 'データ不足' : churnFormatPValue(v.pValue)} (n=${v.n})`;
               }
@@ -1987,7 +2003,13 @@
                 return match !== undefined ? match.toFixed(5) : '';
               }
             }
-          }
+          },
+          ...(opts.showCountBars ? {
+            yCount: {
+              position: 'right', title: { display: true, text: '対象人数 (人)' },
+              min: 0, max: opts.countYMax, grid: { drawOnChartArea: false }
+            }
+          } : {})
         }
       }
     });
