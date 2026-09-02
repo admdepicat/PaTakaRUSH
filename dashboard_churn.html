@@ -1950,6 +1950,11 @@
       plugins: [churnPValueRefLinesPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
+        onClick: (evt, elements) => {
+          if (!opts.onPointClick || !elements || elements.length === 0) return;
+          const el0 = elements[0];
+          opts.onPointClick(el0.datasetIndex, el0.index);
+        },
         plugins: {
           legend: {
             display: true, position: 'top',
