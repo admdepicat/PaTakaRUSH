@@ -1944,14 +1944,24 @@
       };
     });
 
-    // 人数(背景棒): opts.showCountBarsを立てた場合、各系列のn(対象人数)を右軸の棒グラフとして重ねて表示する
+    // 人数(背景棒): opts.showCountBarsを立てた場合、各系列のn(対象人数)を右軸の棒グラフとして重ねて表示する。
+    // values[].excludedがある系列(条件で除外された人数を計算しているもの)は、その上に除外人数を積み上げる。
     if (opts.showCountBars) {
-      series.forEach(s => {
+      series.forEach((s, i) => {
+        const hasExcluded = s.values.some(v => v && v.excluded !== undefined);
+        const stackKey = `churnMultiSensCountStack_${i}`;
         datasets.push({
-          type: 'bar', label: `${s.label}(人数)`, data: s.values.map(v => v.n),
-          backgroundColor: hexToRgba(s.color, 0.25), borderColor: hexToRgba(s.color, 0.5), borderWidth: 1,
-          yAxisID: 'yCount', order: 10, hidden: s.hidden || false
+          type: 'bar', label: `${s.label}(対象)`, data: s.values.map(v => v.n),
+          backgroundColor: hexToRgba(s.color, hasExcluded ? 0.75 : 0.25), borderColor: hexToRgba(s.color, hasExcluded ? 0.9 : 0.5), borderWidth: 1,
+          yAxisID: 'yCount', order: 10, stack: stackKey, hidden: s.hidden || false
         });
+        if (hasExcluded) {
+          datasets.push({
+            type: 'bar', label: `${s.label}(除外)`, data: s.values.map(v => v.excluded || 0),
+            backgroundColor: hexToRgba(s.color, 0.2), borderColor: hexToRgba(s.color, 0.4), borderWidth: 1,
+            yAxisID: 'yCount', order: 10, stack: stackKey, hidden: s.hidden || false
+          });
+        }
       });
     }
 
@@ -2030,7 +2040,13 @@
           const cells = xLabels.map((x, i) => `<td class="py-0.5 text-center border-b border-gray-100">${s.values[i] ? s.values[i].n : 0}</td>`).join('');
           const labelStyle = s.labelColor ? ` style="color:${s.labelColor};"` : '';
           const labelClass = s.labelColor ? 'font-bold' : 'text-gray-500';
-          return `<tr><td class="py-0.5 text-left ${labelClass} border-b border-gray-100 whitespace-nowrap overflow-hidden"${labelStyle}>${s.label}</td>${cells}</tr>`;
+          const mainRow = `<tr><td class="py-0.5 text-left ${labelClass} border-b border-gray-100 whitespace-nowrap overflow-hidden"${labelStyle}>${s.label}</td>${cells}</tr>`;
+          // s.values[i].excludedがある系列(条件で除外された人数を計算しているもの)だけ、その下に除外人数の行を追加する
+          const hasExcluded = s.values.some(v => v && v.excluded !== undefined);
+          if (!hasExcluded) return mainRow;
+          const exCells = xLabels.map((x, i) => `<td class="py-0.5 text-center border-b border-gray-100 text-gray-400">${s.values[i] ? (s.values[i].excluded || 0) : 0}</td>`).join('');
+          const exRow = `<tr><td class="py-0.5 pl-3 text-left text-gray-400 border-b border-gray-100 whitespace-nowrap overflow-hidden">${s.label}(除外)</td>${exCells}</tr>`;
+          return mainRow + exRow;
         }).join('');
         // 系列が1つだけの場合、「合計」は上の行と全く同じ数字になり意味を持たないため省略する
         let totalRow = '';
