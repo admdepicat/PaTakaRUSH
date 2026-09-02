@@ -122,7 +122,7 @@
 
   <script>
     let rawData = null;
-    let charts = { topScatter: null, ageRangePoly: null, patakaScatter: null, patakaScatter2: null, patakaBoxPlot: null, impact: null, churn: null, churnMultiUserLine: null, churnMultiUserLineRedBlue: null, churnPairedBoxLow: null, churnPairedBoxHigh: null, churnPairedMeanSdLow: null, churnPairedMeanSdHigh: null, churnPairedBoxLowWeeks: null, churnPairedBoxHighWeeks: null, churnPairedMeanSdLowWeeks: null, churnPairedMeanSdHighWeeks: null, churnSensitivityMonths: null, churnSensitivityWeeks: null, churnNewGroupBoxLow: null, churnNewGroupBoxHigh: null, churnNewGroupSensitivity: null, churnNewGroupSensitivity2: null, churnFiltered: null, churnHist: null };
+    let charts = { topScatter: null, ageRangePoly: null, patakaScatter: null, patakaScatter2: null, patakaBoxPlot: null, impact: null, churn: null, churnMultiUserLine: null, churnMultiUserLineRedBlue: null, churnPairedBoxLow: null, churnPairedBoxHigh: null, churnPairedMeanSdLow: null, churnPairedMeanSdHigh: null, churnPairedBoxLowWeeks: null, churnPairedBoxHighWeeks: null, churnPairedMeanSdLowWeeks: null, churnPairedMeanSdHighWeeks: null, churnSensitivityMonths: null, churnSensitivityWeeks: null, churnNewGroupBoxLow: null, churnNewGroupBoxHigh: null, churnNewGroupSensitivity: null, churnNewGroupSensitivity2: null, churnFiltered: null, churnHist: null, sigWeekly: null };
 
     Chart.defaults.font.family = 'sans-serif';
 
@@ -294,6 +294,7 @@
       if (typeof renderDistChart === 'function') renderDistChart(targetData);
       if (typeof renderPatakaChart === 'function') renderPatakaChart(); // パタカラ分析描画
       if (typeof renderChurnChart === 'function') renderChurnChart();
+      if (typeof renderSigChart === 'function') renderSigChart();
     }
   </script>
 </body>
