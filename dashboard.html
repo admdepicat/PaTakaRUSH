@@ -228,6 +228,12 @@
       const tgtPnl = document.getElementById('panel-' + tabId);
       if(tgtBtn) tgtBtn.classList.add('tab-active');
       if(tgtPnl) tgtPnl.classList.remove('hidden');
+
+      // タブ切り替え時に対象タブのグラフを再描画する。パネルがhiddenの間にグラフを初期描画すると、
+      // canvasのサイズが0のままChart.jsが内部のchartArea等を計算してしまい、グラフ直下の人数表
+      // (chartAreaの座標を使って列幅を決めている)が壊れたままになることがあるため。
+      if (tabId === 'sig' && typeof renderSigChart === 'function') renderSigChart();
+      if (tabId === 'churn' && typeof renderChurnChart === 'function') renderChurnChart();
     }
 
     function renderCharts() {
