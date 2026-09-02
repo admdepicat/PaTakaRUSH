@@ -64,6 +64,7 @@
         <!-- 新設：パタカラ分析タブ -->
         <button onclick="showTab('pataka')" id="tab-pataka" class="tab-btn flex-1 py-3 min-w-[120px]">パタカラ分析</button>
         <button onclick="showTab('churn')" id="tab-churn" class="tab-btn flex-1 py-3 tab-active min-w-[120px]">離脱率</button>
+        <button onclick="showTab('sig')" id="tab-sig" class="tab-btn flex-1 py-3 min-w-[120px]">有意差</button>
       </div>
 
       <!-- 共通: ユーザー数およびデータ件数表示 -->
@@ -114,6 +115,7 @@
       <?!= include('dashboard_dist'); ?>
       <?!= include('dashboard_pataka'); ?> <!-- 新規追加テンプレート -->
       <?!= include('dashboard_churn'); ?>
+      <?!= include('dashboard_significance'); ?>
 
     </div>
   </div>
@@ -216,7 +218,7 @@
     }
 
     function showTab(tabId) {
-      ['dist', 'pataka', 'churn'].forEach(id => {
+      ['dist', 'pataka', 'churn', 'sig'].forEach(id => {
         const btn = document.getElementById('tab-' + id);
         const pnl = document.getElementById('panel-' + id);
         if(btn) btn.classList.remove('tab-active');
