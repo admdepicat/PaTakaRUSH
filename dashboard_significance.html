@@ -52,15 +52,15 @@
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">1週目 → 対象週 のp値の推移</h4>
   <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週(1週目 → クリックした週)の箱ひげ図が表示されます。</p>
-  <div class="flex flex-col lg:flex-row gap-6">
+  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
     <div class="flex-1 min-w-0">
       <div class="chart-container" style="height: 320px;">
         <canvas id="sigWeeklyChart"></canvas>
       </div>
       <div id="sigWeeklyCountTable" class="overflow-x-auto mt-2"></div>
     </div>
-    <div class="w-full lg:w-80 shrink-0">
-      <div class="chart-container" style="height: 320px;">
+    <div class="w-full lg:w-80 shrink-0 flex flex-col">
+      <div class="chart-container flex-1" style="min-height: 320px;">
         <canvas id="sigBoxChart"></canvas>
       </div>
       <p id="sigBoxCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
@@ -161,7 +161,7 @@
       for (let w = 2; w <= maxWeeks; w++) weeksList.push(w);
       const xLabels = weeksList.map(w => `${w}週`);
       const series = groupDefs.map(g => ({
-        label: g.label, color: g.color,
+        label: g.label, color: g.color, labelColor: g.color,
         values: computeSigWeeklyPValues(g.users, maxWeeks),
         hidden: !visibleGroups.includes(g.key)
       }));
