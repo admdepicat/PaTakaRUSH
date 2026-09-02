@@ -113,6 +113,18 @@
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">0回が</span>
+    <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週以上続いた人を除外</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">◯週まで表示:</span>
+    <input type="number" value="24" min="1" max="104" step="1" data-sync="multiUserWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span data-mirror="multiUserCount" class="text-emerald-600"></span>
+
+    <div class="w-full"></div>
+
     <span class="text-gray-500 mr-1">表示:</span>
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="radio" name="churnFilteredMetricMode" id="churnFilteredMetricAvg" onchange="onChurnFilteredMetricModeChange()" class="w-4 h-4 cursor-pointer accent-gray-600">
