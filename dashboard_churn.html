@@ -261,56 +261,7 @@
     ※指定した期間における「平均利用日数/週」が、左右それぞれで指定した範囲に該当するユーザーを対象に、最初の週と最後の週(期間の終わり)の4文字平均スコアを対応のある箱ひげ図で比較しています。左右の範囲は連続している必要はなく、独立して指定できます。灰色の線は同一ユーザーの変化、黒い太線は2群の中央値同士を結んだ線です。上部のp値は、最初の週と最後の週の差についての対応のあるt検定の結果です。
   </p>
 
-  <h4 class="text-sm font-bold text-gray-800 mb-2">■ 月次で比較(期間:_ヶ月)</h4>
-  <h5 class="text-xs font-bold text-gray-500 mb-2">箱ひげ図</h5>
-  <div class="flex flex-col lg:flex-row gap-6">
-    <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span data-mirror="lowLabel" class="text-gray-800"></span>
-        <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
-      </div>
-      <div class="chart-container" style="height: 380px;">
-        <canvas id="churnPairedBoxLow"></canvas>
-      </div>
-      <p id="churnPairedBoxLowSig" class="text-xs text-gray-500 mt-1"></p>
-    </div>
-    <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span data-mirror="highLabel" class="text-gray-800"></span>
-        <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
-      </div>
-      <div class="chart-container" style="height: 380px;">
-        <canvas id="churnPairedBoxHigh"></canvas>
-      </div>
-      <p id="churnPairedBoxHighSig" class="text-xs text-gray-500 mt-1"></p>
-    </div>
-  </div>
-
-  <h5 class="text-xs font-bold text-gray-500 mt-8 mb-2">平均値±SD</h5>
-  <div class="flex flex-col lg:flex-row gap-6">
-    <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span data-mirror="lowLabel" class="text-gray-800"></span>
-        <span data-mirror="lowCount" class="text-gray-500 font-normal"></span>
-      </div>
-      <div class="chart-container" style="height: 300px;">
-        <canvas id="churnPairedMeanSdLow"></canvas>
-      </div>
-      <p id="churnPairedMeanSdLowSig" class="text-xs text-gray-500 mt-1"></p>
-    </div>
-    <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-        <span data-mirror="highLabel" class="text-gray-800"></span>
-        <span data-mirror="highCount" class="text-gray-500 font-normal"></span>
-      </div>
-      <div class="chart-container" style="height: 300px;">
-        <canvas id="churnPairedMeanSdHigh"></canvas>
-      </div>
-      <p id="churnPairedMeanSdHighSig" class="text-xs text-gray-500 mt-1"></p>
-    </div>
-  </div>
-
-  <h4 class="text-sm font-bold text-gray-800 mt-10 mb-2">■ 週次で比較(期間:_週)</h4>
+  <h4 class="text-sm font-bold text-gray-800 mb-2">■ 週次で比較(期間:_週)</h4>
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">0回が</span>
     <input type="number" value="4" min="1" step="1" data-sync="gapWeeks" onchange="churnSyncField(this)" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -2314,11 +2265,9 @@
     const yMin = yMinInput && yMinInput.value !== '' ? parseInt(yMinInput.value, 10) : 0;
     const yMax = yMaxInput && yMaxInput.value !== '' ? parseInt(yMaxInput.value, 10) : 10;
 
-    const xLabels = windowWeeks === 2 ? ['最初の2週間', '最後の2週間'] : ['最初の週', '最後の週'];
-    renderChurnPairedBoxplot('churnPairedBoxLow', 'churnPairedBoxLow', 'churnPairedBoxLowSig', lowGroup, yMin, yMax, xLabels);
-    renderChurnPairedBoxplot('churnPairedBoxHigh', 'churnPairedBoxHigh', 'churnPairedBoxHighSig', highGroup, yMin, yMax, xLabels);
-    renderChurnMeanSdChart('churnPairedMeanSdLow', 'churnPairedMeanSdLow', 'churnPairedMeanSdLowSig', lowGroup, yMin, yMax, xLabels);
-    renderChurnMeanSdChart('churnPairedMeanSdHigh', 'churnPairedMeanSdHigh', 'churnPairedMeanSdHighSig', highGroup, yMin, yMax, xLabels);
+    // ※月次(churnPairedMonths等)ベースのlowGroup/highGroupは「■ 月次で比較」の箱ひげ図・平均値±SD描画には
+    // もう使わないが、感度分析セクションの対象人数表示(lowCount/highCount)や下記の感度分析グラフの
+    // 日数範囲・比較単位の元データとしてはそのまま使うため、計算自体は残している。
 
     // 週単位の期間指定版(箱ひげ図・平均値±SD) — 比較単位・Y軸・日数範囲は月次側とは独立
     const weeksPeriodInput = document.getElementById('churnPairedWeeksPeriod');
