@@ -357,9 +357,10 @@
   </div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">期間(1〜24週)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
-  <div class="chart-container mb-8" style="height: 260px;">
+  <div class="chart-container" style="height: 260px;">
     <canvas id="churnSensitivityWeeks"></canvas>
   </div>
+  <div id="churnSensitivityWeeksCount" class="overflow-x-auto mt-1 mb-8"></div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">期間(1〜6ヶ月)を変えた場合のp値 (比較単位は現在の設定で固定)</h4>
   <div class="chart-container mb-8" style="height: 260px;">
@@ -2146,8 +2147,7 @@
     for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
     const lowValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, lowMin, lowMax, ageMin, ageMax));
     const highValues = weeksList.map(w => churnComputeGroupPValueForWeeks(w, windowWeeks, highMin, highMax, ageMin, ageMax));
-    // 年齢層別グラフ(suffixあり)のみ、各点の対象人数(n)を表示する
-    churnRenderSensitivityLineChart(`churnSensitivityWeeks${suffix}`, `churnSensitivityWeeks${suffix}`, weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)', suffix ? `churnSensitivityWeeksCount${suffix}` : null);
+    churnRenderSensitivityLineChart(`churnSensitivityWeeks${suffix}`, `churnSensitivityWeeks${suffix}`, weeksList.map(w => `${w}週`), lowValues, highValues, lowLabel, highLabel, '期間(週)', `churnSensitivityWeeksCount${suffix}`);
   }
 
   const CHURN_AGE_BRACKETS = [
