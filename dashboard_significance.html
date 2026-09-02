@@ -6,7 +6,7 @@
   <h2 class="text-lg font-bold text-gray-800 mb-4">有意差</h2>
 
   <p class="text-sm text-gray-600 mb-4">
-    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目から対象週まで毎週利用日数が指定した範囲に収まっている人で判定しています。「0回を◯週まで許容」で、その中で0回だった週を何週まで許容するか(0=1週も0回を許さない)を調整できます(ただしずっと0回だった人は常に除きます)。対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。
+    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目から対象週まで毎週利用日数が指定した範囲に収まっている人で判定しています。「0回を◯週まで許容」で、その中で0回だった週を何週まで許容するか(0=1週も0回を許さない)を調整できます(ただしずっと0回だった人は常に除きます)。対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。なお1週目の点は「1週目 vs 1週目」で比較にならないため、必ずp=1(差なし)として表示しています。最初の1点が異常な値になっていないかを確認する基準点としてご利用ください。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -144,9 +144,21 @@
   // 対象週ごとに、1週目のスコアと対象週のスコアが両方そろっているユーザーのうち、
   // groupFilter(あれば)を満たす人だけを対象にペアを作り、対応のあるt検定のp値と対象人数を計算する。
   // groupFilterは (user, week) => boolean で、週ごとに対象者が変わりうる判定(日数群)に対応する。
+  // 1週目(w=1)は「1週目 vs 1週目」で比較にならないため、最初の1点が誤っていないことを示す基準点として
+  // p=1(差なし)を固定で記録する(t検定は行わない)。
   function computeSigWeeklyPValues(users, maxWeeks, groupFilter) {
     const results = [];
-    for (let w = 2; w <= maxWeeks; w++) {
+    for (let w = 1; w <= maxWeeks; w++) {
+      if (w === 1) {
+        let n = 0;
+        users.forEach(u => {
+          if (groupFilter && !groupFilter(u, w)) return;
+          if (sigScoreAt(u, 0) === null) return;
+          n++;
+        });
+        results.push({ week: w, pValue: 1, n });
+        continue;
+      }
       const diffs = [];
       users.forEach(u => {
         if (groupFilter && !groupFilter(u, w)) return;
@@ -185,7 +197,7 @@
         { key: 'high', label: '高日数群', color: '#dc2626', filter: (u, w) => sigUserInGroupForWeek(u, w, highMin, highMax, maxZeroWeeks) }
       ];
       const weeksList = [];
-      for (let w = 2; w <= maxWeeks; w++) weeksList.push(w);
+      for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
       const xLabels = weeksList.map(w => `${w}週`);
       const series = groupDefs.map(g => ({
         label: g.label, color: g.color, labelColor: g.color,
