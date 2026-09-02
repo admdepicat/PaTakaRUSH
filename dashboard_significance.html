@@ -6,7 +6,7 @@
   <h2 class="text-lg font-bold text-gray-800 mb-4">有意差</h2>
 
   <p class="text-sm text-gray-600 mb-4">
-    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、指定した期間における平均利用日数/週で分類しています。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。
+    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目と対象週の両方の利用日数が指定した範囲に収まる人で判定しており、対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -97,30 +97,32 @@
     return (v === null || v === undefined) ? null : v;
   }
 
-  // 指定した期間(1〜maxWeeks週)の平均利用日数/週を返す。その期間分のデータがまだ無いユーザーはnull
-  function sigAvgDays(user, maxWeeks) {
-    if (!user.data || user.data.length < maxWeeks) return null;
-    let sum = 0;
-    for (let w = 0; w < maxWeeks; w++) sum += (user.data[w] || 0);
-    return sum / maxWeeks;
+  // 週w(0始まり)の利用日数(回数)が無い場合はnullを返す
+  function sigDaysAt(user, w) {
+    if (!user.data || w >= user.data.length) return null;
+    const v = user.data[w];
+    return (v === null || v === undefined) ? null : v;
   }
 
-  // 平均利用日数/週が[min, max]の範囲(両端含む)に該当するユーザーだけを抽出する
-  function sigUsersInRange(users, maxWeeks, min, max) {
+  // 「低日数群」「高日数群」の判定: 1週目と対象週(w, 1始まり)の両方の利用日数が[min, max]の範囲(両端含む)に
+  // 収まっているかどうか。日数群は対象週ごとに変わりうる(同じユーザーでも週によって群が変わる)。
+  function sigUserInGroupForWeek(user, w, min, max) {
     const lo = Math.min(min, max), hi = Math.max(min, max);
-    return users.filter(u => {
-      const avg = sigAvgDays(u, maxWeeks);
-      return avg !== null && avg >= lo && avg <= hi;
-    });
+    const d1 = sigDaysAt(user, 0);
+    const dw = sigDaysAt(user, w - 1);
+    if (d1 === null || dw === null) return false;
+    return d1 >= lo && d1 <= hi && dw >= lo && dw <= hi;
   }
 
-  // 対象週ごとに、1週目のスコアと対象週のスコアが両方そろっているユーザーだけを対象にペアを作り、
-  // 対応のあるt検定のp値と対象人数を計算する
-  function computeSigWeeklyPValues(users, maxWeeks) {
+  // 対象週ごとに、1週目のスコアと対象週のスコアが両方そろっているユーザーのうち、
+  // groupFilter(あれば)を満たす人だけを対象にペアを作り、対応のあるt検定のp値と対象人数を計算する。
+  // groupFilterは (user, week) => boolean で、週ごとに対象者が変わりうる判定(日数群)に対応する。
+  function computeSigWeeklyPValues(users, maxWeeks, groupFilter) {
     const results = [];
     for (let w = 2; w <= maxWeeks; w++) {
       const diffs = [];
       users.forEach(u => {
+        if (groupFilter && !groupFilter(u, w)) return;
         const first = sigScoreAt(u, 0);
         const last = sigScoreAt(u, w - 1);
         if (first === null || last === null) return;
@@ -142,27 +144,24 @@
       const highMax = getSigRangeInput('sigHighMax', 7);
       const visibleGroups = getSigVisibleGroups();
 
-      const lowUsers = sigUsersInRange(rawData.usersChurn, maxWeeks, lowMin, lowMax);
-      const highUsers = sigUsersInRange(rawData.usersChurn, maxWeeks, highMin, highMax);
-
       const totalCount = document.getElementById('sigPopulationCount');
       if (totalCount) totalCount.textContent = `全体: ${rawData.usersChurn.length}人`;
       const lowCountEl = document.getElementById('sigLowCount');
-      if (lowCountEl) lowCountEl.textContent = `対象: ${lowUsers.length}人`;
+      if (lowCountEl) lowCountEl.textContent = '週ごとに変動(下表参照)';
       const highCountEl = document.getElementById('sigHighCount');
-      if (highCountEl) highCountEl.textContent = `対象: ${highUsers.length}人`;
+      if (highCountEl) highCountEl.textContent = '週ごとに変動(下表参照)';
 
       const groupDefs = [
-        { key: 'total', label: '全体', color: '#059669', users: rawData.usersChurn },
-        { key: 'low', label: '低日数群', color: '#2563eb', users: lowUsers },
-        { key: 'high', label: '高日数群', color: '#dc2626', users: highUsers }
+        { key: 'total', label: '全体', color: '#059669', filter: null },
+        { key: 'low', label: '低日数群', color: '#2563eb', filter: (u, w) => sigUserInGroupForWeek(u, w, lowMin, lowMax) },
+        { key: 'high', label: '高日数群', color: '#dc2626', filter: (u, w) => sigUserInGroupForWeek(u, w, highMin, highMax) }
       ];
       const weeksList = [];
       for (let w = 2; w <= maxWeeks; w++) weeksList.push(w);
       const xLabels = weeksList.map(w => `${w}週`);
       const series = groupDefs.map(g => ({
         label: g.label, color: g.color, labelColor: g.color,
-        values: computeSigWeeklyPValues(g.users, maxWeeks),
+        values: computeSigWeeklyPValues(rawData.usersChurn, maxWeeks, g.filter),
         hidden: !visibleGroups.includes(g.key)
       }));
 
@@ -179,10 +178,12 @@
     }
   }
 
-  // クリックされた系列(group)・対象週について、1週目 → 対象週の箱ひげ図を表示する
+  // クリックされた系列(group)・対象週について、1週目 → 対象週の箱ひげ図を表示する。
+  // 日数群は対象週ごとに対象者が変わるため、クリックされた週で改めて対象者を絞り込み直す。
   function renderSigBoxplot(group, week) {
     const pairs = [];
-    group.users.forEach(u => {
+    rawData.usersChurn.forEach(u => {
+      if (group.filter && !group.filter(u, week)) return;
       const first = sigScoreAt(u, 0);
       const last = sigScoreAt(u, week - 1);
       if (first === null || last === null) return;
