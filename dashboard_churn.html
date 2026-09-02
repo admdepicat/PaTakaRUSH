@@ -1217,6 +1217,7 @@
       });
     } else {
       charts[chartKey].data.datasets = newDatasets;
+      charts[chartKey].options.scales.x.max = weeksToCheck + 0.5;
       charts[chartKey].update();
     }
   }
