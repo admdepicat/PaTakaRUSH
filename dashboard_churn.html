@@ -1,7 +1,7 @@
 <!-- ============================================== -->
 <!-- パネル 4: 離脱率 -->
 <!-- ============================================== -->
-<div id="panel-churn" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+<div id="panel-churn" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
 
   <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
     <h2 class="text-lg font-bold text-gray-800">週次利用日数の推移</h2>
@@ -1921,23 +1921,28 @@
 
   // 任意の数の系列(series = [{label, values, color}, ...])のp値推移を表示する折れ線グラフ。
   // churnRenderSensitivityLineChartの2系列固定版とは別に、管理区分などで系列数が可変になるグラフ向け。
-  function churnRenderMultiSensitivityLineChart(canvasId, chartKey, xLabels, series, xAxisTitle, countCaptionId) {
+  function churnRenderMultiSensitivityLineChart(canvasId, chartKey, xLabels, series, xAxisTitle, countCaptionId, opts) {
+    opts = opts || {};
     const el = document.getElementById(canvasId);
     if (!el) return;
     if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
 
     const clampP = (p) => p === null ? null : Math.min(Math.max(p, 0.0001), 0.9);
-    const datasets = series.map(s => ({
-      label: s.label,
-      data: s.values.map(v => clampP(v.pValue)),
-      borderColor: s.color, backgroundColor: s.color,
-      borderDash: s.dash || [],
-      hidden: s.hidden || false,
-      pointBackgroundColor: s.values.map(v => churnPValueColor(v.pValue)),
-      pointBorderColor: s.values.map(v => churnPValueColor(v.pValue)),
-      pointRadius: 5, pointHoverRadius: 7,
-      borderWidth: 2, tension: 0, fill: false, spanGaps: true
-    }));
+    const datasets = series.map(s => {
+      // ドットの色: デフォルトはp値の有意水準で色分け(青/緑/赤)、opts.pointColorBySeriesを立てた場合は系列自体の色で統一する
+      const pointColors = opts.pointColorBySeries ? s.color : s.values.map(v => churnPValueColor(v.pValue));
+      return {
+        label: s.label,
+        data: s.values.map(v => clampP(v.pValue)),
+        borderColor: s.color, backgroundColor: s.color,
+        borderDash: s.dash || [],
+        hidden: s.hidden || false,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors,
+        pointRadius: 5, pointHoverRadius: 7,
+        borderWidth: 2, tension: 0, fill: false, spanGaps: true
+      };
+    });
 
     charts[chartKey] = new Chart(el, {
       type: 'line',
@@ -1946,7 +1951,17 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: true, position: 'top' },
+          legend: {
+            display: true, position: 'top',
+            labels: {
+              usePointStyle: true,
+              generateLabels: (chart) => {
+                const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                labels.forEach(label => { label.pointStyle = 'line'; });
+                return labels;
+              }
+            }
+          },
           tooltip: {
             callbacks: {
               label: (ctx) => {

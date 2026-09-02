@@ -1,7 +1,7 @@
 <!-- ============================================== -->
 <!-- パネル 6: 有意差 -->
 <!-- ============================================== -->
-<div id="panel-sig" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+<div id="panel-sig" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
 
   <h2 class="text-lg font-bold text-gray-800 mb-4">有意差</h2>
 
@@ -20,8 +20,8 @@
 
     <span class="text-gray-500 mr-1">表示:</span>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="sigShowTotal" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-gray-600" checked>
-      <span class="text-gray-700">全体</span>
+      <input type="checkbox" id="sigShowTotal" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+      <span class="text-emerald-600">全体</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="checkbox" id="sigShowLow" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
@@ -141,7 +141,7 @@
       if (highCountEl) highCountEl.textContent = `対象: ${highUsers.length}人`;
 
       const groupDefs = [
-        { key: 'total', label: '全体', color: '#4b5563', users: rawData.usersChurn },
+        { key: 'total', label: '全体', color: '#059669', users: rawData.usersChurn },
         { key: 'low', label: '低日数群', color: '#2563eb', users: lowUsers },
         { key: 'high', label: '高日数群', color: '#dc2626', users: highUsers }
       ];
@@ -154,7 +154,7 @@
         hidden: !visibleGroups.includes(g.key)
       }));
 
-      churnRenderMultiSensitivityLineChart('sigWeeklyChart', 'sigWeekly', xLabels, series, '対象週', 'sigWeeklyCountTable');
+      churnRenderMultiSensitivityLineChart('sigWeeklyChart', 'sigWeekly', xLabels, series, '対象週', 'sigWeeklyCountTable', { pointColorBySeries: true });
     } catch (error) {
       console.error(error);
     }
