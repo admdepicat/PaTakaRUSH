@@ -917,13 +917,17 @@
     const colgroup = `<colgroup><col style="width:${labelColWidth}px">` +
       weeksList.map(() => `<col style="width:${colWidth}px">`).join('') + `</colgroup>`;
     const headerCells = weeksList.map(w => `<th class="py-0.5 text-center font-normal text-gray-500 border-b border-gray-200 overflow-hidden">${w}</th>`).join('');
-    const cells = weekly.map(w => `<td class="py-0.5 text-center border-b border-gray-100">${w.activeUsers}</td>`).join('');
+    const totalCells = weekly.map(w => `<td class="py-0.5 text-center border-b border-gray-100">${w.activeUsers}</td>`).join('');
+    const testedCells = weekly.map(w => `<td class="py-0.5 text-center border-b border-gray-100">${Math.max(0, w.activeUsers - (w.hist[0] || 0))}</td>`).join('');
 
     captionEl.innerHTML = `
       <table class="text-xs border-collapse" style="table-layout:fixed; width:${labelColWidth + colWidth * n}px;">
         ${colgroup}
-        <thead><tr><th class="py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap overflow-hidden">実人数</th>${headerCells}</tr></thead>
-        <tbody><tr><td class="py-0.5 text-left font-bold border-b border-gray-100 whitespace-nowrap overflow-hidden" style="color:#059669;">対象(0回除外後)</td>${cells}</tr></tbody>
+        <thead><tr><th class="py-0.5 text-left font-normal text-gray-500 border-b border-gray-200 whitespace-nowrap overflow-hidden">週目</th>${headerCells}</tr></thead>
+        <tbody>
+          <tr><td class="py-0.5 text-left font-bold border-b border-gray-100 whitespace-nowrap overflow-hidden" style="color:#059669;">対象人数</td>${totalCells}</tr>
+          <tr><td class="py-0.5 text-left font-bold border-b border-gray-100 whitespace-nowrap overflow-hidden" style="color:#047857;">実施(週1日以上)</td>${testedCells}</tr>
+        </tbody>
       </table>
     `;
   }
