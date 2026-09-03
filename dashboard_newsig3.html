@@ -136,7 +136,7 @@
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">継続は力なり: 徐々に伸びた人のピックアップ</h4>
   <p class="text-xs text-gray-500 mb-2">
-    ※基準点(1週目)から対象週まで、スコアが徐々に伸びている人だけを条件で拾い出して個別に見る、意図的な抽出です(統計的な証明ではなく、実例の可視化を目的としています)。対象は「期間」「年齢」「対象週」の設定(上の日数群セクションと共通)に従います。
+    ※基準点(1週目)から対象週まで、スコアが徐々に伸びている人だけを条件で拾い出して個別に見る、意図的な抽出です(統計的な証明ではなく、実例の可視化を目的としています)。対象は「期間」「年齢」「対象週」の設定(上の日数群セクションと共通)に従います。該当者は、基準点(スコア)の3等分パーセンタイル(上の日数群セクションと同じ境界)で悪い人(赤)/ふつうの人(黄)/良い人(青)に色分けし、チェックボックスで表示/非表示を切り替えられます。
   </p>
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200 mb-3">
     <span class="text-gray-500">増加の定義:</span>
@@ -151,6 +151,22 @@
     <input type="text" inputmode="numeric" id="newSig3ContinuityR2" value="0.5" min="0" max="1" step="0.05" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="font-normal text-gray-500">以上</span>
     <span id="newSig3ContinuitySummary" class="text-emerald-700"></span>
+
+    <div class="w-full"></div>
+
+    <span class="text-gray-500">色分け(基準点のスコア3等分):</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ContinuityShowBad" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-red-600" checked>
+      <span class="text-red-600">悪い人(下位33%・赤)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ContinuityShowMid" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-yellow-500" checked>
+      <span class="text-yellow-600">ふつうの人(中位33%・黄)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ContinuityShowGood" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
+      <span class="text-blue-600">良い人(上位33%・青)</span>
+    </label>
   </div>
   <div class="chart-container mb-2" style="height: 320px;">
     <canvas id="newSig3ContinuityChart"></canvas>
@@ -433,7 +449,7 @@
         });
       });
 
-      renderNewSig3ContinuitySection(users, maxWeeks, targetMode);
+      renderNewSig3ContinuitySection(users, maxWeeks, targetMode, tertiles);
     } catch (error) {
       console.error(error);
     }
@@ -520,7 +536,17 @@
     return isNaN(v) ? 0.5 : Math.max(0, Math.min(1, v));
   }
 
-  function renderNewSig3ContinuityChart(users, maxWeeks, mode) {
+  // 基準点(week1BaselineAvg)を、renderNewSig3Chart側で計算済みの3等分パーセンタイル境界(tertiles)に
+  // 照らして「悪い人(下位33%・赤)/ふつうの人(中位33%・黄)/良い人(上位33%・青)」に分類する。
+  const NEW_SIG3_CONTINUITY_COLORS = { bad: '#dc2626', mid: '#eab308', good: '#2563eb' };
+  function newSig3ScoreTertileGroup(user, tertiles) {
+    if (tertiles.low === null || tertiles.high === null) return 'mid';
+    if (user.week1BaselineAvg < tertiles.low) return 'bad';
+    if (user.week1BaselineAvg >= tertiles.high) return 'good';
+    return 'mid';
+  }
+
+  function renderNewSig3ContinuityChart(users, maxWeeks, mode, tertiles) {
     const el = document.getElementById('newSig3ContinuityChart');
     if (!el) return;
     const datasets = users.map(u => {
@@ -528,9 +554,11 @@
       const points = [];
       scores.forEach((v, i) => { if (v !== null && v !== undefined) points.push({ x: i + 1, y: v }); });
       const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
+      const tertileGroup = newSig3ScoreTertileGroup(u, tertiles);
+      const baseColor = NEW_SIG3_CONTINUITY_COLORS[tertileGroup];
       return {
         label: u.uid, data: points,
-        borderColor: isSelected ? '#111827' : hexToRgba('#059669', 0.25),
+        borderColor: isSelected ? '#111827' : hexToRgba(baseColor, 0.35),
         backgroundColor: 'transparent',
         borderWidth: isSelected ? 4 : 1.5, pointRadius: 0, fill: false, tension: 0.2,
         order: isSelected ? -1 : 0
@@ -559,13 +587,19 @@
     });
   }
 
-  function newSig3RenderContinuityList(users) {
+  const NEW_SIG3_CONTINUITY_BADGE_CLASSES = {
+    bad: 'bg-red-100 text-red-800 hover:bg-red-200',
+    mid: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+    good: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+  };
+  function newSig3RenderContinuityList(users, tertiles) {
     const listEl = document.getElementById('newSig3ContinuityList');
     if (!listEl) return;
     listEl.innerHTML = users.map(u => {
       const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
       const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-      const cls = isSelected ? 'bg-gray-800 text-white' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+      const tertileGroup = newSig3ScoreTertileGroup(u, tertiles);
+      const cls = isSelected ? 'bg-gray-800 text-white' : NEW_SIG3_CONTINUITY_BADGE_CLASSES[tertileGroup];
       return `<button type="button" class="newsig3-continuity-uid px-2 py-0.5 rounded text-xs ${cls}" data-uid="${uidEscaped}">${u.uid}</button>`;
     }).join('');
 
@@ -584,9 +618,18 @@
     renderNewSig3Chart();
   }
 
+  function getNewSig3ContinuityVisibleTertiles() {
+    const groups = [];
+    if (document.getElementById('newSig3ContinuityShowBad') && document.getElementById('newSig3ContinuityShowBad').checked) groups.push('bad');
+    if (document.getElementById('newSig3ContinuityShowMid') && document.getElementById('newSig3ContinuityShowMid').checked) groups.push('mid');
+    if (document.getElementById('newSig3ContinuityShowGood') && document.getElementById('newSig3ContinuityShowGood').checked) groups.push('good');
+    return groups;
+  }
+
   // スコア層・日数群とは独立に、「基準点から対象週まで徐々にスコアが伸びた人」を条件で拾い出し、
   // 個別の折れ線グラフ・一覧・件数サマリーを表示する(意図的な抽出であり、統計的な検定ではない)。
-  function renderNewSig3ContinuitySection(users, maxWeeks, mode) {
+  // tertilesは、renderNewSig3Chart側で計算済みの基準点3等分パーセンタイル境界(色分け用)。
+  function renderNewSig3ContinuitySection(users, maxWeeks, mode, tertiles) {
     const def = getNewSig3ContinuityDef();
     const r2Threshold = getNewSig3ContinuityR2Threshold();
     document.getElementById('newSig3ContinuityR2').disabled = (def !== 'trend');
@@ -606,7 +649,10 @@
       newSig3ContinuitySelectedUid = null;
     }
 
-    renderNewSig3ContinuityChart(matched, maxWeeks, mode);
-    newSig3RenderContinuityList(matched);
+    const visibleTertiles = getNewSig3ContinuityVisibleTertiles();
+    const visibleMatched = matched.filter(u => visibleTertiles.includes(newSig3ScoreTertileGroup(u, tertiles)));
+
+    renderNewSig3ContinuityChart(visibleMatched, maxWeeks, mode, tertiles);
+    newSig3RenderContinuityList(visibleMatched, tertiles);
   }
 </script>
