@@ -14,6 +14,7 @@
     <li>「年齢」で年齢層を選ぶと対象を絞り込めます。</li>
     <li><b>全体/悪い人/ふつう人/良い人</b>(スコアによる分類)は、1週目の基準点(スコア)を3等分(下位33%/中位33%/上位33%)したパーセンタイルで分類しており、それぞれ独立したグラフの段として表示します(下位33%未満=悪い人、上位33%超=良い人)。日数群のような週ごとの変動はなく、1週目時点で固定のグループです。</li>
     <li><b>低日数群/高日数群/群間移動</b>(利用日数による分類)は、各スコア層の段の中で、1週目から対象週まで毎週の利用日数(検査回数ではなく日数)が指定した範囲に収まっている人で判定します。0日の週だけは特別扱いし、「対象週から遡って連続して0日の週が何週続いているか」が「0回/週を◯週まで許容」の設定以下なら許容します(0日以外で範囲外の日数が1回でもあれば、その時点で対象外)。対象期間中ずっと0日だった人は常に対象外です。「群間移動」は、1週目から対象週までの間に、低日数群の範囲に該当する週と高日数群の範囲に該当する週の両方があった人です。</li>
+    <li><b>低日数群 vs 高日数群(群間比較)</b>は、他の3本の線とは違い「1週目からの変化量」そのものを低日数群と高日数群の間で直接比較する(対応のない・Welchのt検定)線です。低日数群・高日数群それぞれの「1週目からの変化が有意か」ではなく、「両群の変化量に差があるか」を示します。</li>
     <li>1週目は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。</li>
     <li>色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。</li>
   </ul>
@@ -95,6 +96,10 @@
       <input type="checkbox" id="newSig3ShowTransition" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-purple-600" checked>
       <span class="text-purple-600">群間移動</span>
     </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowCompare" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-gray-800" checked>
+      <span class="text-gray-800">低日数群 vs 高日数群(群間比較)</span>
+    </label>
 
     <div class="w-full"></div>
 
@@ -155,6 +160,7 @@
     if (document.getElementById('newSig3ShowLow') && document.getElementById('newSig3ShowLow').checked) groups.push('low');
     if (document.getElementById('newSig3ShowHigh') && document.getElementById('newSig3ShowHigh').checked) groups.push('high');
     if (document.getElementById('newSig3ShowTransition') && document.getElementById('newSig3ShowTransition').checked) groups.push('transition');
+    if (document.getElementById('newSig3ShowCompare') && document.getElementById('newSig3ShowCompare').checked) groups.push('compare');
     return groups;
   }
 
@@ -213,6 +219,53 @@
       }
       const pValue = diffs.length > 0 ? churnPairedTTestPValue(diffs) : null;
       results.push({ week: w, pValue, n: diffs.length, excluded });
+    }
+    return results;
+  }
+
+  // 対応のない(independent、Welchの)2標本t検定の両側p値。churnIncompleteBeta/churnLogGamma
+  // (離脱率タブ由来、全スクリプト共通で利用可能)を使って、対応のあるt検定と同じ考え方で計算する。
+  // 等分散を仮定しない(Welch-Satterthwaiteの自由度補正)。
+  function newSig3UnpairedTTestPValue(valuesA, valuesB) {
+    const n1 = valuesA.length, n2 = valuesB.length;
+    if (n1 < 2 || n2 < 2) return null;
+    const mean1 = valuesA.reduce((s, v) => s + v, 0) / n1;
+    const mean2 = valuesB.reduce((s, v) => s + v, 0) / n2;
+    const var1 = valuesA.reduce((s, v) => s + (v - mean1) * (v - mean1), 0) / (n1 - 1);
+    const var2 = valuesB.reduce((s, v) => s + (v - mean2) * (v - mean2), 0) / (n2 - 1);
+    const se2 = var1 / n1 + var2 / n2;
+    if (se2 === 0) return mean1 === mean2 ? 1 : 0;
+    const t = (mean1 - mean2) / Math.sqrt(se2);
+    const df = (se2 * se2) / (((var1 / n1) * (var1 / n1)) / (n1 - 1) + ((var2 / n2) * (var2 / n2)) / (n2 - 1));
+    const x = df / (df + t * t);
+    return churnIncompleteBeta(x, df / 2, 0.5);
+  }
+
+  // 対象週w(1始まり)ごとに、低日数群の「1週目からの変化量」と高日数群の「1週目からの変化量」を
+  // 直接比較する(群間・対応のないt検定)。tierFilterでスコア層に絞り込んだ上で、lowFilter/highFilter
+  // (日数だけを見る、スコア層を含まない純粋な判定関数)で2群に振り分ける。どちらの群にも該当しない
+  // 人(範囲外の日数・0日許容超過など)はexcludedに数える。
+  function computeNewSig3BetweenGroupPValues(users, maxWeeks, mode, tierFilter, lowFilter, highFilter) {
+    const results = [];
+    for (let w = 1; w <= maxWeeks; w++) {
+      const diffsLow = [], diffsHigh = [];
+      let excluded = 0;
+      users.forEach(u => {
+        if (tierFilter && !tierFilter(u)) return;
+        const baseline = u.week1BaselineAvg;
+        const target = newSig3TargetValueForWeek(u, w, mode);
+        if (target === null || target === undefined) { excluded++; return; }
+        const diff = target - baseline;
+        if (lowFilter(u, w)) diffsLow.push(diff);
+        else if (highFilter(u, w)) diffsHigh.push(diff);
+        else excluded++;
+      });
+      if (w === 1) {
+        results.push({ week: w, pValue: null, n: diffsLow.length + diffsHigh.length, excluded });
+        continue;
+      }
+      const pValue = (diffsLow.length >= 2 && diffsHigh.length >= 2) ? newSig3UnpairedTTestPValue(diffsLow, diffsHigh) : null;
+      results.push({ week: w, pValue, n: diffsLow.length + diffsHigh.length, excluded });
     }
     return results;
   }
@@ -321,13 +374,21 @@
 
         const tierFilter = tierFilters[t.key];
         const groupDefsForTier = dayDefs.map(d => ({
-          key: d.key, label: d.label, color: d.color,
+          key: d.key, label: d.label, color: d.color, isCompare: false,
           filter: (u, w) => (!tierFilter || tierFilter(u)) && d.filter(u, w)
         }));
-        const series = groupDefsForTier.map(g => ({
+        const compareDef = {
+          key: 'compare', label: '低日数群 vs 高日数群', color: '#111827', isCompare: true,
+          values: computeNewSig3BetweenGroupPValues(users, maxWeeks, targetMode, tierFilter, dayDefs[0].filter, dayDefs[1].filter)
+        };
+        const allDefsForTier = groupDefsForTier.concat([compareDef]);
+        const series = allDefsForTier.map(g => ({
           label: g.label, color: g.color, labelColor: g.color,
-          values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
-          hidden: !visibleGroups.includes(g.key)
+          values: g.isCompare ? g.values : computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
+          hidden: !visibleGroups.includes(g.key),
+          // 群間比較(低日数群 vs 高日数群)の対象人数は、低日数群・高日数群の人数を合算したもので
+          // 二重計上になるため、表の「合計」には含めない
+          excludeFromTotal: g.isCompare
         }));
 
         const boxIds = {
@@ -338,7 +399,8 @@
           pointColorBySeries: true,
           showCountBars, countYMax,
           onPointClick: (datasetIndex, pointIndex) => {
-            const g = groupDefsForTier[datasetIndex];
+            const g = allDefsForTier[datasetIndex];
+            if (!g || g.isCompare) return; // 群間比較の点は「対応のある」箱ひげ図では表現できないためクリック無効
             const week = weeksList[pointIndex];
             renderNewSig3Boxplot(boxIds, g, week, users, targetMode);
           }
