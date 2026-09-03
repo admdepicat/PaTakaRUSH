@@ -482,6 +482,24 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
           } else { dataArr.push(null); scoresArr.push(null); }
         }
 
+        // 「新・有意差」タブ用：検査への慣れ(1回目)の影響を避けるため、1週目(検査開始7日以内)の
+        // 2回目・3回目の検査の平均を基準点として算出する(1週目に2回目・3回目が無い人はnull=分析から除外)。
+        // 対象週側は「その週最後の2回の平均」を使い、単発の検査結果に振り回されにくくする
+        // (その週の検査が1回以下の場合はnull=その週だけ比較対象から除外)。
+        var week1Scores = weeklyScoreMap[0] || [];
+        var week1BaselineAvg = week1Scores.length >= 3 ? (week1Scores[1] + week1Scores[2]) / 2 : null;
+        var scoresLast2Arr = [];
+        for (var w3 = 0; w3 < MAX_CHURN_WEEKS; w3++) {
+          if (accountAgeDays >= w3 * 7) {
+            var wScores3 = weeklyScoreMap[w3];
+            if (wScores3 && wScores3.length >= 2) {
+              scoresLast2Arr.push((wScores3[wScores3.length - 1] + wScores3[wScores3.length - 2]) / 2);
+            } else {
+              scoresLast2Arr.push(null);
+            }
+          } else { scoresLast2Arr.push(null); }
+        }
+
         // 「新・年齢と4文字平均の相関」の1週間/2週間用：週で区切って平均するのではなく、
         // 期間内の生の検査記録を同じ重みで直接平均した値（1人1データ）を別途算出する
         // （パタカラ分析タブ用に、4文字平均以外の指標(3文字平均・パ・タ・カ・ラ)も同様に2週間分を算出する）
@@ -509,7 +527,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
         var avgRaw2wK = avgOf(rawRecords2wK);
         var avgRaw2wR = avgOf(rawRecords2wR);
 
-        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
+        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, week1BaselineAvg: week1BaselineAvg, scoresLast2: scoresLast2Arr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
       }
     });
 

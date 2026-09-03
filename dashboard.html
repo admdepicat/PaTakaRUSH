@@ -64,7 +64,8 @@
         <!-- 新設：パタカラ分析タブ -->
         <button onclick="showTab('pataka')" id="tab-pataka" class="tab-btn flex-1 py-3 min-w-[120px]">パタカラ分析</button>
         <button onclick="showTab('churn')" id="tab-churn" class="tab-btn flex-1 py-3 min-w-[120px]">離脱率</button>
-        <button onclick="showTab('sig')" id="tab-sig" class="tab-btn flex-1 py-3 tab-active min-w-[120px]">有意差</button>
+        <button onclick="showTab('sig')" id="tab-sig" class="tab-btn flex-1 py-3 min-w-[120px]">有意差</button>
+        <button onclick="showTab('newsig')" id="tab-newsig" class="tab-btn flex-1 py-3 tab-active min-w-[120px]">新・有意差</button>
       </div>
 
       <!-- 共通: ユーザー数およびデータ件数表示 -->
@@ -116,13 +117,14 @@
       <?!= include('dashboard_pataka'); ?> <!-- 新規追加テンプレート -->
       <?!= include('dashboard_churn'); ?>
       <?!= include('dashboard_significance'); ?>
+      <?!= include('dashboard_newsig'); ?>
 
     </div>
   </div>
 
   <script>
     let rawData = null;
-    let charts = { topScatter: null, ageRangePoly: null, patakaScatter: null, patakaScatter2: null, patakaBoxPlot: null, impact: null, churn: null, churnMultiUserLine: null, churnMultiUserLineRedBlue: null, churnPairedBoxLow: null, churnPairedBoxHigh: null, churnPairedMeanSdLow: null, churnPairedMeanSdHigh: null, churnPairedBoxLowWeeks: null, churnPairedBoxHighWeeks: null, churnPairedMeanSdLowWeeks: null, churnPairedMeanSdHighWeeks: null, churnSensitivityMonths: null, churnSensitivityWeeks: null, churnNewGroupBoxLow: null, churnNewGroupBoxHigh: null, churnNewGroupSensitivity: null, churnNewGroupSensitivity2: null, churnFiltered: null, churnHist: null, sigWeekly: null, sigTransitionLine: null };
+    let charts = { topScatter: null, ageRangePoly: null, patakaScatter: null, patakaScatter2: null, patakaBoxPlot: null, impact: null, churn: null, churnMultiUserLine: null, churnMultiUserLineRedBlue: null, churnPairedBoxLow: null, churnPairedBoxHigh: null, churnPairedMeanSdLow: null, churnPairedMeanSdHigh: null, churnPairedBoxLowWeeks: null, churnPairedBoxHighWeeks: null, churnPairedMeanSdLowWeeks: null, churnPairedMeanSdHighWeeks: null, churnSensitivityMonths: null, churnSensitivityWeeks: null, churnNewGroupBoxLow: null, churnNewGroupBoxHigh: null, churnNewGroupSensitivity: null, churnNewGroupSensitivity2: null, churnFiltered: null, churnHist: null, sigWeekly: null, sigTransitionLine: null, newSigWeekly: null, newSigBox: null };
 
     Chart.defaults.font.family = 'sans-serif';
 
@@ -218,7 +220,7 @@
     }
 
     function showTab(tabId) {
-      ['dist', 'pataka', 'churn', 'sig'].forEach(id => {
+      ['dist', 'pataka', 'churn', 'sig', 'newsig'].forEach(id => {
         const btn = document.getElementById('tab-' + id);
         const pnl = document.getElementById('panel-' + id);
         if(btn) btn.classList.remove('tab-active');
@@ -233,6 +235,7 @@
       // canvasのサイズが0のままChart.jsが内部のchartArea等を計算してしまい、グラフ直下の人数表
       // (chartAreaの座標を使って列幅を決めている)が壊れたままになることがあるため。
       if (tabId === 'sig' && typeof renderSigChart === 'function') renderSigChart();
+      if (tabId === 'newsig' && typeof renderNewSigChart === 'function') renderNewSigChart();
       if (tabId === 'churn' && typeof renderChurnChart === 'function') renderChurnChart();
     }
 
@@ -301,6 +304,7 @@
       if (typeof renderPatakaChart === 'function') renderPatakaChart(); // パタカラ分析描画
       if (typeof renderChurnChart === 'function') renderChurnChart();
       if (typeof renderSigChart === 'function') renderSigChart();
+      if (typeof renderNewSigChart === 'function') renderNewSigChart();
     }
   </script>
 </body>

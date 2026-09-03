@@ -1,0 +1,154 @@
+<!-- ============================================== -->
+<!-- パネル 7: 新・有意差 -->
+<!-- ============================================== -->
+<div id="panel-newsig" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+
+  <h2 class="text-lg font-bold text-gray-800 mb-4">新・有意差</h2>
+
+  <p class="text-sm text-gray-600 mb-4">
+    ※「有意差」タブでは1週目・対象週それぞれの週内平均をそのまま比較していましたが、1週目の1回目の検査は検査に慣れていないため
+    低く出やすいという指摘を踏まえ、こちらのタブでは基準点・比較点の取り方を変えています。
+    <b>基準点</b>は「1週目(検査開始から7日以内)の2回目・3回目の検査の平均」(1回目は除外)とし、1週目に2回目・3回目の検査が無い人はこの分析の対象外です。
+    <b>比較点(対象週)</b>は「その週の最後の2回の検査の平均」とし、対象週の検査が1回以下の人は、その週だけ比較対象から除外します。
+    「年齢」で年齢層を選ぶと対象を絞り込めます。1週目は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。
+  </p>
+
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">期間: 1〜</span>
+    <input type="text" inputmode="numeric" id="newSigMaxWeeks" value="12" min="2" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSigChart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="newSigPopulationCount" class="text-cyan-700"></span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">年齢:</span>
+    <select id="newSigAgeBracket" onchange="renderNewSigChart()" class="p-1 border border-gray-300 rounded outline-none font-normal">
+      <option value="all" selected>全年齢</option>
+      <option value="3-18">3≦〜&lt;18歳</option>
+      <option value="18-50">18≦〜&lt;50歳</option>
+      <option value="50-80">50≦〜&lt;80歳</option>
+      <option value="80+">80歳以上</option>
+    </select>
+
+    <div class="w-full"></div>
+
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSigShowCountBars" onchange="renderNewSigChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+      <span class="text-gray-700">人数(背景棒)</span>
+    </label>
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">対象人数Y軸最大値:</span>
+    <input type="text" inputmode="numeric" id="newSigCountYMax" placeholder="自動" min="1" step="1" oninput="churnNormalizeNumberInput(this); renderNewSigChart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+  </div>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">基準点(1週目2〜3回目平均) → 対象週(最後2回平均) のp値の推移</h4>
+  <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
+  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="newSigWeeklyChart"></canvas>
+      </div>
+      <div id="newSigWeeklyCountTable" class="overflow-x-auto mt-2"></div>
+    </div>
+    <div class="w-full lg:w-96 shrink-0 flex flex-col">
+      <div class="chart-container flex-1" style="min-height: 320px;">
+        <canvas id="newSigBoxChart"></canvas>
+      </div>
+      <p id="newSigBoxCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
+      <p id="newSigBoxSig" class="text-center text-xs text-gray-500 mt-1"></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ===== 新・有意差タブ: 基準点(1週目2-3回目平均) vs 対象週(最後2回平均)のp値推移 =====
+  function getNewSigMaxWeeks() {
+    const el = document.getElementById('newSigMaxWeeks');
+    return el && el.value ? Math.max(2, Math.min(104, parseInt(el.value, 10))) : 12;
+  }
+
+  function getNewSigAgeBracket() {
+    const el = document.getElementById('newSigAgeBracket');
+    return el ? el.value : 'all';
+  }
+
+  // 対象週w(1始まり)における、基準点(week1BaselineAvg)→対象週(scoresLast2[w-1])のペアからp値・対象人数・除外人数を計算する。
+  // 基準点が無い人(1週目に2回目・3回目の検査が無い人)は母集団の時点で既に除いてある前提。
+  // excludedは「基準点はあるが、対象週の検査が1回以下でscoresLast2が無い(その週だけ比較不能)人数」。
+  // 1週目(w=1)は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、t検定は行わずp=nullとする。
+  function computeNewSigWeeklyPValues(users, maxWeeks) {
+    const results = [];
+    for (let w = 1; w <= maxWeeks; w++) {
+      const diffs = [];
+      let excluded = 0;
+      users.forEach(u => {
+        const baseline = u.week1BaselineAvg;
+        const target = (u.scoresLast2 && (w - 1) < u.scoresLast2.length) ? u.scoresLast2[w - 1] : null;
+        if (target === null || target === undefined) { excluded++; return; }
+        diffs.push(target - baseline);
+      });
+      if (w === 1) {
+        results.push({ week: w, pValue: null, n: diffs.length, excluded });
+        continue;
+      }
+      const pValue = diffs.length > 0 ? churnPairedTTestPValue(diffs) : null;
+      results.push({ week: w, pValue, n: diffs.length, excluded });
+    }
+    return results;
+  }
+
+  function renderNewSigChart() {
+    try {
+      if (!rawData || !rawData.usersChurn) return;
+      const maxWeeks = getNewSigMaxWeeks();
+      const ageBracket = getNewSigAgeBracket();
+      const allUsers = sigFilterUsersByAge(rawData.usersChurn, ageBracket);
+      const users = allUsers.filter(u => u.week1BaselineAvg !== null && u.week1BaselineAvg !== undefined);
+
+      const totalCount = document.getElementById('newSigPopulationCount');
+      if (totalCount) totalCount.textContent = `基準点あり: ${users.length}人 (絞り込み後全体: ${allUsers.length}人)`;
+
+      const weeksList = [];
+      for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
+      const xLabels = weeksList.map(w => `${w}週`);
+      const series = [{
+        label: '全体', color: '#0891b2', labelColor: '#0891b2',
+        values: computeNewSigWeeklyPValues(users, maxWeeks),
+        hidden: false
+      }];
+
+      const showCountBarsEl = document.getElementById('newSigShowCountBars');
+      const showCountBars = !!(showCountBarsEl && showCountBarsEl.checked);
+      const countYMaxEl = document.getElementById('newSigCountYMax');
+      const countYMax = countYMaxEl && countYMaxEl.value !== '' ? parseInt(countYMaxEl.value, 10) : undefined;
+
+      churnRenderMultiSensitivityLineChart('newSigWeeklyChart', 'newSigWeekly', xLabels, series, '対象週', 'newSigWeeklyCountTable', {
+        pointColorBySeries: true,
+        showCountBars, countYMax,
+        onPointClick: (datasetIndex, pointIndex) => {
+          const week = weeksList[pointIndex];
+          renderNewSigBoxplot(week, users);
+        }
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // クリックされた対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均)の箱ひげ図を表示する。
+  function renderNewSigBoxplot(week, users) {
+    const pairs = [];
+    users.forEach(u => {
+      const baseline = u.week1BaselineAvg;
+      const target = (u.scoresLast2 && (week - 1) < u.scoresLast2.length) ? u.scoresLast2[week - 1] : null;
+      if (target === null || target === undefined) return;
+      pairs.push({ uid: u.uid, first: baseline, last: target });
+    });
+
+    const captionEl = document.getElementById('newSigBoxCaption');
+    if (captionEl) captionEl.textContent = `基準点 → ${week}週目 (対象: ${pairs.length}人)`;
+
+    renderChurnPairedBoxplot('newSigBoxChart', 'newSigBox', 'newSigBoxSig', pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
+  }
+</script>
