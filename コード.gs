@@ -487,7 +487,8 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
         // 対象週側は「その週最後の2回の平均」を使い、単発の検査結果に振り回されにくくする
         // (その週の検査が1回以下の場合はnull=その週だけ比較対象から除外)。
         var week1Scores = weeklyScoreMap[0] || [];
-        var week1BaselineAvg = week1Scores.length >= 3 ? (week1Scores[1] + week1Scores[2]) / 2 : null;
+        var week1TestCount = week1Scores.length;
+        var week1BaselineAvg = week1TestCount >= 3 ? (week1Scores[1] + week1Scores[2]) / 2 : null;
         var scoresLast2Arr = [];
         for (var w3 = 0; w3 < MAX_CHURN_WEEKS; w3++) {
           if (accountAgeDays >= w3 * 7) {
@@ -527,7 +528,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
         var avgRaw2wK = avgOf(rawRecords2wK);
         var avgRaw2wR = avgOf(rawRecords2wR);
 
-        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, week1BaselineAvg: week1BaselineAvg, scoresLast2: scoresLast2Arr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
+        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, week1BaselineAvg: week1BaselineAvg, week1TestCount: week1TestCount, scoresLast2: scoresLast2Arr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
       }
     });
 

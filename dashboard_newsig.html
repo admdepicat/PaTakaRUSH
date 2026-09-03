@@ -113,9 +113,11 @@
       const totalCount = document.getElementById('newSigPopulationCount');
       if (totalCount) totalCount.textContent = `基準点あり: ${users.length}人 (絞り込み後全体: ${allUsers.length}人)`;
 
-      const excludedCount = allUsers.length - users.length;
+      const excludedUsers = allUsers.filter(u => u.week1BaselineAvg === null || u.week1BaselineAvg === undefined);
+      const excludedOnce = excludedUsers.filter(u => u.week1TestCount === 1).length;
+      const excludedTwice = excludedUsers.filter(u => u.week1TestCount === 2).length;
       const noteEl = document.getElementById('newSigExclusionNote');
-      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 → 基準点(1週目の2回目・3回目の検査平均)を算出できる${users.length.toLocaleString()}人が対象(1週目の検査が1回または2回で2回目・3回目が無いため、${excludedCount.toLocaleString()}人を除外)。`;
+      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 → 基準点(1週目の2回目・3回目の検査平均)を算出できる${users.length.toLocaleString()}人が対象(1週目の検査が1回の人${excludedOnce.toLocaleString()}人 + 2回の人${excludedTwice.toLocaleString()}人 = 計${excludedUsers.length.toLocaleString()}人を除外)。`;
 
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
