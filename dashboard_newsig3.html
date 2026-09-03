@@ -12,6 +12,7 @@
     <li><b>基準点</b>は「1週目(検査開始から7日以内)の2回目・3回目の検査の平均」(1回目は除外)。1週目に2回目・3回目の検査が無い人はこの分析の対象外です(2週目以降にいくら検査していても基準点には使いません)。</li>
     <li><b>比較点(対象週)</b>は「その週の最後の2回の検査の平均」(2回以上検査している場合)。「対象週」のラジオボタンで「1回でも採用」を選ぶと、その週1回しか検査していない人もその1回の値をそのまま採用します(「2回以上必須」を選ぶと1回だけの人はその週だけ除外)。いずれの場合も、対象週に1度も検査していない(0回)人は、その週だけ比較対象から除外します。</li>
     <li>「年齢」で年齢層を選ぶと対象を絞り込めます。</li>
+    <li><b>悪い人/ふつう人/良い人</b>は、1週目の基準点(スコア)を3等分(下位33%/中位33%/上位33%)したパーセンタイルで分類しています(下位33%未満=悪い人、上位33%超=良い人)。日数群のような週ごとの変動はなく、1週目時点で固定のグループです。</li>
     <li>1週目は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。</li>
     <li>色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。</li>
   </ul>
@@ -46,6 +47,27 @@
 
     <div class="w-full"></div>
     <span id="newSig3ExclusionNote" class="text-gray-600 font-normal"></span>
+
+    <div class="w-full"></div>
+
+    <span class="text-gray-500 mr-1">表示:</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowTotal" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-cyan-600">
+      <span class="text-cyan-700">全体</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowBad" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-rose-600" checked>
+      <span class="text-rose-600">悪い人(下位33%)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowMid" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-amber-600" checked>
+      <span class="text-amber-600">ふつう人(中位33%)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowGood" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-emerald-600" checked>
+      <span class="text-emerald-600">良い人(上位33%)</span>
+    </label>
+    <span id="newSig3TertileNote" class="text-gray-500 font-normal"></span>
 
     <div class="w-full"></div>
 
@@ -95,6 +117,25 @@
     return el ? el.value : 'allow1';
   }
 
+  function getNewSig3VisibleGroups() {
+    const groups = [];
+    if (document.getElementById('newSig3ShowTotal') && document.getElementById('newSig3ShowTotal').checked) groups.push('total');
+    if (document.getElementById('newSig3ShowBad') && document.getElementById('newSig3ShowBad').checked) groups.push('bad');
+    if (document.getElementById('newSig3ShowMid') && document.getElementById('newSig3ShowMid').checked) groups.push('mid');
+    if (document.getElementById('newSig3ShowGood') && document.getElementById('newSig3ShowGood').checked) groups.push('good');
+    return groups;
+  }
+
+  // 1週目の基準点(week1BaselineAvg)の分布を3等分するパーセンタイル境界(下位33%点・上位33%点)を求める。
+  // weightedPercentile(年齢別分布タブ由来、全スクリプト共通で利用可能)を重み1で使い、単純な3等分にする。
+  function computeNewSig3ScoreTertiles(users) {
+    const pairs = users.map(u => [u.week1BaselineAvg, 1]);
+    return {
+      low: weightedPercentile(pairs, 1 / 3),
+      high: weightedPercentile(pairs, 2 / 3)
+    };
+  }
+
   // 対象週w(1始まり)の1人分の比較値を取得する。scoresLast2[w-1]は「2回以上→最後2回平均、1回のみ→その1回、
   // 0回→null」というコード.gs側の計算結果。mode==='strict2'の場合は、その週の検査回数(weekTestCounts)が
   // 2回未満(0回または1回)ならnull扱いにする(1回だけの人もその週は除外)。
@@ -112,7 +153,7 @@
   // p値・対象人数・除外人数を計算する。基準点が無い人(1週目に2回目・3回目の検査が無い人)は母集団の
   // 時点で既に除いてある前提。excludedは「基準点はあるが、対象週の比較値が無い(その週だけ比較不能)人数」。
   // 1週目(w=1)は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、t検定は行わずp=nullとする。
-  function computeNewSig3WeeklyPValues(users, maxWeeks, mode) {
+  function computeNewSig3WeeklyPValues(users, maxWeeks, mode, groupFilter) {
     const results = [];
     for (let w = 1; w <= maxWeeks; w++) {
       const diffs = [];
@@ -121,6 +162,7 @@
         const baseline = u.week1BaselineAvg;
         const target = newSig3TargetValueForWeek(u, w, mode);
         if (target === null || target === undefined) { excluded++; return; }
+        if (groupFilter && !groupFilter(u)) { excluded++; return; }
         diffs.push(target - baseline);
       });
       if (w === 1) {
@@ -151,14 +193,31 @@
       const noteEl = document.getElementById('newSig3ExclusionNote');
       if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 →${users.length.toLocaleString()}人（${excludedUsers.length.toLocaleString()}人＝1回${excludedOnce.toLocaleString()}人＋2回${excludedTwice.toLocaleString()}人を除外)`;
 
+      const tertiles = computeNewSig3ScoreTertiles(users);
+      const tertileNoteEl = document.getElementById('newSig3TertileNote');
+      if (tertileNoteEl) {
+        tertileNoteEl.textContent = (tertiles.low !== null && tertiles.high !== null)
+          ? `(境界: 悪い人 <${tertiles.low.toFixed(2)} / ふつう人 ${tertiles.low.toFixed(2)}〜${tertiles.high.toFixed(2)} / 良い人 ≥${tertiles.high.toFixed(2)})`
+          : '';
+      }
+
+      const visibleGroups = getNewSig3VisibleGroups();
+      const groupDefs = [
+        { key: 'total', label: '全体', color: '#0891b2', filter: null },
+        { key: 'bad', label: '悪い人', color: '#dc2626', filter: (u) => u.week1BaselineAvg < tertiles.low },
+        { key: 'mid', label: 'ふつう人', color: '#d97706', filter: (u) => u.week1BaselineAvg >= tertiles.low && u.week1BaselineAvg < tertiles.high },
+        { key: 'good', label: '良い人', color: '#059669', filter: (u) => u.week1BaselineAvg >= tertiles.high }
+      ];
+
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
       const xLabels = weeksList.map(w => `${w}週`);
-      const series = [{
-        label: '全体', color: '#0891b2', labelColor: '#0891b2',
-        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode),
-        hidden: false
-      }];
+      const series = groupDefs.map(g => ({
+        label: g.label, color: g.color, labelColor: g.color,
+        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
+        hidden: !visibleGroups.includes(g.key),
+        excludeFromTotal: g.key === 'total'
+      }));
 
       const showCountBarsEl = document.getElementById('newSig3ShowCountBars');
       const showCountBars = !!(showCountBarsEl && showCountBarsEl.checked);
@@ -169,8 +228,9 @@
         pointColorBySeries: true,
         showCountBars, countYMax,
         onPointClick: (datasetIndex, pointIndex) => {
+          const g = groupDefs[datasetIndex];
           const week = weeksList[pointIndex];
-          renderNewSig3Boxplot(week, users, targetMode);
+          renderNewSig3Boxplot(g, week, users, targetMode);
         }
       });
     } catch (error) {
@@ -178,18 +238,20 @@
     }
   }
 
-  // クリックされた対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均、または「1回でも採用」時のその1回)の箱ひげ図を表示する。
-  function renderNewSig3Boxplot(week, users, mode) {
+  // クリックされた系列(group)・対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均、または
+  // 「1回でも採用」時のその1回)の箱ひげ図を表示する。
+  function renderNewSig3Boxplot(group, week, users, mode) {
     const pairs = [];
     users.forEach(u => {
       const baseline = u.week1BaselineAvg;
       const target = newSig3TargetValueForWeek(u, week, mode);
       if (target === null || target === undefined) return;
+      if (group.filter && !group.filter(u)) return;
       pairs.push({ uid: u.uid, first: baseline, last: target });
     });
 
     const captionEl = document.getElementById('newSig3BoxCaption');
-    if (captionEl) captionEl.textContent = `基準点 → ${week}週目 (対象: ${pairs.length}人)`;
+    if (captionEl) captionEl.textContent = `${group.label} 基準点 → ${week}週目 (対象: ${pairs.length}人)`;
 
     renderChurnPairedBoxplot('newSig3BoxChart', 'newSig3Box', 'newSig3BoxSig', pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
   }
