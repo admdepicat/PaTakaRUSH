@@ -245,6 +245,6 @@
     const captionEl = document.getElementById('sigBoxCaption');
     if (captionEl) captionEl.textContent = `${group.label} 1週目 → ${week}週目 (対象: ${pairs.length}人)`;
 
-    renderChurnPairedBoxplot('sigBoxChart', 'sigBox', 'sigBoxSig', pairs, 0, 10, ['1週目', `${week}週目`]);
+    renderChurnPairedBoxplot('sigBoxChart', 'sigBox', 'sigBoxSig', pairs, 0, 10, ['1週目', `${week}週目`], 0.8);
   }
 </script>

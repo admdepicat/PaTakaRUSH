@@ -1491,7 +1491,8 @@
     return `p = ${p.toFixed(3)}`;
   }
 
-  function renderChurnPairedBoxplot(canvasId, chartKey, sigElementId, pairs, yMin, yMax, xLabels) {
+  function renderChurnPairedBoxplot(canvasId, chartKey, sigElementId, pairs, yMin, yMax, xLabels, xPad) {
+    xPad = xPad !== undefined ? xPad : 0.5;
     const el = document.getElementById(canvasId);
     const sigEl = document.getElementById(sigElementId);
     if (!el) return;
@@ -1608,7 +1609,7 @@
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
         },
         scales: {
-          x: { type: 'linear', min: 0.5, max: 2.5, ticks: { stepSize: 1, callback: (v) => v === 1 ? xLabels[0] : (v === 2 ? xLabels[1] : '') } },
+          x: { type: 'linear', min: 1 - xPad, max: 2 + xPad, ticks: { stepSize: 1, callback: (v) => v === 1 ? xLabels[0] : (v === 2 ? xLabels[1] : '') } },
           y: { title: { display: true, text: '4文字平均(回/秒)' }, min: yMin, max: yMax, ticks: { stepSize: 1, precision: 0 } }
         },
         onHover: (evt, elements, chart) => {
