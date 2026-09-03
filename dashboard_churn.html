@@ -2012,6 +2012,15 @@
         plugins: {
           legend: {
             display: true, position: 'top',
+            onClick: (evt, legendItem, legend) => {
+              // opts.onLegendClickが指定されている場合はそちらに委譲する(例:複数グラフ間で表示/非表示を連動させたい場合)。
+              // 未指定時はChart.js標準の凡例クリック動作(そのグラフ内のみでの表示/非表示切り替え)。
+              if (opts.onLegendClick) {
+                opts.onLegendClick(legendItem, legend.chart);
+              } else if (Chart.defaults.plugins.legend.onClick) {
+                Chart.defaults.plugins.legend.onClick.call(legend, evt, legendItem, legend);
+              }
+            },
             labels: {
               usePointStyle: true,
               generateLabels: (chart) => {

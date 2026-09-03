@@ -379,6 +379,32 @@
     { key: 'good', label: '良い人' }
   ];
 
+  // 「全体」「悪い人」「ふつう人」の3段は凡例クリックによる表示/非表示を連動させる(ユーザー指定により「良い人」は対象外)。
+  const NEW_SIG3_LINKED_TIER_KEYS = ['total', 'bad', 'mid'];
+
+  // tierKeyのグラフで凡例がクリックされた際、Chart.js標準の表示/非表示切り替えを行った上で、
+  // 同じラベルの系列を持つ連動対象の他の段にも同じ表示状態を反映する。
+  function newSig3TierLegendOnClick(tierKey) {
+    return function (legendItem, chart) {
+      const index = legendItem.datasetIndex;
+      const label = chart.data.datasets[index].label;
+      const wasVisible = chart.isDatasetVisible(index);
+      if (wasVisible) chart.hide(index); else chart.show(index);
+      const nowVisible = !wasVisible;
+
+      NEW_SIG3_LINKED_TIER_KEYS.filter(k => k !== tierKey).forEach(k => {
+        const otherChart = charts['newSig3Tier_' + k];
+        if (!otherChart) return;
+        otherChart.data.datasets.forEach((ds, i) => {
+          if (ds.label !== label) return;
+          if (otherChart.isDatasetVisible(i) !== nowVisible) {
+            if (nowVisible) otherChart.show(i); else otherChart.hide(i);
+          }
+        });
+      });
+    };
+  }
+
   function newSig3RenderTierContainers() {
     const container = document.getElementById('newSig3TierSections');
     if (!container || container.dataset.rendered === '1') return;
@@ -498,6 +524,7 @@
         churnRenderMultiSensitivityLineChart('newSig3TierChart_' + t.key, 'newSig3Tier_' + t.key, xLabels, series, '対象週', 'newSig3TierTable_' + t.key, {
           pointColorBySeries: true,
           showCountBars, countYMax,
+          onLegendClick: NEW_SIG3_LINKED_TIER_KEYS.includes(t.key) ? newSig3TierLegendOnClick(t.key) : undefined,
           onPointClick: (datasetIndex, pointIndex) => {
             const g = allDefsForTier[datasetIndex];
             if (!g || g.isCompare) return; // 群間比較の点は「対応のある」箱ひげ図では表現できないためクリック無効
