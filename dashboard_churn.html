@@ -1812,8 +1812,9 @@
         ctx.setLineDash([]);
         ctx.fillStyle = color;
         ctx.font = '10px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(label, chartArea.left + 2, y - 2);
+        // ラベルはグラフ内(プロット領域)ではなく、Y軸目盛りのある左側の余白に表示する
+        ctx.textAlign = 'right';
+        ctx.fillText(label, chartArea.left - 4, y - 2);
         ctx.restore();
       };
       drawLine(0.05, '#16a34a', 'p=0.05');
