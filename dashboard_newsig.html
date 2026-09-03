@@ -115,7 +115,7 @@
 
       const excludedCount = allUsers.length - users.length;
       const noteEl = document.getElementById('newSigExclusionNote');
-      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 → 基準点(1週目の2回目・3回目の検査平均)を算出できる${users.length.toLocaleString()}人が対象(1週目の検査が3回未満(0〜2回)で2回目・3回目が無いため、${excludedCount.toLocaleString()}人を除外)。`;
+      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 → 基準点(1週目の2回目・3回目の検査平均)を算出できる${users.length.toLocaleString()}人が対象(1週目の検査が1回または2回で2回目・3回目が無いため、${excludedCount.toLocaleString()}人を除外)。`;
 
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
