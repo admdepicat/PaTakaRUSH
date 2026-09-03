@@ -12,8 +12,8 @@
     <li><b>基準点</b>は「1週目(検査開始から7日以内)の2回目・3回目の検査の平均」(1回目は除外)。1週目に2回目・3回目の検査が無い人はこの分析の対象外です(2週目以降にいくら検査していても基準点には使いません)。</li>
     <li><b>比較点(対象週)</b>は「その週の最後の2回の検査の平均」(2回以上検査している場合)。「対象週」のラジオボタンで「1回でも採用」を選ぶと、その週1回しか検査していない人もその1回の値をそのまま採用します(「2回以上必須」を選ぶと1回だけの人はその週だけ除外)。いずれの場合も、対象週に1度も検査していない(0回)人は、その週だけ比較対象から除外します。</li>
     <li>「年齢」で年齢層を選ぶと対象を絞り込めます。</li>
-    <li><b>悪い人/ふつう人/良い人</b>(スコアによる分類)は、1週目の基準点(スコア)を3等分(下位33%/中位33%/上位33%)したパーセンタイルで分類しています(下位33%未満=悪い人、上位33%超=良い人)。日数群のような週ごとの変動はなく、1週目時点で固定のグループです。</li>
-    <li><b>低日数群/高日数群/群間移動</b>(利用日数による分類、スコアの分類とは別軸です)は、1週目から対象週まで毎週の利用日数(検査回数ではなく日数)が指定した範囲に収まっている人で判定します。0日の週だけは特別扱いし、「対象週から遡って連続して0日の週が何週続いているか」が「0回/週を◯週まで許容」の設定以下なら許容します(0日以外で範囲外の日数が1回でもあれば、その時点で対象外)。対象期間中ずっと0日だった人は常に対象外です。「群間移動」は、1週目から対象週までの間に、低日数群の範囲に該当する週と高日数群の範囲に該当する週の両方があった人です。</li>
+    <li><b>全体/悪い人/ふつう人/良い人</b>(スコアによる分類)は、1週目の基準点(スコア)を3等分(下位33%/中位33%/上位33%)したパーセンタイルで分類しており、それぞれ独立したグラフの段として表示します(下位33%未満=悪い人、上位33%超=良い人)。日数群のような週ごとの変動はなく、1週目時点で固定のグループです。</li>
+    <li><b>低日数群/高日数群/群間移動</b>(利用日数による分類)は、各スコア層の段の中で、1週目から対象週まで毎週の利用日数(検査回数ではなく日数)が指定した範囲に収まっている人で判定します。0日の週だけは特別扱いし、「対象週から遡って連続して0日の週が何週続いているか」が「0回/週を◯週まで許容」の設定以下なら許容します(0日以外で範囲外の日数が1回でもあれば、その時点で対象外)。対象期間中ずっと0日だった人は常に対象外です。「群間移動」は、1週目から対象週までの間に、低日数群の範囲に該当する週と高日数群の範囲に該当する週の両方があった人です。</li>
     <li>1週目は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。</li>
     <li>色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。</li>
   </ul>
@@ -51,9 +51,9 @@
 
     <div class="w-full"></div>
 
-    <span class="text-gray-500 mr-1">表示:</span>
+    <span class="text-gray-500 mr-1">表示する段:</span>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="newSig3ShowTotal" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-cyan-600">
+      <input type="checkbox" id="newSig3ShowTotal" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-cyan-600" checked>
       <span class="text-cyan-700">全体</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
@@ -82,7 +82,7 @@
 
     <div class="w-full"></div>
 
-    <span class="text-gray-500 mr-1">表示:</span>
+    <span class="text-gray-500 mr-1">各段に表示する線:</span>
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="checkbox" id="newSig3ShowLow" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
       <span class="text-blue-600">低日数群</span>
@@ -124,41 +124,8 @@
     <input type="text" inputmode="numeric" id="newSig3CountYMax" placeholder="自動" min="1" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
   </div>
 
-  <h4 class="text-sm font-bold text-gray-700 mb-2">① スコア分類(悪い人/ふつう人/良い人)のp値の推移</h4>
-  <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
-  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch mb-8">
-    <div class="flex-1 min-w-0">
-      <div class="chart-container" style="height: 320px;">
-        <canvas id="newSig3WeeklyChart"></canvas>
-      </div>
-      <div id="newSig3WeeklyCountTable" class="overflow-x-auto mt-2"></div>
-    </div>
-    <div class="w-full lg:w-96 shrink-0 flex flex-col">
-      <div class="chart-container flex-1" style="min-height: 320px;">
-        <canvas id="newSig3BoxChart"></canvas>
-      </div>
-      <p id="newSig3BoxCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
-      <p id="newSig3BoxSig" class="text-center text-xs text-gray-500 mt-1"></p>
-    </div>
-  </div>
-
-  <h4 class="text-sm font-bold text-gray-700 mb-2">② 日数群分類(低日数群/高日数群/群間移動)のp値の推移</h4>
-  <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
-  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
-    <div class="flex-1 min-w-0">
-      <div class="chart-container" style="height: 320px;">
-        <canvas id="newSig3DayWeeklyChart"></canvas>
-      </div>
-      <div id="newSig3DayWeeklyCountTable" class="overflow-x-auto mt-2"></div>
-    </div>
-    <div class="w-full lg:w-96 shrink-0 flex flex-col">
-      <div class="chart-container flex-1" style="min-height: 320px;">
-        <canvas id="newSig3DayBoxChart"></canvas>
-      </div>
-      <p id="newSig3DayBoxCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
-      <p id="newSig3DayBoxSig" class="text-center text-xs text-gray-500 mt-1"></p>
-    </div>
-  </div>
+  <p class="text-xs text-gray-500 mb-2">※スコア層(全体/悪い人/ふつう人/良い人)ごとに、その中で低日数群/高日数群/群間移動によって差が出るかをグラフ4段で比較します。グラフの点をクリックすると、その段の右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
+  <div id="newSig3TierSections"></div>
 
 </div>
 
@@ -250,9 +217,45 @@
     return results;
   }
 
+  // スコア層(全体/悪い人/ふつう人/良い人)ごとに、その中で低日数群/高日数群/群間移動を比較するグラフの段を
+  // 4段ぶん生成する(1回だけ、churnRenderAgeBracketContainers等と同じパターン)。
+  const NEW_SIG3_TIERS = [
+    { key: 'total', label: '全体' },
+    { key: 'bad', label: '悪い人' },
+    { key: 'mid', label: 'ふつう人' },
+    { key: 'good', label: '良い人' }
+  ];
+
+  function newSig3RenderTierContainers() {
+    const container = document.getElementById('newSig3TierSections');
+    if (!container || container.dataset.rendered === '1') return;
+    container.dataset.rendered = '1';
+    container.innerHTML = NEW_SIG3_TIERS.map(t => `
+      <div id="newSig3TierRow_${t.key}">
+        <h4 class="text-sm font-bold text-gray-700 mb-2">${t.label}の中での日数群比較</h4>
+        <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch mb-8">
+          <div class="flex-1 min-w-0">
+            <div class="chart-container" style="height: 280px;">
+              <canvas id="newSig3TierChart_${t.key}"></canvas>
+            </div>
+            <div id="newSig3TierTable_${t.key}" class="overflow-x-auto mt-2"></div>
+          </div>
+          <div class="w-full lg:w-96 shrink-0 flex flex-col">
+            <div class="chart-container flex-1" style="min-height: 280px;">
+              <canvas id="newSig3TierBoxChart_${t.key}"></canvas>
+            </div>
+            <p id="newSig3TierBoxCaption_${t.key}" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
+            <p id="newSig3TierBoxSig_${t.key}" class="text-center text-xs text-gray-500 mt-1"></p>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
   function renderNewSig3Chart() {
     try {
       if (!rawData || !rawData.usersChurn) return;
+      newSig3RenderTierContainers();
       const maxWeeks = getNewSig3MaxWeeks();
       const ageBracket = getNewSig3AgeBracket();
       const targetMode = getNewSig3TargetMode();
@@ -287,14 +290,15 @@
       if (highCountEl) highCountEl.textContent = '週ごとに変動(下表参照)';
 
       const visibleGroups = getNewSig3VisibleGroups();
-      const scoreGroupDefs = [
-        { key: 'total', label: '全体', color: '#0891b2', filter: null },
-        { key: 'bad', label: '悪い人', color: '#dc2626', filter: (u) => u.week1BaselineAvg < tertiles.low },
-        { key: 'mid', label: 'ふつう人', color: '#d97706', filter: (u) => u.week1BaselineAvg >= tertiles.low && u.week1BaselineAvg < tertiles.high },
-        { key: 'good', label: '良い人', color: '#059669', filter: (u) => u.week1BaselineAvg >= tertiles.high }
-      ];
-      const dayGroupDefs = [
-        { key: 'total', label: '全体', color: '#0891b2', filter: null },
+      // スコア層(全体/悪い人/ふつう人/良い人)ごとの絞り込み関数(段の母集団を決める)
+      const tierFilters = {
+        total: null,
+        bad: (u) => u.week1BaselineAvg < tertiles.low,
+        mid: (u) => u.week1BaselineAvg >= tertiles.low && u.week1BaselineAvg < tertiles.high,
+        good: (u) => u.week1BaselineAvg >= tertiles.high
+      };
+      // 日数群(低日数群/高日数群/群間移動)の絞り込み関数(各段の中で比較する3本の線)
+      const dayDefs = [
         { key: 'low', label: '低日数群', color: '#2563eb', filter: (u, w) => newSigUserInGroupForWeek(u, w, lowMin, lowMax, maxZeroWeeks) },
         { key: 'high', label: '高日数群', color: '#be185d', filter: (u, w) => newSigUserInGroupForWeek(u, w, highMin, highMax, maxZeroWeeks) },
         { key: 'transition', label: '群間移動', color: '#7c3aed', filter: (u, w) => newSigUserIsGroupTransition(u, w, lowMin, lowMax, highMin, highMax) }
@@ -309,36 +313,36 @@
       const countYMaxEl = document.getElementById('newSig3CountYMax');
       const countYMax = countYMaxEl && countYMaxEl.value !== '' ? parseInt(countYMaxEl.value, 10) : undefined;
 
-      const scoreSeries = scoreGroupDefs.map(g => ({
-        label: g.label, color: g.color, labelColor: g.color,
-        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
-        hidden: !visibleGroups.includes(g.key),
-        excludeFromTotal: g.key === 'total'
-      }));
-      churnRenderMultiSensitivityLineChart('newSig3WeeklyChart', 'newSig3Weekly', xLabels, scoreSeries, '対象週', 'newSig3WeeklyCountTable', {
-        pointColorBySeries: true,
-        showCountBars, countYMax,
-        onPointClick: (datasetIndex, pointIndex) => {
-          const g = scoreGroupDefs[datasetIndex];
-          const week = weeksList[pointIndex];
-          renderNewSig3Boxplot({ chart: 'newSig3BoxChart', key: 'newSig3Box', sig: 'newSig3BoxSig', caption: 'newSig3BoxCaption' }, g, week, users, targetMode);
-        }
-      });
+      NEW_SIG3_TIERS.forEach(t => {
+        const rowEl = document.getElementById('newSig3TierRow_' + t.key);
+        const showRow = visibleGroups.includes(t.key);
+        if (rowEl) rowEl.classList.toggle('hidden', !showRow);
+        if (!showRow) return;
 
-      const daySeries = dayGroupDefs.map(g => ({
-        label: g.label, color: g.color, labelColor: g.color,
-        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
-        hidden: !visibleGroups.includes(g.key),
-        excludeFromTotal: g.key === 'total'
-      }));
-      churnRenderMultiSensitivityLineChart('newSig3DayWeeklyChart', 'newSig3DayWeekly', xLabels, daySeries, '対象週', 'newSig3DayWeeklyCountTable', {
-        pointColorBySeries: true,
-        showCountBars, countYMax,
-        onPointClick: (datasetIndex, pointIndex) => {
-          const g = dayGroupDefs[datasetIndex];
-          const week = weeksList[pointIndex];
-          renderNewSig3Boxplot({ chart: 'newSig3DayBoxChart', key: 'newSig3DayBox', sig: 'newSig3DayBoxSig', caption: 'newSig3DayBoxCaption' }, g, week, users, targetMode);
-        }
+        const tierFilter = tierFilters[t.key];
+        const groupDefsForTier = dayDefs.map(d => ({
+          key: d.key, label: d.label, color: d.color,
+          filter: (u, w) => (!tierFilter || tierFilter(u)) && d.filter(u, w)
+        }));
+        const series = groupDefsForTier.map(g => ({
+          label: g.label, color: g.color, labelColor: g.color,
+          values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
+          hidden: !visibleGroups.includes(g.key)
+        }));
+
+        const boxIds = {
+          chart: 'newSig3TierBoxChart_' + t.key, key: 'newSig3TierBox_' + t.key,
+          sig: 'newSig3TierBoxSig_' + t.key, caption: 'newSig3TierBoxCaption_' + t.key
+        };
+        churnRenderMultiSensitivityLineChart('newSig3TierChart_' + t.key, 'newSig3Tier_' + t.key, xLabels, series, '対象週', 'newSig3TierTable_' + t.key, {
+          pointColorBySeries: true,
+          showCountBars, countYMax,
+          onPointClick: (datasetIndex, pointIndex) => {
+            const g = groupDefsForTier[datasetIndex];
+            const week = weeksList[pointIndex];
+            renderNewSig3Boxplot(boxIds, g, week, users, targetMode);
+          }
+        });
       });
     } catch (error) {
       console.error(error);
@@ -346,8 +350,8 @@
   }
 
   // クリックされた系列(group)・対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均、または
-  // 「1回でも採用」時のその1回)の箱ひげ図を表示する。boxIdsで、スコア分類用/日数群分類用どちらの
-  // 箱ひげ図キャンバスに描画するかを指定する。
+  // 「1回でも採用」時のその1回)の箱ひげ図を表示する。boxIdsで、どの段の箱ひげ図キャンバスに
+  // 描画するかを指定する。
   function renderNewSig3Boxplot(boxIds, group, week, users, mode) {
     const pairs = [];
     users.forEach(u => {
