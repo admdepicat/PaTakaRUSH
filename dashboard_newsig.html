@@ -34,6 +34,9 @@
     </select>
 
     <div class="w-full"></div>
+    <span id="newSigExclusionNote" class="text-gray-600 font-normal"></span>
+
+    <div class="w-full"></div>
 
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="checkbox" id="newSigShowCountBars" onchange="renderNewSigChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
@@ -45,7 +48,6 @@
   </div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">基準点(1週目2〜3回目平均) → 対象週(最後2回平均) のp値の推移</h4>
-  <p id="newSigExclusionNote" class="text-xs font-bold text-gray-700 mb-1"></p>
   <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
   <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
     <div class="flex-1 min-w-0">
@@ -117,7 +119,7 @@
       const excludedOnce = excludedUsers.filter(u => u.week1TestCount === 1).length;
       const excludedTwice = excludedUsers.filter(u => u.week1TestCount === 2).length;
       const noteEl = document.getElementById('newSigExclusionNote');
-      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 → 基準点(1週目の2回目・3回目の検査平均)を算出できる${users.length.toLocaleString()}人が対象(1週目の検査が1回の人${excludedOnce.toLocaleString()}人 + 2回の人${excludedTwice.toLocaleString()}人 = 計${excludedUsers.length.toLocaleString()}人を除外)。`;
+      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 →${users.length.toLocaleString()}人（${excludedUsers.length.toLocaleString()}人＝1回${excludedOnce.toLocaleString()}人＋2回${excludedTwice.toLocaleString()}人を除外)`;
 
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
