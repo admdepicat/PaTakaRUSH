@@ -124,9 +124,9 @@
     <input type="text" inputmode="numeric" id="newSig3CountYMax" placeholder="自動" min="1" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
   </div>
 
-  <h4 class="text-sm font-bold text-gray-700 mb-2">基準点(1週目2〜3回目平均) → 対象週(最後2回平均) のp値の推移</h4>
+  <h4 class="text-sm font-bold text-gray-700 mb-2">① スコア分類(悪い人/ふつう人/良い人)のp値の推移</h4>
   <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
-  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch mb-8">
     <div class="flex-1 min-w-0">
       <div class="chart-container" style="height: 320px;">
         <canvas id="newSig3WeeklyChart"></canvas>
@@ -139,6 +139,24 @@
       </div>
       <p id="newSig3BoxCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
       <p id="newSig3BoxSig" class="text-center text-xs text-gray-500 mt-1"></p>
+    </div>
+  </div>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">② 日数群分類(低日数群/高日数群/群間移動)のp値の推移</h4>
+  <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
+  <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="newSig3DayWeeklyChart"></canvas>
+      </div>
+      <div id="newSig3DayWeeklyCountTable" class="overflow-x-auto mt-2"></div>
+    </div>
+    <div class="w-full lg:w-96 shrink-0 flex flex-col">
+      <div class="chart-container flex-1" style="min-height: 320px;">
+        <canvas id="newSig3DayBoxChart"></canvas>
+      </div>
+      <p id="newSig3DayBoxCaption" class="text-center text-sm text-gray-500 mt-2">グラフの点をクリックしてください</p>
+      <p id="newSig3DayBoxSig" class="text-center text-xs text-gray-500 mt-1"></p>
     </div>
   </div>
 
@@ -269,11 +287,14 @@
       if (highCountEl) highCountEl.textContent = '週ごとに変動(下表参照)';
 
       const visibleGroups = getNewSig3VisibleGroups();
-      const groupDefs = [
+      const scoreGroupDefs = [
         { key: 'total', label: '全体', color: '#0891b2', filter: null },
         { key: 'bad', label: '悪い人', color: '#dc2626', filter: (u) => u.week1BaselineAvg < tertiles.low },
         { key: 'mid', label: 'ふつう人', color: '#d97706', filter: (u) => u.week1BaselineAvg >= tertiles.low && u.week1BaselineAvg < tertiles.high },
-        { key: 'good', label: '良い人', color: '#059669', filter: (u) => u.week1BaselineAvg >= tertiles.high },
+        { key: 'good', label: '良い人', color: '#059669', filter: (u) => u.week1BaselineAvg >= tertiles.high }
+      ];
+      const dayGroupDefs = [
+        { key: 'total', label: '全体', color: '#0891b2', filter: null },
         { key: 'low', label: '低日数群', color: '#2563eb', filter: (u, w) => newSigUserInGroupForWeek(u, w, lowMin, lowMax, maxZeroWeeks) },
         { key: 'high', label: '高日数群', color: '#be185d', filter: (u, w) => newSigUserInGroupForWeek(u, w, highMin, highMax, maxZeroWeeks) },
         { key: 'transition', label: '群間移動', color: '#7c3aed', filter: (u, w) => newSigUserIsGroupTransition(u, w, lowMin, lowMax, highMin, highMax) }
@@ -282,25 +303,41 @@
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
       const xLabels = weeksList.map(w => `${w}週`);
-      const series = groupDefs.map(g => ({
-        label: g.label, color: g.color, labelColor: g.color,
-        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
-        hidden: !visibleGroups.includes(g.key),
-        excludeFromTotal: g.key === 'total'
-      }));
 
       const showCountBarsEl = document.getElementById('newSig3ShowCountBars');
       const showCountBars = !!(showCountBarsEl && showCountBarsEl.checked);
       const countYMaxEl = document.getElementById('newSig3CountYMax');
       const countYMax = countYMaxEl && countYMaxEl.value !== '' ? parseInt(countYMaxEl.value, 10) : undefined;
 
-      churnRenderMultiSensitivityLineChart('newSig3WeeklyChart', 'newSig3Weekly', xLabels, series, '対象週', 'newSig3WeeklyCountTable', {
+      const scoreSeries = scoreGroupDefs.map(g => ({
+        label: g.label, color: g.color, labelColor: g.color,
+        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
+        hidden: !visibleGroups.includes(g.key),
+        excludeFromTotal: g.key === 'total'
+      }));
+      churnRenderMultiSensitivityLineChart('newSig3WeeklyChart', 'newSig3Weekly', xLabels, scoreSeries, '対象週', 'newSig3WeeklyCountTable', {
         pointColorBySeries: true,
         showCountBars, countYMax,
         onPointClick: (datasetIndex, pointIndex) => {
-          const g = groupDefs[datasetIndex];
+          const g = scoreGroupDefs[datasetIndex];
           const week = weeksList[pointIndex];
-          renderNewSig3Boxplot(g, week, users, targetMode);
+          renderNewSig3Boxplot({ chart: 'newSig3BoxChart', key: 'newSig3Box', sig: 'newSig3BoxSig', caption: 'newSig3BoxCaption' }, g, week, users, targetMode);
+        }
+      });
+
+      const daySeries = dayGroupDefs.map(g => ({
+        label: g.label, color: g.color, labelColor: g.color,
+        values: computeNewSig3WeeklyPValues(users, maxWeeks, targetMode, g.filter),
+        hidden: !visibleGroups.includes(g.key),
+        excludeFromTotal: g.key === 'total'
+      }));
+      churnRenderMultiSensitivityLineChart('newSig3DayWeeklyChart', 'newSig3DayWeekly', xLabels, daySeries, '対象週', 'newSig3DayWeeklyCountTable', {
+        pointColorBySeries: true,
+        showCountBars, countYMax,
+        onPointClick: (datasetIndex, pointIndex) => {
+          const g = dayGroupDefs[datasetIndex];
+          const week = weeksList[pointIndex];
+          renderNewSig3Boxplot({ chart: 'newSig3DayBoxChart', key: 'newSig3DayBox', sig: 'newSig3DayBoxSig', caption: 'newSig3DayBoxCaption' }, g, week, users, targetMode);
         }
       });
     } catch (error) {
@@ -309,8 +346,9 @@
   }
 
   // クリックされた系列(group)・対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均、または
-  // 「1回でも採用」時のその1回)の箱ひげ図を表示する。
-  function renderNewSig3Boxplot(group, week, users, mode) {
+  // 「1回でも採用」時のその1回)の箱ひげ図を表示する。boxIdsで、スコア分類用/日数群分類用どちらの
+  // 箱ひげ図キャンバスに描画するかを指定する。
+  function renderNewSig3Boxplot(boxIds, group, week, users, mode) {
     const pairs = [];
     users.forEach(u => {
       const baseline = u.week1BaselineAvg;
@@ -320,9 +358,9 @@
       pairs.push({ uid: u.uid, first: baseline, last: target });
     });
 
-    const captionEl = document.getElementById('newSig3BoxCaption');
+    const captionEl = document.getElementById(boxIds.caption);
     if (captionEl) captionEl.textContent = `${group.label} 基準点 → ${week}週目 (対象: ${pairs.length}人)`;
 
-    renderChurnPairedBoxplot('newSig3BoxChart', 'newSig3Box', 'newSig3BoxSig', pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
+    renderChurnPairedBoxplot(boxIds.chart, boxIds.key, boxIds.sig, pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
   }
 </script>
