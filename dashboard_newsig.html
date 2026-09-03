@@ -10,7 +10,7 @@
   </p>
   <ul class="text-sm text-gray-600 mb-4 list-disc pl-5 space-y-1">
     <li><b>基準点</b>は「1週目(検査開始から7日以内)の2回目・3回目の検査の平均」(1回目は除外)。1週目に2回目・3回目の検査が無い人はこの分析の対象外です(2週目以降にいくら検査していても基準点には使いません)。</li>
-    <li><b>比較点(対象週)</b>は「その週の最後の2回の検査の平均」。対象週の検査が1回以下の人は、その週だけ比較対象から除外します。</li>
+    <li><b>比較点(対象週)</b>は「その週の最後の2回の検査の平均」(2回以上検査している場合)。「対象週」のラジオボタンで「1回でも採用」を選ぶと、その週1回しか検査していない人もその1回の値をそのまま採用します(「2回以上必須」を選ぶと1回だけの人はその週だけ除外)。いずれの場合も、対象週に1度も検査していない(0回)人は、その週だけ比較対象から除外します。</li>
     <li>「年齢」で年齢層を選ぶと対象を絞り込めます。</li>
     <li>1週目は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。</li>
     <li>色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。</li>
@@ -32,6 +32,17 @@
       <option value="50-80">50≦〜&lt;80歳</option>
       <option value="80+">80歳以上</option>
     </select>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">対象週:</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSigTargetMode" id="newSigTargetModeAllow1" value="allow1" checked onchange="renderNewSigChart()" class="cursor-pointer accent-cyan-600">
+      <span class="font-normal">1回でも採用(2回以上は平均)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSigTargetMode" id="newSigTargetModeStrict2" value="strict2" onchange="renderNewSigChart()" class="cursor-pointer accent-cyan-600">
+      <span class="font-normal">2回以上必須</span>
+    </label>
 
     <div class="w-full"></div>
     <span id="newSigExclusionNote" class="text-gray-600 font-normal"></span>
@@ -79,18 +90,36 @@
     return el ? el.value : 'all';
   }
 
-  // 対象週w(1始まり)における、基準点(week1BaselineAvg)→対象週(scoresLast2[w-1])のペアからp値・対象人数・除外人数を計算する。
-  // 基準点が無い人(1週目に2回目・3回目の検査が無い人)は母集団の時点で既に除いてある前提。
-  // excludedは「基準点はあるが、対象週の検査が1回以下でscoresLast2が無い(その週だけ比較不能)人数」。
+  function getNewSigTargetMode() {
+    const el = document.querySelector('input[name="newSigTargetMode"]:checked');
+    return el ? el.value : 'allow1';
+  }
+
+  // 対象週w(1始まり)の1人分の比較値を取得する。scoresLast2[w-1]は「2回以上→最後2回平均、1回のみ→その1回、
+  // 0回→null」というコード.gs側の計算結果。mode==='strict2'の場合は、その週の検査回数(weekTestCounts)が
+  // 2回未満(0回または1回)ならnull扱いにする(1回だけの人もその週は除外)。
+  function newSigTargetValueForWeek(user, w, mode) {
+    const target = (user.scoresLast2 && (w - 1) < user.scoresLast2.length) ? user.scoresLast2[w - 1] : null;
+    if (target === null || target === undefined) return null;
+    if (mode === 'strict2') {
+      const count = (user.weekTestCounts && (w - 1) < user.weekTestCounts.length) ? user.weekTestCounts[w - 1] : null;
+      if (count === null || count < 2) return null;
+    }
+    return target;
+  }
+
+  // 対象週w(1始まり)における、基準点(week1BaselineAvg)→対象週(newSigTargetValueForWeek)のペアから
+  // p値・対象人数・除外人数を計算する。基準点が無い人(1週目に2回目・3回目の検査が無い人)は母集団の
+  // 時点で既に除いてある前提。excludedは「基準点はあるが、対象週の比較値が無い(その週だけ比較不能)人数」。
   // 1週目(w=1)は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、t検定は行わずp=nullとする。
-  function computeNewSigWeeklyPValues(users, maxWeeks) {
+  function computeNewSigWeeklyPValues(users, maxWeeks, mode) {
     const results = [];
     for (let w = 1; w <= maxWeeks; w++) {
       const diffs = [];
       let excluded = 0;
       users.forEach(u => {
         const baseline = u.week1BaselineAvg;
-        const target = (u.scoresLast2 && (w - 1) < u.scoresLast2.length) ? u.scoresLast2[w - 1] : null;
+        const target = newSigTargetValueForWeek(u, w, mode);
         if (target === null || target === undefined) { excluded++; return; }
         diffs.push(target - baseline);
       });
@@ -109,6 +138,7 @@
       if (!rawData || !rawData.usersChurn) return;
       const maxWeeks = getNewSigMaxWeeks();
       const ageBracket = getNewSigAgeBracket();
+      const targetMode = getNewSigTargetMode();
       const allUsers = sigFilterUsersByAge(rawData.usersChurn, ageBracket);
       const users = allUsers.filter(u => u.week1BaselineAvg !== null && u.week1BaselineAvg !== undefined);
 
@@ -126,7 +156,7 @@
       const xLabels = weeksList.map(w => `${w}週`);
       const series = [{
         label: '全体', color: '#0891b2', labelColor: '#0891b2',
-        values: computeNewSigWeeklyPValues(users, maxWeeks),
+        values: computeNewSigWeeklyPValues(users, maxWeeks, targetMode),
         hidden: false
       }];
 
@@ -140,7 +170,7 @@
         showCountBars, countYMax,
         onPointClick: (datasetIndex, pointIndex) => {
           const week = weeksList[pointIndex];
-          renderNewSigBoxplot(week, users);
+          renderNewSigBoxplot(week, users, targetMode);
         }
       });
     } catch (error) {
@@ -148,12 +178,12 @@
     }
   }
 
-  // クリックされた対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均)の箱ひげ図を表示する。
-  function renderNewSigBoxplot(week, users) {
+  // クリックされた対象週について、基準点(1週目2-3回目平均) → 対象週(最後2回平均、または「1回でも採用」時のその1回)の箱ひげ図を表示する。
+  function renderNewSigBoxplot(week, users, mode) {
     const pairs = [];
     users.forEach(u => {
       const baseline = u.week1BaselineAvg;
-      const target = (u.scoresLast2 && (week - 1) < u.scoresLast2.length) ? u.scoresLast2[week - 1] : null;
+      const target = newSigTargetValueForWeek(u, week, mode);
       if (target === null || target === undefined) return;
       pairs.push({ uid: u.uid, first: baseline, last: target });
     });
