@@ -1973,12 +1973,28 @@
       plugins: [churnPValueRefLinesPlugin],
       options: {
         responsive: true, maintainAspectRatio: false,
-        onClick: (evt, elements) => {
-          // 人数(背景棒)の要素がクリックされた場合はp値系列ではないので無視する(datasetIndexがseries.lengthを超えるものは棒グラフ)
-          if (!opts.onPointClick || !elements || elements.length === 0) return;
-          const el0 = elements[0];
-          if (el0.datasetIndex >= series.length) return;
-          opts.onPointClick(el0.datasetIndex, el0.index);
+        onClick: (evt, elements, chart) => {
+          if (!opts.onPointClick) return;
+          // p値が小さい点はグラフ下部(人数の背景棒と同じ領域)に来るため、Chart.js標準の要素判定だと
+          // 面積の大きい棒グラフの方が優先的にヒットしてしまい、点をクリックしたつもりでも反応しないこと
+          // があった。そのため棒グラフのデータは無視し、p値系列(line、datasetIndex < series.length)の
+          // 点だけを対象に、クリック位置に一番近い点をこちらで直接探す。
+          const pos = Chart.helpers.getRelativePosition(evt, chart);
+          let closest = null, closestDist = Infinity;
+          for (let di = 0; di < series.length; di++) {
+            const meta = chart.getDatasetMeta(di);
+            if (!meta || meta.hidden) continue;
+            const rawData = chart.data.datasets[di].data;
+            meta.data.forEach((point, idx) => {
+              if (rawData[idx] === null || rawData[idx] === undefined) return;
+              const dist = Math.hypot(point.x - pos.x, point.y - pos.y);
+              if (dist < closestDist) { closestDist = dist; closest = { datasetIndex: di, index: idx }; }
+            });
+          }
+          const CLICK_TOLERANCE_PX = 20;
+          if (closest && closestDist <= CLICK_TOLERANCE_PX) {
+            opts.onPointClick(closest.datasetIndex, closest.index);
+          }
         },
         plugins: {
           legend: {
