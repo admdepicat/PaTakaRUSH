@@ -212,10 +212,26 @@
       </label>
     </span>
   </div>
-  <div class="chart-container mb-2" style="height: 320px;">
-    <canvas id="newSig3ContinuityChart"></canvas>
+  <div class="flex flex-col lg:flex-row gap-6 mb-2">
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="newSig3ContinuityChart"></canvas>
+      </div>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="newSig3ContinuityDayChart"></canvas>
+      </div>
+    </div>
+    <div class="w-full lg:w-72 shrink-0">
+      <div id="newSig3ContinuityHeatmap" class="overflow-auto border border-gray-200 rounded" style="max-height: 320px;"></div>
+    </div>
   </div>
-  <p class="text-xs text-gray-500 mb-1">※該当した人をクリックすると、その人の線をグラフ上で太く強調表示します(もう一度クリックで解除)。</p>
+  <p class="text-xs text-gray-500 mb-1">※スコア推移(左)・利用日数の推移(中央)・利用日数のヒートマップ(右)は連動しています。一覧またはヒートマップのニックネームをクリックすると、両方のグラフでその人の線を黒太線で強調表示します(もう一度クリックで解除)。</p>
+  <div class="flex items-center gap-2 mb-1">
+    <span id="newSig3ContinuitySelectCaption" class="text-sm text-gray-600"></span>
+    <button type="button" onclick="clearNewSig3ContinuitySelection()" class="text-xs font-normal text-gray-400 hover:text-gray-600 underline">選択解除</button>
+  </div>
   <div id="newSig3ContinuityList" class="flex flex-wrap gap-1 overflow-y-auto border border-gray-200 rounded p-2" style="max-height: 140px;"></div>
 
 </div>
@@ -760,7 +776,115 @@
     const visibleGroups = getNewSig3ContinuityVisibleGroups(scheme);
     const visibleMatched = matched.filter(u => visibleGroups.includes(newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7)));
 
+    const captionEl = document.getElementById('newSig3ContinuitySelectCaption');
+    if (captionEl) captionEl.textContent = newSig3ContinuitySelectedUid ? `選択中: ${newSig3ContinuitySelectedUid}` : '一覧またはヒートマップのニックネームをクリックしてください';
+
     renderNewSig3ContinuityChart(visibleMatched, maxWeeks, mode, scheme, tertiles, percentiles7);
+    renderNewSig3ContinuityDayChart(visibleMatched, maxWeeks, scheme, tertiles, percentiles7);
+    renderNewSig3ContinuityHeatmap(visibleMatched, maxWeeks, scheme, tertiles, percentiles7);
     newSig3RenderContinuityList(visibleMatched, scheme, tertiles, percentiles7);
+  }
+
+  function clearNewSig3ContinuitySelection() {
+    newSig3ContinuitySelectedUid = null;
+    renderNewSig3Chart();
+  }
+
+  // 色分けグループの色を基準に、日数(0〜7)が多いほど濃く塗るヒートマップセル色を返す
+  function newSig3DayCellColor(days, color) {
+    return hexToRgba(color, days / 7);
+  }
+
+  // スコア推移グラフ(newSig3ContinuityChart)の隣に、同じ対象者の利用日数の推移を折れ線グラフで表示する。
+  // 線の色は色分けグループの色を使う(選択中の人だけ黒太線で強調)。
+  function renderNewSig3ContinuityDayChart(users, maxWeeks, scheme, tertiles, percentiles7) {
+    const el = document.getElementById('newSig3ContinuityDayChart');
+    if (!el) return;
+    const colorMap = scheme === '7' ? NEW_SIG3_CONTINUITY_COLORS_7 : NEW_SIG3_CONTINUITY_COLORS_3;
+    const datasets = users.map(u => {
+      const points = [];
+      for (let w = 0; w < maxWeeks; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        points.push({ x: w + 1, y: days });
+      }
+      const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
+      const group = newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7);
+      const baseColor = colorMap[group];
+      return {
+        label: u.uid, data: points,
+        borderColor: isSelected ? '#111827' : hexToRgba(baseColor, 0.3),
+        backgroundColor: 'transparent',
+        borderWidth: isSelected ? 4 : 1, pointRadius: 0, fill: false, tension: 0.2,
+        order: isSelected ? -1 : 0
+      };
+    });
+    if (newSig3ContinuitySelectedUid !== null) {
+      const idx = datasets.findIndex(ds => ds.label === newSig3ContinuitySelectedUid);
+      if (idx >= 0) datasets.push(datasets.splice(idx, 1)[0]);
+    }
+
+    if (charts.newSig3ContinuityDay) { charts.newSig3ContinuityDay.destroy(); charts.newSig3ContinuityDay = null; }
+    charts.newSig3ContinuityDay = new Chart(el, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y}日` } }
+        },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: '対象週' }, min: 0.5, max: maxWeeks + 0.5, ticks: { stepSize: 1, precision: 0 } },
+          y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: 7, ticks: { stepSize: 1, precision: 0 } }
+        }
+      }
+    });
+  }
+
+  // 利用日数のヒートマップ(離脱率タブの週次ヒートマップと同じ見た目)。セルの色は色分けグループの色を
+  // 基準に日数が多いほど濃く塗る。uidクリックでselectNewSig3ContinuityUidを呼び、スコア推移・
+  // 利用日数推移の両グラフと選択状態を共有する。
+  function renderNewSig3ContinuityHeatmap(users, maxWeeks, scheme, tertiles, percentiles7) {
+    const container = document.getElementById('newSig3ContinuityHeatmap');
+    if (!container) return;
+    const colorMap = scheme === '7' ? NEW_SIG3_CONTINUITY_COLORS_7 : NEW_SIG3_CONTINUITY_COLORS_3;
+
+    const totalDaysOf = (u) => {
+      let sum = 0;
+      for (let w = 0; w < maxWeeks; w++) sum += (u.data && u.data[w]) ? u.data[w] : 0;
+      return sum;
+    };
+    const sortedUsers = [...users].sort((a, b) => totalDaysOf(b) - totalDaysOf(a));
+
+    let html = '<table class="text-xs border-collapse"><thead><tr>' +
+      '<th class="sticky left-0 top-0 bg-white px-2 py-1 text-left border-b border-r border-gray-200 z-10">uid</th>';
+    for (let w = 1; w <= maxWeeks; w++) {
+      html += `<th class="sticky top-0 bg-white px-1 py-1 text-center border-b border-gray-200" style="min-width:22px;">${w}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    sortedUsers.forEach(u => {
+      const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
+      const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const group = newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7);
+      const baseColor = colorMap[group];
+      const rowCellClass = isSelected ? 'bg-gray-200 text-gray-900' : 'bg-white';
+      html += `<tr><td class="newsig3-continuity-heatmap-uid sticky left-0 ${rowCellClass} px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10 cursor-pointer hover:underline font-bold" data-uid="${uidEscaped}">${u.uid}</td>`;
+      for (let w = 0; w < maxWeeks; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        html += `<td class="text-center border-b border-gray-100" style="background-color:${newSig3DayCellColor(days, baseColor)}; min-width:22px; height:18px;" title="${u.uid} ${w + 1}週目: ${days}日">${days > 0 ? days : ''}</td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    if (!container._clickBound) {
+      container.addEventListener('click', (evt) => {
+        const cell = evt.target.closest('.newsig3-continuity-heatmap-uid');
+        if (!cell) return;
+        selectNewSig3ContinuityUid(cell.getAttribute('data-uid'));
+      });
+      container._clickBound = true;
+    }
   }
 </script>
