@@ -102,6 +102,12 @@
     <input type="text" inputmode="numeric" id="newSigCountYMax" placeholder="自動" min="1" step="1" oninput="churnNormalizeNumberInput(this); renderNewSigChart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
   </div>
 
+  <h4 class="text-sm font-bold text-gray-700 mb-2">週ごとの平均スコア(パタカラ発声回数)の推移</h4>
+  <p class="text-xs text-gray-500 mb-2">※下のp値グラフは「差が統計的に意味があるか」を示すだけで、実際のスコアの増減は分かりません。こちらは各群の平均スコアそのものの推移です(1週目は基準点(2〜3回目平均)の値を表示しています)。</p>
+  <div class="chart-container mb-6" style="height: 280px;">
+    <canvas id="newSigScoreTrendChart"></canvas>
+  </div>
+
   <h4 class="text-sm font-bold text-gray-700 mb-2">基準点(1週目2〜3回目平均) → 対象週(最後2回平均) のp値の推移</h4>
   <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
   <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
@@ -232,6 +238,52 @@
     return results;
   }
 
+  // 対象週w(1始まり)ごとに、groupFilterを満たす人の平均スコアそのもの(p値ではなく実数値)を計算する。
+  // 1週目は基準点(week1BaselineAvg)の値を、2週目以降はnewSigTargetValueForWeekの値を使う。
+  function computeNewSigScoreTrend(users, maxWeeks, mode, groupFilter) {
+    const results = [];
+    for (let w = 1; w <= maxWeeks; w++) {
+      const values = [];
+      users.forEach(u => {
+        if (groupFilter && !groupFilter(u, w)) return;
+        const val = (w === 1) ? u.week1BaselineAvg : newSigTargetValueForWeek(u, w, mode);
+        if (val === null || val === undefined) return;
+        values.push(val);
+      });
+      const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+      results.push({ week: w, avg, n: values.length });
+    }
+    return results;
+  }
+
+  function renderNewSigScoreTrendChart(xLabels, series) {
+    const el = document.getElementById('newSigScoreTrendChart');
+    if (!el) return;
+    const datasets = series.map(s => ({
+      label: s.label, data: s.values.map(v => v.avg), borderColor: s.color, backgroundColor: s.color,
+      borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0, fill: false, spanGaps: true, hidden: s.hidden || false
+    }));
+    if (charts.newSigScoreTrend) { charts.newSigScoreTrend.destroy(); charts.newSigScoreTrend = null; }
+    charts.newSigScoreTrend = new Chart(el, {
+      type: 'line',
+      data: { labels: xLabels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'top' },
+          tooltip: { callbacks: { label: (ctx) => {
+            const v = series[ctx.datasetIndex].values[ctx.dataIndex];
+            return `${ctx.dataset.label}: ${v.avg === null ? 'データ不足' : v.avg.toFixed(2)} (n=${v.n})`;
+          } } }
+        },
+        scales: {
+          x: { offset: true, title: { display: true, text: '対象週' } },
+          y: { title: { display: true, text: '平均スコア(回/秒)' }, min: 0 }
+        }
+      }
+    });
+  }
+
   function renderNewSigChart() {
     try {
       if (!rawData || !rawData.usersChurn) return;
@@ -277,6 +329,13 @@
         hidden: !visibleGroups.includes(g.key),
         excludeFromTotal: g.key === 'total'
       }));
+
+      const scoreTrendSeries = groupDefs.map(g => ({
+        label: g.label, color: g.color,
+        values: computeNewSigScoreTrend(users, maxWeeks, targetMode, g.filter),
+        hidden: !visibleGroups.includes(g.key)
+      }));
+      renderNewSigScoreTrendChart(xLabels, scoreTrendSeries);
 
       const showCountBarsEl = document.getElementById('newSigShowCountBars');
       const showCountBars = !!(showCountBarsEl && showCountBarsEl.checked);
