@@ -136,7 +136,7 @@
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">継続は力なり: 徐々に伸びた人のピックアップ</h4>
   <p class="text-xs text-gray-500 mb-2">
-    ※基準点(1週目)から対象週まで、スコアが徐々に伸びている人だけを条件で拾い出して個別に見る、意図的な抽出です(統計的な証明ではなく、実例の可視化を目的としています)。対象は「期間」「年齢」「対象週」の設定(上の日数群セクションと共通)に従います。該当者は、基準点(スコア)の3等分パーセンタイル(上の日数群セクションと同じ境界)で悪い人(赤)/ふつうの人(黄)/良い人(青)に色分けし、チェックボックスで表示/非表示を切り替えられます。
+    ※基準点(1週目)から対象週まで、スコアが徐々に伸びている人だけを条件で拾い出して個別に見る、意図的な抽出です(統計的な証明ではなく、実例の可視化を目的としています)。対象は「期間」「年齢」「対象週」の設定(上の日数群セクションと共通)に従います。該当者は、基準点(スコア)のパーセンタイルで色分けします。「3群」(上の日数群セクションと同じ33%刻みの境界)と「7群」(「年齢別分布」タブの7本線と同じ3/10/25/75/90/97%の境界)をラジオボタンで切り替えられ、それぞれの区分の表示/非表示はチェックボックスで切り替えられます。
   </p>
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200 mb-3">
     <span class="text-gray-500">増加の定義:</span>
@@ -154,19 +154,63 @@
 
     <div class="w-full"></div>
 
-    <span class="text-gray-500">色分け(基準点のスコア3等分):</span>
+    <span class="text-gray-500">色分けの区切り:</span>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="newSig3ContinuityShowBad" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-red-600" checked>
-      <span class="text-red-600">悪い人(下位33%・赤)</span>
+      <input type="radio" name="newSig3ContinuityColorScheme" id="newSig3ContinuityScheme3" value="3" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-gray-700">
+      <span class="font-normal">3群(〜33% / 33〜66% / 66%〜)</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="newSig3ContinuityShowMid" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-yellow-500" checked>
-      <span class="text-yellow-600">ふつうの人(中位33%・黄)</span>
+      <input type="radio" name="newSig3ContinuityColorScheme" id="newSig3ContinuityScheme7" value="7" onchange="renderNewSig3Chart()" class="cursor-pointer accent-gray-700">
+      <span class="font-normal">7群(〜3% / 3〜10% / 10〜25% / 25〜75% / 75〜90% / 90〜97% / 97%〜)</span>
     </label>
-    <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="newSig3ContinuityShowGood" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
-      <span class="text-blue-600">良い人(上位33%・青)</span>
-    </label>
+
+    <div class="w-full"></div>
+
+    <span id="newSig3ContinuityScheme3Wrap" class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowBad" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-red-600" checked>
+        <span class="text-red-600">悪い人(下位33%・赤)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowMid" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-yellow-500" checked>
+        <span class="text-yellow-600">ふつうの人(中位33%・黄)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowGood" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
+        <span class="text-blue-600">良い人(上位33%・青)</span>
+      </label>
+    </span>
+
+    <span id="newSig3ContinuityScheme7Wrap" class="hidden flex-wrap items-center gap-x-4 gap-y-1.5">
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP0_3" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-red-600" checked>
+        <span class="text-red-600">〜3%(赤)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP3_10" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-orange-500" checked>
+        <span class="text-orange-500">3〜10%(橙)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP10_25" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-yellow-500" checked>
+        <span class="text-yellow-600">10〜25%(黄)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP25_75" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-green-600" checked>
+        <span class="text-green-600">25〜75%(緑)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP75_90" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
+        <span class="text-blue-600">75〜90%(青)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP90_97" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-indigo-600" checked>
+        <span class="text-indigo-600">90〜97%(藍)</span>
+      </label>
+      <label class="flex items-center gap-1 cursor-pointer">
+        <input type="checkbox" id="newSig3ContinuityShowP97_100" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-purple-600" checked>
+        <span class="text-purple-600">97%〜(紫)</span>
+      </label>
+    </span>
   </div>
   <div class="chart-container mb-2" style="height: 320px;">
     <canvas id="newSig3ContinuityChart"></canvas>
@@ -536,9 +580,34 @@
     return isNaN(v) ? 0.5 : Math.max(0, Math.min(1, v));
   }
 
-  // 基準点(week1BaselineAvg)を、renderNewSig3Chart側で計算済みの3等分パーセンタイル境界(tertiles)に
-  // 照らして「悪い人(下位33%・赤)/ふつうの人(中位33%・黄)/良い人(上位33%・青)」に分類する。
-  const NEW_SIG3_CONTINUITY_COLORS = { bad: '#dc2626', mid: '#eab308', good: '#2563eb' };
+  // 基準点(week1BaselineAvg)を、パーセンタイル境界に照らしてグループ分けする。
+  // 3群: renderNewSig3Chart側で計算済みの3等分パーセンタイル境界(tertiles)を使う。
+  // 7群: 「年齢別分布」タブの7本線と同じ3/10/25/75/90/97%の境界(percentiles7)を使う。
+  const NEW_SIG3_CONTINUITY_COLORS_3 = { bad: '#dc2626', mid: '#eab308', good: '#2563eb' };
+  const NEW_SIG3_CONTINUITY_COLORS_7 = {
+    p0_3: '#dc2626', p3_10: '#f97316', p10_25: '#eab308', p25_75: '#16a34a',
+    p75_90: '#2563eb', p90_97: '#4f46e5', p97_100: '#9333ea'
+  };
+  const NEW_SIG3_CONTINUITY_BADGE_CLASSES_3 = {
+    bad: 'bg-red-100 text-red-800 hover:bg-red-200',
+    mid: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+    good: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+  };
+  const NEW_SIG3_CONTINUITY_BADGE_CLASSES_7 = {
+    p0_3: 'bg-red-100 text-red-800 hover:bg-red-200',
+    p3_10: 'bg-orange-100 text-orange-800 hover:bg-orange-200',
+    p10_25: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
+    p25_75: 'bg-green-100 text-green-800 hover:bg-green-200',
+    p75_90: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
+    p90_97: 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200',
+    p97_100: 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+  };
+
+  function getNewSig3ContinuityColorScheme() {
+    const el = document.querySelector('input[name="newSig3ContinuityColorScheme"]:checked');
+    return el ? el.value : '3';
+  }
+
   function newSig3ScoreTertileGroup(user, tertiles) {
     if (tertiles.low === null || tertiles.high === null) return 'mid';
     if (user.week1BaselineAvg < tertiles.low) return 'bad';
@@ -546,16 +615,44 @@
     return 'mid';
   }
 
-  function renderNewSig3ContinuityChart(users, maxWeeks, mode, tertiles) {
+  // 基準点(week1BaselineAvg)の分布から、7群の境界(3/10/25/75/90/97パーセンタイル)を求める
+  function computeNewSig3ScorePercentiles7(users) {
+    const pairs = users.map(u => [u.week1BaselineAvg, 1]);
+    return {
+      p3: weightedPercentile(pairs, 0.03), p10: weightedPercentile(pairs, 0.10), p25: weightedPercentile(pairs, 0.25),
+      p75: weightedPercentile(pairs, 0.75), p90: weightedPercentile(pairs, 0.90), p97: weightedPercentile(pairs, 0.97)
+    };
+  }
+
+  function newSig3ScorePercentile7Group(user, percentiles7) {
+    const v = user.week1BaselineAvg;
+    const p = percentiles7;
+    if (p.p3 === null) return 'p25_75';
+    if (v < p.p3) return 'p0_3';
+    if (v < p.p10) return 'p3_10';
+    if (v < p.p25) return 'p10_25';
+    if (v < p.p75) return 'p25_75';
+    if (v < p.p90) return 'p75_90';
+    if (v < p.p97) return 'p90_97';
+    return 'p97_100';
+  }
+
+  // schemeに応じて、色分けグループのキーを返す(3群/7群共通の入り口)
+  function newSig3ScoreColorGroup(user, scheme, tertiles, percentiles7) {
+    return scheme === '7' ? newSig3ScorePercentile7Group(user, percentiles7) : newSig3ScoreTertileGroup(user, tertiles);
+  }
+
+  function renderNewSig3ContinuityChart(users, maxWeeks, mode, scheme, tertiles, percentiles7) {
     const el = document.getElementById('newSig3ContinuityChart');
     if (!el) return;
+    const colorMap = scheme === '7' ? NEW_SIG3_CONTINUITY_COLORS_7 : NEW_SIG3_CONTINUITY_COLORS_3;
     const datasets = users.map(u => {
       const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
       const points = [];
       scores.forEach((v, i) => { if (v !== null && v !== undefined) points.push({ x: i + 1, y: v }); });
       const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
-      const tertileGroup = newSig3ScoreTertileGroup(u, tertiles);
-      const baseColor = NEW_SIG3_CONTINUITY_COLORS[tertileGroup];
+      const group = newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7);
+      const baseColor = colorMap[group];
       return {
         label: u.uid, data: points,
         borderColor: isSelected ? '#111827' : hexToRgba(baseColor, 0.35),
@@ -587,19 +684,15 @@
     });
   }
 
-  const NEW_SIG3_CONTINUITY_BADGE_CLASSES = {
-    bad: 'bg-red-100 text-red-800 hover:bg-red-200',
-    mid: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-    good: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-  };
-  function newSig3RenderContinuityList(users, tertiles) {
+  function newSig3RenderContinuityList(users, scheme, tertiles, percentiles7) {
     const listEl = document.getElementById('newSig3ContinuityList');
     if (!listEl) return;
+    const badgeMap = scheme === '7' ? NEW_SIG3_CONTINUITY_BADGE_CLASSES_7 : NEW_SIG3_CONTINUITY_BADGE_CLASSES_3;
     listEl.innerHTML = users.map(u => {
       const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
       const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-      const tertileGroup = newSig3ScoreTertileGroup(u, tertiles);
-      const cls = isSelected ? 'bg-gray-800 text-white' : NEW_SIG3_CONTINUITY_BADGE_CLASSES[tertileGroup];
+      const group = newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7);
+      const cls = isSelected ? 'bg-gray-800 text-white' : badgeMap[group];
       return `<button type="button" class="newsig3-continuity-uid px-2 py-0.5 rounded text-xs ${cls}" data-uid="${uidEscaped}">${u.uid}</button>`;
     }).join('');
 
@@ -618,21 +711,36 @@
     renderNewSig3Chart();
   }
 
-  function getNewSig3ContinuityVisibleTertiles() {
+  function getNewSig3ContinuityVisibleGroups(scheme) {
     const groups = [];
-    if (document.getElementById('newSig3ContinuityShowBad') && document.getElementById('newSig3ContinuityShowBad').checked) groups.push('bad');
-    if (document.getElementById('newSig3ContinuityShowMid') && document.getElementById('newSig3ContinuityShowMid').checked) groups.push('mid');
-    if (document.getElementById('newSig3ContinuityShowGood') && document.getElementById('newSig3ContinuityShowGood').checked) groups.push('good');
+    if (scheme === '7') {
+      ['P0_3', 'P3_10', 'P10_25', 'P25_75', 'P75_90', 'P90_97', 'P97_100'].forEach(suffix => {
+        const el = document.getElementById('newSig3ContinuityShow' + suffix);
+        if (el && el.checked) groups.push(suffix.toLowerCase());
+      });
+    } else {
+      ['Bad', 'Mid', 'Good'].forEach(suffix => {
+        const el = document.getElementById('newSig3ContinuityShow' + suffix);
+        if (el && el.checked) groups.push(suffix.toLowerCase());
+      });
+    }
     return groups;
   }
 
   // スコア層・日数群とは独立に、「基準点から対象週まで徐々にスコアが伸びた人」を条件で拾い出し、
   // 個別の折れ線グラフ・一覧・件数サマリーを表示する(意図的な抽出であり、統計的な検定ではない)。
-  // tertilesは、renderNewSig3Chart側で計算済みの基準点3等分パーセンタイル境界(色分け用)。
+  // tertilesは、renderNewSig3Chart側で計算済みの基準点3等分パーセンタイル境界(3群の色分け用)。
   function renderNewSig3ContinuitySection(users, maxWeeks, mode, tertiles) {
     const def = getNewSig3ContinuityDef();
     const r2Threshold = getNewSig3ContinuityR2Threshold();
     document.getElementById('newSig3ContinuityR2').disabled = (def !== 'trend');
+
+    const scheme = getNewSig3ContinuityColorScheme();
+    const scheme3Wrap = document.getElementById('newSig3ContinuityScheme3Wrap');
+    const scheme7Wrap = document.getElementById('newSig3ContinuityScheme7Wrap');
+    if (scheme3Wrap) { scheme3Wrap.classList.toggle('hidden', scheme === '7'); scheme3Wrap.classList.toggle('flex', scheme !== '7'); }
+    if (scheme7Wrap) { scheme7Wrap.classList.toggle('hidden', scheme !== '7'); scheme7Wrap.classList.toggle('flex', scheme === '7'); }
+    const percentiles7 = computeNewSig3ScorePercentiles7(users);
 
     const matched = users.filter(u => {
       const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
@@ -649,10 +757,10 @@
       newSig3ContinuitySelectedUid = null;
     }
 
-    const visibleTertiles = getNewSig3ContinuityVisibleTertiles();
-    const visibleMatched = matched.filter(u => visibleTertiles.includes(newSig3ScoreTertileGroup(u, tertiles)));
+    const visibleGroups = getNewSig3ContinuityVisibleGroups(scheme);
+    const visibleMatched = matched.filter(u => visibleGroups.includes(newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7)));
 
-    renderNewSig3ContinuityChart(visibleMatched, maxWeeks, mode, tertiles);
-    newSig3RenderContinuityList(visibleMatched, tertiles);
+    renderNewSig3ContinuityChart(visibleMatched, maxWeeks, mode, scheme, tertiles, percentiles7);
+    newSig3RenderContinuityList(visibleMatched, scheme, tertiles, percentiles7);
   }
 </script>
