@@ -132,6 +132,32 @@
   <p class="text-xs text-gray-500 mb-2">※スコア層(全体/悪い人/ふつう人/良い人)ごとに、その中で低日数群/高日数群/群間移動によって差が出るかをグラフ4段で比較します。グラフの点をクリックすると、その段の右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
   <div id="newSig3TierSections"></div>
 
+  <hr class="my-6 border-gray-200">
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">継続は力なり: 徐々に伸びた人のピックアップ</h4>
+  <p class="text-xs text-gray-500 mb-2">
+    ※基準点(1週目)から対象週まで、スコアが徐々に伸びている人だけを条件で拾い出して個別に見る、意図的な抽出です(統計的な証明ではなく、実例の可視化を目的としています)。対象は「期間」「年齢」「対象週」の設定(上の日数群セクションと共通)に従います。
+  </p>
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200 mb-3">
+    <span class="text-gray-500">増加の定義:</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefStrict" value="strict" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
+      <span class="font-normal">完全な単調増加(一度も下がらない)</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefTrend" value="trend" onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
+      <span class="font-normal">回帰直線の傾きが正でR²が</span>
+    </label>
+    <input type="text" inputmode="numeric" id="newSig3ContinuityR2" value="0.5" min="0" max="1" step="0.05" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="font-normal text-gray-500">以上</span>
+    <span id="newSig3ContinuitySummary" class="text-emerald-700"></span>
+  </div>
+  <div class="chart-container mb-2" style="height: 320px;">
+    <canvas id="newSig3ContinuityChart"></canvas>
+  </div>
+  <p class="text-xs text-gray-500 mb-1">※該当した人をクリックすると、その人の線をグラフ上で太く強調表示します(もう一度クリックで解除)。</p>
+  <div id="newSig3ContinuityList" class="flex flex-wrap gap-1 overflow-y-auto border border-gray-200 rounded p-2" style="max-height: 140px;"></div>
+
 </div>
 
 <script>
@@ -406,6 +432,8 @@
           }
         });
       });
+
+      renderNewSig3ContinuitySection(users, maxWeeks, targetMode);
     } catch (error) {
       console.error(error);
     }
@@ -428,5 +456,157 @@
     if (captionEl) captionEl.textContent = `${group.label} 基準点 → ${week}週目 (対象: ${pairs.length}人)`;
 
     renderChurnPairedBoxplot(boxIds.chart, boxIds.key, boxIds.sig, pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
+  }
+
+  // ===== 有意差3タブ: 「継続は力なり」セクション(徐々に伸びた人のピックアップ) =====
+  let newSig3ContinuitySelectedUid = null; // 折れ線グラフでクリックして選択中のuid(このセクション専用)
+
+  // 週1〜maxWeeksについて、1週目は基準点、それ以降はnewSig3TargetValueForWeekを使った
+  // そのユーザーのスコア推移(null=その週データなし)を返す。
+  function newSig3UserWeeklyScores(user, maxWeeks, mode) {
+    const scores = [];
+    for (let w = 1; w <= maxWeeks; w++) {
+      scores.push(w === 1 ? user.week1BaselineAvg : newSig3TargetValueForWeek(user, w, mode));
+    }
+    return scores;
+  }
+
+  // 完全な単調増加(データがある週同士を順に比べて、一度も下がらず、かつ最初より最後が高い)かどうか
+  function newSig3IsMonotonicIncreasing(scores) {
+    const pts = [];
+    scores.forEach((v, i) => { if (v !== null && v !== undefined) pts.push({ week: i + 1, value: v }); });
+    if (pts.length < 2) return false;
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i].value < pts[i - 1].value) return false;
+    }
+    return pts[pts.length - 1].value > pts[0].value;
+  }
+
+  // 単純な最小二乗回帰。points: [{x,y}]。傾きと決定係数(R²)を返す(2点未満・x方向にばらつきが無ければnull)。
+  function newSig3LinearRegression(points) {
+    const n = points.length;
+    if (n < 2) return null;
+    const xbar = points.reduce((s, p) => s + p.x, 0) / n;
+    const ybar = points.reduce((s, p) => s + p.y, 0) / n;
+    let sxy = 0, sxx = 0, syy = 0;
+    points.forEach(p => {
+      sxy += (p.x - xbar) * (p.y - ybar);
+      sxx += (p.x - xbar) * (p.x - xbar);
+      syy += (p.y - ybar) * (p.y - ybar);
+    });
+    if (sxx === 0) return null;
+    const slope = sxy / sxx;
+    const r2 = syy === 0 ? 0 : (sxy * sxy) / (sxx * syy);
+    return { slope, r2 };
+  }
+
+  // 回帰直線の傾きが正、かつ決定係数(R²)がr2Threshold以上かどうか
+  function newSig3IsTrendIncreasing(scores, r2Threshold) {
+    const pts = [];
+    scores.forEach((v, i) => { if (v !== null && v !== undefined) pts.push({ x: i + 1, y: v }); });
+    const reg = newSig3LinearRegression(pts);
+    if (!reg) return false;
+    return reg.slope > 0 && reg.r2 >= r2Threshold;
+  }
+
+  function getNewSig3ContinuityDef() {
+    const el = document.querySelector('input[name="newSig3ContinuityDef"]:checked');
+    return el ? el.value : 'strict';
+  }
+
+  function getNewSig3ContinuityR2Threshold() {
+    const el = document.getElementById('newSig3ContinuityR2');
+    const v = el && el.value !== '' ? parseFloat(el.value) : 0.5;
+    return isNaN(v) ? 0.5 : Math.max(0, Math.min(1, v));
+  }
+
+  function renderNewSig3ContinuityChart(users, maxWeeks, mode) {
+    const el = document.getElementById('newSig3ContinuityChart');
+    if (!el) return;
+    const datasets = users.map(u => {
+      const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
+      const points = [];
+      scores.forEach((v, i) => { if (v !== null && v !== undefined) points.push({ x: i + 1, y: v }); });
+      const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
+      return {
+        label: u.uid, data: points,
+        borderColor: isSelected ? '#111827' : hexToRgba('#059669', 0.25),
+        backgroundColor: 'transparent',
+        borderWidth: isSelected ? 4 : 1.5, pointRadius: 0, fill: false, tension: 0.2,
+        order: isSelected ? -1 : 0
+      };
+    });
+    if (newSig3ContinuitySelectedUid !== null) {
+      const idx = datasets.findIndex(ds => ds.label === newSig3ContinuitySelectedUid);
+      if (idx >= 0) datasets.push(datasets.splice(idx, 1)[0]);
+    }
+
+    if (charts.newSig3Continuity) { charts.newSig3Continuity.destroy(); charts.newSig3Continuity = null; }
+    charts.newSig3Continuity = new Chart(el, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
+        },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: '対象週' }, min: 0.5, max: maxWeeks + 0.5, ticks: { stepSize: 1, precision: 0 } },
+          y: { title: { display: true, text: 'スコア(回/秒)' }, min: 0 }
+        }
+      }
+    });
+  }
+
+  function newSig3RenderContinuityList(users) {
+    const listEl = document.getElementById('newSig3ContinuityList');
+    if (!listEl) return;
+    listEl.innerHTML = users.map(u => {
+      const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
+      const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const cls = isSelected ? 'bg-gray-800 text-white' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+      return `<button type="button" class="newsig3-continuity-uid px-2 py-0.5 rounded text-xs ${cls}" data-uid="${uidEscaped}">${u.uid}</button>`;
+    }).join('');
+
+    if (!listEl._clickBound) {
+      listEl.addEventListener('click', (evt) => {
+        const btn = evt.target.closest('.newsig3-continuity-uid');
+        if (!btn) return;
+        selectNewSig3ContinuityUid(btn.getAttribute('data-uid'));
+      });
+      listEl._clickBound = true;
+    }
+  }
+
+  function selectNewSig3ContinuityUid(uid) {
+    newSig3ContinuitySelectedUid = (newSig3ContinuitySelectedUid === uid) ? null : uid;
+    renderNewSig3Chart();
+  }
+
+  // スコア層・日数群とは独立に、「基準点から対象週まで徐々にスコアが伸びた人」を条件で拾い出し、
+  // 個別の折れ線グラフ・一覧・件数サマリーを表示する(意図的な抽出であり、統計的な検定ではない)。
+  function renderNewSig3ContinuitySection(users, maxWeeks, mode) {
+    const def = getNewSig3ContinuityDef();
+    const r2Threshold = getNewSig3ContinuityR2Threshold();
+    document.getElementById('newSig3ContinuityR2').disabled = (def !== 'trend');
+
+    const matched = users.filter(u => {
+      const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
+      return def === 'trend' ? newSig3IsTrendIncreasing(scores, r2Threshold) : newSig3IsMonotonicIncreasing(scores);
+    }).sort((a, b) => String(a.uid).localeCompare(String(b.uid)));
+
+    const summaryEl = document.getElementById('newSig3ContinuitySummary');
+    if (summaryEl) {
+      const pct = users.length > 0 ? (matched.length / users.length * 100).toFixed(1) : '0.0';
+      summaryEl.textContent = `該当: ${matched.length.toLocaleString()}人 / 対象${users.length.toLocaleString()}人(${pct}%)`;
+    }
+
+    if (newSig3ContinuitySelectedUid !== null && !matched.some(u => u.uid === newSig3ContinuitySelectedUid)) {
+      newSig3ContinuitySelectedUid = null;
+    }
+
+    renderNewSig3ContinuityChart(matched, maxWeeks, mode);
+    newSig3RenderContinuityList(matched);
   }
 </script>
