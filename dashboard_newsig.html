@@ -45,6 +45,7 @@
   </div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">基準点(1週目2〜3回目平均) → 対象週(最後2回平均) のp値の推移</h4>
+  <p id="newSigExclusionNote" class="text-xs font-bold text-gray-700 mb-1"></p>
   <p class="text-xs text-gray-500 mb-2">※グラフの点をクリックすると、右側にその週の箱ひげ図が表示されます。1週目は折れ線グラフの点としては表示していません(対象人数は下の表・背景棒でご確認いただけます)。</p>
   <div class="flex flex-col lg:flex-row gap-6 lg:items-stretch">
     <div class="flex-1 min-w-0">
@@ -111,6 +112,10 @@
 
       const totalCount = document.getElementById('newSigPopulationCount');
       if (totalCount) totalCount.textContent = `基準点あり: ${users.length}人 (絞り込み後全体: ${allUsers.length}人)`;
+
+      const excludedCount = allUsers.length - users.length;
+      const noteEl = document.getElementById('newSigExclusionNote');
+      if (noteEl) noteEl.textContent = `${allUsers.length.toLocaleString()}人 → 基準点(1週目に2回目・3回目の検査がある)を算出できる${users.length.toLocaleString()}人が対象(1週目の検査が1回以下で2回目・3回目が無いため、${excludedCount.toLocaleString()}人を除外)。`;
 
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
