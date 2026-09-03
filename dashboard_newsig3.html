@@ -12,7 +12,8 @@
     <li><b>基準点</b>は「1週目(検査開始から7日以内)の2回目・3回目の検査の平均」(1回目は除外)。1週目に2回目・3回目の検査が無い人はこの分析の対象外です(2週目以降にいくら検査していても基準点には使いません)。</li>
     <li><b>比較点(対象週)</b>は「その週の最後の2回の検査の平均」(2回以上検査している場合)。「対象週」のラジオボタンで「1回でも採用」を選ぶと、その週1回しか検査していない人もその1回の値をそのまま採用します(「2回以上必須」を選ぶと1回だけの人はその週だけ除外)。いずれの場合も、対象週に1度も検査していない(0回)人は、その週だけ比較対象から除外します。</li>
     <li>「年齢」で年齢層を選ぶと対象を絞り込めます。</li>
-    <li><b>悪い人/ふつう人/良い人</b>は、1週目の基準点(スコア)を3等分(下位33%/中位33%/上位33%)したパーセンタイルで分類しています(下位33%未満=悪い人、上位33%超=良い人)。日数群のような週ごとの変動はなく、1週目時点で固定のグループです。</li>
+    <li><b>悪い人/ふつう人/良い人</b>(スコアによる分類)は、1週目の基準点(スコア)を3等分(下位33%/中位33%/上位33%)したパーセンタイルで分類しています(下位33%未満=悪い人、上位33%超=良い人)。日数群のような週ごとの変動はなく、1週目時点で固定のグループです。</li>
+    <li><b>低日数群/高日数群/群間移動</b>(利用日数による分類、スコアの分類とは別軸です)は、1週目から対象週まで毎週の利用日数(検査回数ではなく日数)が指定した範囲に収まっている人で判定します。0日の週だけは特別扱いし、「対象週から遡って連続して0日の週が何週続いているか」が「0回/週を◯週まで許容」の設定以下なら許容します(0日以外で範囲外の日数が1回でもあれば、その時点で対象外)。対象期間中ずっと0日だった人は常に対象外です。「群間移動」は、1週目から対象週までの間に、低日数群の範囲に該当する週と高日数群の範囲に該当する週の両方があった人です。</li>
     <li>1週目は基準点と対象週の算出に使う検査回が重なりうる(比較にならない)ため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。</li>
     <li>色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。</li>
   </ul>
@@ -68,9 +69,52 @@
       <span class="text-emerald-600">良い人(上位33%)</span>
     </label>
     <span id="newSig3TertileNote" class="text-gray-500 font-normal"></span>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 mb-4">
+    <span class="text-gray-600">日数群(週の利用日数による分類・スコア分類とは別軸です):</span>
 
     <div class="w-full"></div>
 
+    <span class="text-gray-500">0回/週を</span>
+    <input type="text" inputmode="numeric" id="newSig3MaxZeroWeeks" value="0" min="0" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">週まで許容(対象週から遡って連続、低日数群/高日数群共通)</span>
+
+    <div class="w-full"></div>
+
+    <span class="text-gray-500 mr-1">表示:</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowLow" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-blue-600" checked>
+      <span class="text-blue-600">低日数群</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowHigh" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-rose-600" checked>
+      <span class="text-rose-600">高日数群</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="newSig3ShowTransition" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-purple-600" checked>
+      <span class="text-purple-600">群間移動</span>
+    </label>
+
+    <div class="w-full"></div>
+
+    <span class="text-blue-600">低日数群:</span>
+    <input type="text" inputmode="numeric" id="newSig3LowMin" value="0" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">〜</span>
+    <input type="text" inputmode="numeric" id="newSig3LowMax" value="2" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">日</span>
+    <span id="newSig3LowCount" class="text-gray-500 font-normal"></span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-rose-600">高日数群:</span>
+    <input type="text" inputmode="numeric" id="newSig3HighMin" value="4" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">〜</span>
+    <input type="text" inputmode="numeric" id="newSig3HighMax" value="7" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">日</span>
+    <span id="newSig3HighCount" class="text-gray-500 font-normal"></span>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 mb-4">
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="checkbox" id="newSig3ShowCountBars" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
       <span class="text-gray-700">人数(背景棒)</span>
@@ -123,7 +167,20 @@
     if (document.getElementById('newSig3ShowBad') && document.getElementById('newSig3ShowBad').checked) groups.push('bad');
     if (document.getElementById('newSig3ShowMid') && document.getElementById('newSig3ShowMid').checked) groups.push('mid');
     if (document.getElementById('newSig3ShowGood') && document.getElementById('newSig3ShowGood').checked) groups.push('good');
+    if (document.getElementById('newSig3ShowLow') && document.getElementById('newSig3ShowLow').checked) groups.push('low');
+    if (document.getElementById('newSig3ShowHigh') && document.getElementById('newSig3ShowHigh').checked) groups.push('high');
+    if (document.getElementById('newSig3ShowTransition') && document.getElementById('newSig3ShowTransition').checked) groups.push('transition');
     return groups;
+  }
+
+  function getNewSig3MaxZeroWeeks() {
+    const el = document.getElementById('newSig3MaxZeroWeeks');
+    return el && el.value !== '' ? Math.max(0, Math.min(104, parseInt(el.value, 10))) : 0;
+  }
+
+  function getNewSig3RangeInput(id, fallback) {
+    const el = document.getElementById(id);
+    return el && el.value !== '' ? parseInt(el.value, 10) : fallback;
   }
 
   // 1週目の基準点(week1BaselineAvg)の分布を3等分するパーセンタイル境界(下位33%点・上位33%点)を求める。
@@ -162,7 +219,7 @@
         const baseline = u.week1BaselineAvg;
         const target = newSig3TargetValueForWeek(u, w, mode);
         if (target === null || target === undefined) { excluded++; return; }
-        if (groupFilter && !groupFilter(u)) { excluded++; return; }
+        if (groupFilter && !groupFilter(u, w)) { excluded++; return; }
         diffs.push(target - baseline);
       });
       if (w === 1) {
@@ -201,12 +258,25 @@
           : '';
       }
 
+      const lowMin = getNewSig3RangeInput('newSig3LowMin', 0);
+      const lowMax = getNewSig3RangeInput('newSig3LowMax', 2);
+      const highMin = getNewSig3RangeInput('newSig3HighMin', 4);
+      const highMax = getNewSig3RangeInput('newSig3HighMax', 7);
+      const maxZeroWeeks = getNewSig3MaxZeroWeeks();
+      const lowCountEl = document.getElementById('newSig3LowCount');
+      if (lowCountEl) lowCountEl.textContent = '週ごとに変動(下表参照)';
+      const highCountEl = document.getElementById('newSig3HighCount');
+      if (highCountEl) highCountEl.textContent = '週ごとに変動(下表参照)';
+
       const visibleGroups = getNewSig3VisibleGroups();
       const groupDefs = [
         { key: 'total', label: '全体', color: '#0891b2', filter: null },
         { key: 'bad', label: '悪い人', color: '#dc2626', filter: (u) => u.week1BaselineAvg < tertiles.low },
         { key: 'mid', label: 'ふつう人', color: '#d97706', filter: (u) => u.week1BaselineAvg >= tertiles.low && u.week1BaselineAvg < tertiles.high },
-        { key: 'good', label: '良い人', color: '#059669', filter: (u) => u.week1BaselineAvg >= tertiles.high }
+        { key: 'good', label: '良い人', color: '#059669', filter: (u) => u.week1BaselineAvg >= tertiles.high },
+        { key: 'low', label: '低日数群', color: '#2563eb', filter: (u, w) => newSigUserInGroupForWeek(u, w, lowMin, lowMax, maxZeroWeeks) },
+        { key: 'high', label: '高日数群', color: '#be185d', filter: (u, w) => newSigUserInGroupForWeek(u, w, highMin, highMax, maxZeroWeeks) },
+        { key: 'transition', label: '群間移動', color: '#7c3aed', filter: (u, w) => newSigUserIsGroupTransition(u, w, lowMin, lowMax, highMin, highMax) }
       ];
 
       const weeksList = [];
@@ -246,7 +316,7 @@
       const baseline = u.week1BaselineAvg;
       const target = newSig3TargetValueForWeek(u, week, mode);
       if (target === null || target === undefined) return;
-      if (group.filter && !group.filter(u)) return;
+      if (group.filter && !group.filter(u, week)) return;
       pairs.push({ uid: u.uid, first: baseline, last: target });
     });
 
