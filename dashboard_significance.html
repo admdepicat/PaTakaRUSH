@@ -87,6 +87,33 @@
     </div>
   </div>
 
+  <hr class="my-6 border-gray-200">
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">群間移動の推移</h4>
+  <p class="text-xs text-gray-500 mb-2">
+    ※「群間移動」(低日数群の範囲に該当する週と高日数群の範囲に該当する週の両方があった人)に該当する人について、指定した対象週までの週ごとの利用日数の推移を表示しています。折れ線・ヒートマップとも、低日数群の範囲に近いほど青、高日数群の範囲に近いほど赤で色分けしています。ヒートマップのuidをクリックすると、折れ線グラフでそのユーザーを太い黒線で強調表示します(もう一度クリックすると解除します)。低日数群・高日数群の範囲や「0回を◯週まで許容」を変更すると、この対象者も連動して変わります。
+  </p>
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
+    <span class="text-gray-500">対象週:</span>
+    <input type="text" inputmode="numeric" id="sigTransitionWeek" value="12" min="2" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderSigTransitionSection()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <span class="text-gray-500">週</span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="sigTransitionCount" class="text-purple-600"></span>
+    <span class="text-gray-300 mx-1">|</span>
+    <span id="sigTransitionSelectCaption" class="text-gray-500 font-normal"></span>
+    <button type="button" onclick="clearSigTransitionSelection()" class="text-xs font-normal text-gray-400 hover:text-gray-600 underline">選択解除</button>
+  </div>
+  <div class="flex flex-col lg:flex-row gap-6 lg:items-start">
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="sigTransitionLineChart"></canvas>
+      </div>
+    </div>
+    <div class="w-full lg:w-96 shrink-0">
+      <div id="sigTransitionHeatmapContainer" class="overflow-auto border border-gray-200 rounded" style="max-height: 320px;"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -247,6 +274,8 @@
           renderSigBoxplot(g, week);
         }
       });
+
+      renderSigTransitionSection();
     } catch (error) {
       console.error(error);
     }
@@ -268,5 +297,156 @@
     if (captionEl) captionEl.textContent = `${group.label} 1週目 → ${week}週目 (対象: ${pairs.length}人)`;
 
     renderChurnPairedBoxplot('sigBoxChart', 'sigBox', 'sigBoxSig', pairs, 0, 10, ['1週目', `${week}週目`], 0.8);
+  }
+
+  // ===== 有意差タブ: 群間移動の推移(ヒートマップ+折れ線) =====
+  // 離脱率タブの同種の機能(churnMultiUserSelectedUid・renderChurnMultiUserLineChart・renderChurnHeatmap等)は
+  // churnGetMultiUserWeeks()(離脱率タブ自身の「◯週まで表示」欄)や、離脱率タブ全体を再描画する
+  // renderChurnMultiUserCharts()に結び付いているため、そのまま使うと有意差タブの操作が離脱率タブの表示に
+  // 影響してしまう。そのため、選択状態・週数・再描画関数はすべてこのタブ専用に独立させている
+  // (色分けの純粋関数churnHeatmapCellColorのみ共通利用)。
+  let sigTransitionSelectedUid = null; // ヒートマップでクリックして選択中のuid(有意差タブ専用)
+
+  function getSigTransitionWeek() {
+    const el = document.getElementById('sigTransitionWeek');
+    const maxWeeks = getSigMaxWeeks();
+    const raw = el && el.value !== '' ? parseInt(el.value, 10) : maxWeeks;
+    return Math.max(2, Math.min(maxWeeks, isNaN(raw) ? maxWeeks : raw));
+  }
+
+  function getSigTransitionUsers(week) {
+    if (!rawData || !rawData.usersChurn) return [];
+    const lowMin = getSigRangeInput('sigLowMin', 0);
+    const lowMax = getSigRangeInput('sigLowMax', 2);
+    const highMin = getSigRangeInput('sigHighMin', 4);
+    const highMax = getSigRangeInput('sigHighMax', 7);
+    return rawData.usersChurn
+      .filter(u => sigUserIsGroupTransition(u, week, lowMin, lowMax, highMin, highMax))
+      .sort((a, b) => String(a.uid).localeCompare(String(b.uid)));
+  }
+
+  function renderSigTransitionLineChart(users, week) {
+    const el = document.getElementById('sigTransitionLineChart');
+    if (!el) return;
+
+    const newDatasets = users.map(u => {
+      const points = [];
+      for (let w = 0; w < week; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        points.push({ x: w + 1, y: days });
+      }
+      const isSelected = sigTransitionSelectedUid !== null && u.uid === sigTransitionSelectedUid;
+      const dataset = {
+        type: 'line', label: u.uid, data: points,
+        borderColor: isSelected ? '#111827' : hexToRgba('#9333ea', 0.2), backgroundColor: 'transparent',
+        borderWidth: isSelected ? 4 : 1, pointRadius: 0, fill: false, tension: 0.2,
+        order: isSelected ? -1 : 0 // 選択中の線を他より前面(上)に描画する
+      };
+      if (!isSelected) {
+        dataset.segment = { borderColor: (ctx) => churnHeatmapCellColor(ctx.p1.parsed.y, 'redblue') };
+      }
+      return dataset;
+    });
+    if (sigTransitionSelectedUid !== null) {
+      const idx = newDatasets.findIndex(ds => ds.label === sigTransitionSelectedUid);
+      if (idx >= 0) newDatasets.push(newDatasets.splice(idx, 1)[0]);
+    }
+
+    if (!charts.sigTransitionLine) {
+      charts.sigTransitionLine = new Chart(el, {
+        type: 'line',
+        data: { datasets: newDatasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y}日` } }
+          },
+          scales: {
+            x: { type: 'linear', title: { display: true, text: '週目' }, min: 0.5, max: week + 0.5, ticks: { stepSize: 1, precision: 0 } },
+            y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: 7, ticks: { stepSize: 1, precision: 0 } }
+          }
+        }
+      });
+    } else {
+      charts.sigTransitionLine.data.datasets = newDatasets;
+      charts.sigTransitionLine.options.scales.x.max = week + 0.5;
+      charts.sigTransitionLine.update();
+    }
+  }
+
+  function renderSigTransitionHeatmap(users, week) {
+    const container = document.getElementById('sigTransitionHeatmapContainer');
+    if (!container) return;
+
+    // 濃い(利用日数の合計が多い)人から薄い人の順に並べる
+    const totalDaysOf = (u) => {
+      let sum = 0;
+      for (let w = 0; w < week; w++) sum += (u.data && u.data[w]) ? u.data[w] : 0;
+      return sum;
+    };
+    const sortedUsers = [...users].sort((a, b) => totalDaysOf(b) - totalDaysOf(a));
+
+    let html = '<table class="text-xs border-collapse"><thead><tr>' +
+      '<th class="sticky left-0 top-0 bg-white px-2 py-1 text-left border-b border-r border-gray-200 z-10">uid</th>';
+    for (let w = 1; w <= week; w++) {
+      html += `<th class="sticky top-0 bg-white px-1 py-1 text-center border-b border-gray-200" style="min-width:22px;">${w}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    sortedUsers.forEach(u => {
+      const isSelected = sigTransitionSelectedUid !== null && u.uid === sigTransitionSelectedUid;
+      const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const rowCellClass = isSelected ? 'bg-gray-200 text-gray-900' : 'bg-white';
+      html += `<tr><td class="sig-transition-uid-cell sticky left-0 ${rowCellClass} px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10 cursor-pointer hover:underline font-bold" data-uid="${uidEscaped}">${u.uid}</td>`;
+      for (let w = 0; w < week; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        html += `<td class="text-center border-b border-gray-100" style="background-color:${churnHeatmapCellColor(days, 'redblue')}; min-width:22px; height:18px;" title="${u.uid} ${w + 1}週目: ${days}日">${days > 0 ? days : ''}</td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    // uidクリックで折れ線グラフ側をハイライトする(1回だけイベント委譲で登録)
+    if (!container._sigTransitionClickBound) {
+      container.addEventListener('click', (evt) => {
+        const cell = evt.target.closest('.sig-transition-uid-cell');
+        if (!cell) return;
+        selectSigTransitionUid(cell.getAttribute('data-uid'));
+      });
+      container._sigTransitionClickBound = true;
+    }
+  }
+
+  function selectSigTransitionUid(uid) {
+    // 同じuidを再クリックしたら選択解除する
+    sigTransitionSelectedUid = (sigTransitionSelectedUid === uid) ? null : uid;
+    renderSigTransitionSection();
+  }
+
+  function clearSigTransitionSelection() {
+    sigTransitionSelectedUid = null;
+    renderSigTransitionSection();
+  }
+
+  function updateSigTransitionSelectCaption() {
+    const caption = document.getElementById('sigTransitionSelectCaption');
+    if (!caption) return;
+    caption.textContent = sigTransitionSelectedUid ? `選択中: ${sigTransitionSelectedUid}` : 'ヒートマップのuidをクリックしてください';
+  }
+
+  function renderSigTransitionSection() {
+    try {
+      if (!rawData || !rawData.usersChurn) return;
+      const week = getSigTransitionWeek();
+      const users = getSigTransitionUsers(week);
+      const countEl = document.getElementById('sigTransitionCount');
+      if (countEl) countEl.textContent = `群間移動: ${users.length}人`;
+      updateSigTransitionSelectCaption();
+      renderSigTransitionLineChart(users, week);
+      renderSigTransitionHeatmap(users, week);
+    } catch (error) {
+      console.error(error);
+    }
   }
 </script>
