@@ -1813,9 +1813,11 @@
         ctx.setLineDash([]);
         ctx.fillStyle = color;
         ctx.font = '10px sans-serif';
-        // ラベルはグラフ内(プロット領域)ではなく、Y軸目盛りのある左側の余白に表示する
+        // ラベルはグラフ内(プロット領域)ではなく、Y軸目盛りのある左側の余白に表示する。
+        // 1%のラインはY軸目盛り(0.01000)とちょうど同じ高さになり文字が重なってしまうため、
+        // 目盛りの文字(だいたいy±5px)とかぶらないよう、線より十分上にずらして描画する。
         ctx.textAlign = 'right';
-        ctx.fillText(label, chartArea.left - 4, y - 2);
+        ctx.fillText(label, chartArea.left - 4, y - 10);
         ctx.restore();
       };
       drawLine(0.05, '#16a34a', '5%');
