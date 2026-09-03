@@ -104,8 +104,13 @@
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">週ごとの平均スコア(パタカラ発声回数)の推移</h4>
   <p class="text-xs text-gray-500 mb-2">※下のp値グラフは「差が統計的に意味があるか」を示すだけで、実際のスコアの増減は分かりません。こちらは各群の平均スコアそのものの推移です(1週目は基準点(2〜3回目平均)の値を表示しています)。</p>
-  <div class="chart-container mb-6" style="height: 280px;">
-    <canvas id="newSigScoreTrendChart"></canvas>
+  <div class="flex flex-col lg:flex-row gap-6 mb-6">
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 280px;">
+        <canvas id="newSigScoreTrendChart"></canvas>
+      </div>
+    </div>
+    <div class="hidden lg:block w-96 shrink-0"></div>
   </div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">基準点(1週目2〜3回目平均) → 対象週(最後2回平均) のp値の推移</h4>
