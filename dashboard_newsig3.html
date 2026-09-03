@@ -223,16 +223,14 @@
         <canvas id="newSig3ContinuityDayChart"></canvas>
       </div>
     </div>
-    <div class="w-full lg:w-72 shrink-0">
-      <div id="newSig3ContinuityHeatmap" class="overflow-auto border border-gray-200 rounded" style="max-height: 320px;"></div>
-    </div>
   </div>
-  <p class="text-xs text-gray-500 mb-1">※スコア推移(左)・利用日数の推移(中央)・利用日数のヒートマップ(右)は連動しています。一覧またはヒートマップのニックネームをクリックすると、両方のグラフでその人の線を黒太線で強調表示します(もう一度クリックで解除)。</p>
+  <p class="text-xs text-gray-500 mb-1">※スコア推移(左)・利用日数の推移(右)は連動しています。下のヒートマップのニックネームをクリックすると、両方のグラフでその人の線を黒太線で強調表示します(もう一度クリックで解除)。</p>
   <div class="flex items-center gap-2 mb-1">
     <span id="newSig3ContinuitySelectCaption" class="text-sm text-gray-600"></span>
     <button type="button" onclick="clearNewSig3ContinuitySelection()" class="text-xs font-normal text-gray-400 hover:text-gray-600 underline">選択解除</button>
   </div>
-  <div id="newSig3ContinuityList" class="flex flex-wrap gap-1 overflow-y-auto border border-gray-200 rounded p-2" style="max-height: 140px;"></div>
+  <h5 class="text-sm font-bold text-gray-700 mt-2 mb-1">利用日数のヒートマップ</h5>
+  <div id="newSig3ContinuityHeatmap" class="mt-1" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
 </div>
 
@@ -604,21 +602,6 @@
     p0_3: '#dc2626', p3_10: '#f97316', p10_25: '#eab308', p25_75: '#16a34a',
     p75_90: '#2563eb', p90_97: '#4f46e5', p97_100: '#9333ea'
   };
-  const NEW_SIG3_CONTINUITY_BADGE_CLASSES_3 = {
-    bad: 'bg-red-100 text-red-800 hover:bg-red-200',
-    mid: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-    good: 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-  };
-  const NEW_SIG3_CONTINUITY_BADGE_CLASSES_7 = {
-    p0_3: 'bg-red-100 text-red-800 hover:bg-red-200',
-    p3_10: 'bg-orange-100 text-orange-800 hover:bg-orange-200',
-    p10_25: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-    p25_75: 'bg-green-100 text-green-800 hover:bg-green-200',
-    p75_90: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-    p90_97: 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200',
-    p97_100: 'bg-purple-100 text-purple-800 hover:bg-purple-200'
-  };
-
   function getNewSig3ContinuityColorScheme() {
     const el = document.querySelector('input[name="newSig3ContinuityColorScheme"]:checked');
     return el ? el.value : '3';
@@ -700,28 +683,6 @@
     });
   }
 
-  function newSig3RenderContinuityList(users, scheme, tertiles, percentiles7) {
-    const listEl = document.getElementById('newSig3ContinuityList');
-    if (!listEl) return;
-    const badgeMap = scheme === '7' ? NEW_SIG3_CONTINUITY_BADGE_CLASSES_7 : NEW_SIG3_CONTINUITY_BADGE_CLASSES_3;
-    listEl.innerHTML = users.map(u => {
-      const isSelected = newSig3ContinuitySelectedUid !== null && u.uid === newSig3ContinuitySelectedUid;
-      const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-      const group = newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7);
-      const cls = isSelected ? 'bg-gray-800 text-white' : badgeMap[group];
-      return `<button type="button" class="newsig3-continuity-uid px-2 py-0.5 rounded text-xs ${cls}" data-uid="${uidEscaped}">${u.uid}</button>`;
-    }).join('');
-
-    if (!listEl._clickBound) {
-      listEl.addEventListener('click', (evt) => {
-        const btn = evt.target.closest('.newsig3-continuity-uid');
-        if (!btn) return;
-        selectNewSig3ContinuityUid(btn.getAttribute('data-uid'));
-      });
-      listEl._clickBound = true;
-    }
-  }
-
   function selectNewSig3ContinuityUid(uid) {
     newSig3ContinuitySelectedUid = (newSig3ContinuitySelectedUid === uid) ? null : uid;
     renderNewSig3Chart();
@@ -777,12 +738,11 @@
     const visibleMatched = matched.filter(u => visibleGroups.includes(newSig3ScoreColorGroup(u, scheme, tertiles, percentiles7)));
 
     const captionEl = document.getElementById('newSig3ContinuitySelectCaption');
-    if (captionEl) captionEl.textContent = newSig3ContinuitySelectedUid ? `選択中: ${newSig3ContinuitySelectedUid}` : '一覧またはヒートマップのニックネームをクリックしてください';
+    if (captionEl) captionEl.textContent = newSig3ContinuitySelectedUid ? `選択中: ${newSig3ContinuitySelectedUid}` : 'ヒートマップのニックネームをクリックしてください';
 
     renderNewSig3ContinuityChart(visibleMatched, maxWeeks, mode, scheme, tertiles, percentiles7);
     renderNewSig3ContinuityDayChart(visibleMatched, maxWeeks, scheme, tertiles, percentiles7);
     renderNewSig3ContinuityHeatmap(visibleMatched, maxWeeks, scheme, tertiles, percentiles7);
-    newSig3RenderContinuityList(visibleMatched, scheme, tertiles, percentiles7);
   }
 
   function clearNewSig3ContinuitySelection() {
