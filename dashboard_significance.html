@@ -6,7 +6,7 @@
   <h2 class="text-lg font-bold text-gray-800 mb-4">有意差</h2>
 
   <p class="text-sm text-gray-600 mb-4">
-    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目から対象週まで毎週利用日数が指定した範囲に収まっている人で判定しています。「0回を◯週まで許容」で、その中で0回だった週を何週まで許容するか(0=1週も0回を許さない)を調整できます(ただしずっと0回だった人は常に除きます)。対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。1週目は「1週目 vs 1週目」で比較にならないため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。下の表・背景棒には、日数群の条件で除外された人数(「(除外)」の行・薄い色の棒)も表示しています。
+    ※検査開始から「1週目」のスコアと「対象週」のスコアを対応のあるt検定で比較し、p値の推移を表示しています(絞り込み・除外は一切ありません)。「低日数群」「高日数群」は、1週目から対象週まで毎週利用日数が指定した範囲に収まっている人で判定しています。「0回を◯週まで許容」で、その中で0回だった週を何週まで許容するか(0=1週も0回を許さない)を調整できます(ただしずっと0回だった人は常に除きます)。「群間移動」は、1週目から対象週までの間に、低日数群の範囲に該当する週と高日数群の範囲に該当する週の両方があった人です(低日数群・高日数群のどちらにも該当しなかった人とは重複しません)。対象週ごとに該当者は変わります。色は青: p&lt;0.01、緑: p&lt;0.05、赤: p≧0.05です。1週目は「1週目 vs 1週目」で比較にならないため、折れ線グラフには含めていません(対象人数(人数(背景棒))と表には引き続き含まれます)。下の表・背景棒には、日数群の条件で除外された人数(「(除外)」の行・薄い色の棒)も表示しています。
   </p>
 
   <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200 mb-4">
@@ -36,6 +36,10 @@
       <input type="checkbox" id="sigShowHigh" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-rose-600" checked>
       <span class="text-rose-600">高日数群</span>
     </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="checkbox" id="sigShowTransition" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-purple-600" checked>
+      <span class="text-purple-600">群間移動</span>
+    </label>
 
     <div class="w-full"></div>
 
@@ -57,7 +61,7 @@
     <div class="w-full"></div>
 
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="sigShowCountBars" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-gray-500">
+      <input type="checkbox" id="sigShowCountBars" onchange="renderSigChart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
       <span class="text-gray-700">人数(背景棒)</span>
     </label>
     <span class="text-gray-300 mx-1">|</span>
@@ -107,6 +111,7 @@
     if (document.getElementById('sigShowTotal') && document.getElementById('sigShowTotal').checked) groups.push('total');
     if (document.getElementById('sigShowLow') && document.getElementById('sigShowLow').checked) groups.push('low');
     if (document.getElementById('sigShowHigh') && document.getElementById('sigShowHigh').checked) groups.push('high');
+    if (document.getElementById('sigShowTransition') && document.getElementById('sigShowTransition').checked) groups.push('transition');
     return groups;
   }
 
@@ -139,6 +144,22 @@
     }
     if (zeroCount >= w) return false; // ずっと0回
     return zeroCount <= maxZeroWeeks;
+  }
+
+  // 「群間移動」の判定: 1週目から対象週までの間に、低日数群の範囲(低min〜低max)に該当する週と、
+  // 高日数群の範囲(高min〜高max)に該当する週の、両方が(連続している必要はなく)少なくとも1週ずつあったかどうか。
+  // sigUserInGroupForWeekと違い、範囲外(例:3日)の週があっても、両方の範囲を経験していれば対象に含める。
+  function sigUserIsGroupTransition(user, w, lowMin, lowMax, highMin, highMax) {
+    const lo1 = Math.min(lowMin, lowMax), hi1 = Math.max(lowMin, lowMax);
+    const lo2 = Math.min(highMin, highMax), hi2 = Math.max(highMin, highMax);
+    let hasLow = false, hasHigh = false;
+    for (let wi = 0; wi < w; wi++) {
+      const d = sigDaysAt(user, wi);
+      if (d === null) return false;
+      if (d >= lo1 && d <= hi1) hasLow = true;
+      if (d >= lo2 && d <= hi2) hasHigh = true;
+    }
+    return hasLow && hasHigh;
   }
 
   // 対象週ごとに、1週目のスコアと対象週のスコアが両方そろっているユーザーのうち、
@@ -199,7 +220,8 @@
       const groupDefs = [
         { key: 'total', label: '全体', color: '#059669', filter: null },
         { key: 'low', label: '低日数群', color: '#2563eb', filter: (u, w) => sigUserInGroupForWeek(u, w, lowMin, lowMax, maxZeroWeeks) },
-        { key: 'high', label: '高日数群', color: '#dc2626', filter: (u, w) => sigUserInGroupForWeek(u, w, highMin, highMax, maxZeroWeeks) }
+        { key: 'high', label: '高日数群', color: '#dc2626', filter: (u, w) => sigUserInGroupForWeek(u, w, highMin, highMax, maxZeroWeeks) },
+        { key: 'transition', label: '群間移動', color: '#9333ea', filter: (u, w) => sigUserIsGroupTransition(u, w, lowMin, lowMax, highMin, highMax) }
       ];
       const weeksList = [];
       for (let w = 1; w <= maxWeeks; w++) weeksList.push(w);
