@@ -103,7 +103,32 @@
   </div>
 
   <h4 class="text-sm font-bold text-gray-700 mb-2">週ごとの平均スコア(パタカラ発声回数)の推移</h4>
-  <p class="text-xs text-gray-500 mb-2">※下のp値グラフは「差が統計的に意味があるか」を示すだけで、実際のスコアの増減は分かりません。こちらは各群の平均スコアそのものの推移です(1週目は基準点(2〜3回目平均)の値を表示しています)。</p>
+  <p class="text-xs text-gray-500 mb-2">※下のp値グラフは「差が統計的に意味があるか」を示すだけで、実際のスコアの増減は分かりません。こちらは各群の平均スコアそのものの推移です(1週目は基準点(2〜3回目平均)の値を表示しています)。「％ile曲線」は「年齢別分布」タブと同じLMS法で週方向に滑らかにした曲線です。</p>
+  <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 mb-3">
+    <span class="text-gray-500">表示方法:</span>
+    <select id="newSigScoreDisplayMode" onchange="renderNewSigChart()" class="p-1 border border-gray-300 rounded outline-none font-normal">
+      <option value="sd" selected>平均 ± SD(エラーバー)</option>
+      <option value="percentile">％ile曲線(LMS法)</option>
+    </select>
+
+    <span id="newSigPctModeWrap" class="hidden items-center gap-4">
+      <span class="text-gray-300 mx-1">|</span>
+      <span class="text-gray-500">本数:</span>
+      <select id="newSigPctMode" onchange="renderNewSigChart()" class="p-1 border border-gray-300 rounded outline-none font-normal">
+        <option value="7">7本線 (3/10/25/50/75/90/97%ile)</option>
+        <option value="7b" selected>7本線② (3/10/25/50/75/90/97%ile・帯塗り)</option>
+        <option value="5a">5本線① (5/10/50/90/95%ile)</option>
+        <option value="5b">5本線② (3/10/50/90/97%ile・帯塗り)</option>
+        <option value="2">2本線 (3〜97%ile帯 + 50%ile細線)</option>
+      </select>
+    </span>
+
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">Y軸: 最小</span>
+    <input type="text" inputmode="numeric" id="newSigScoreYMin" placeholder="自動" min="0" step="1" oninput="churnNormalizeNumberInput(this); renderNewSigChart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="text-gray-500">〜最大</span>
+    <input type="text" inputmode="numeric" id="newSigScoreYMax" placeholder="自動" min="0" step="1" oninput="churnNormalizeNumberInput(this); renderNewSigChart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+  </div>
   <div class="flex flex-col lg:flex-row gap-6 mb-6">
     <div class="flex-1 min-w-0">
       <div class="chart-container" style="height: 280px;">
@@ -243,8 +268,27 @@
     return results;
   }
 
-  // 対象週w(1始まり)ごとに、groupFilterを満たす人の平均スコアそのもの(p値ではなく実数値)を計算する。
-  // 1週目は基準点(week1BaselineAvg)の値を、2週目以降はnewSigTargetValueForWeekの値を使う。
+  function getNewSigScoreDisplayMode() {
+    const el = document.getElementById('newSigScoreDisplayMode');
+    return el ? el.value : 'sd';
+  }
+
+  function getNewSigPctMode() {
+    const el = document.getElementById('newSigPctMode');
+    return el ? el.value : '7b';
+  }
+
+  function getNewSigScoreYRange() {
+    const minEl = document.getElementById('newSigScoreYMin');
+    const maxEl = document.getElementById('newSigScoreYMax');
+    return {
+      min: minEl && minEl.value !== '' ? parseFloat(minEl.value) : undefined,
+      max: maxEl && maxEl.value !== '' ? parseFloat(maxEl.value) : undefined
+    };
+  }
+
+  // 対象週w(1始まり)ごとに、groupFilterを満たす人の平均スコアそのもの(p値ではなく実数値)と標準偏差(SD)を
+  // 計算する。1週目は基準点(week1BaselineAvg)の値を、2週目以降はnewSigTargetValueForWeekの値を使う。
   function computeNewSigScoreTrend(users, maxWeeks, mode, groupFilter) {
     const results = [];
     for (let w = 1; w <= maxWeeks; w++) {
@@ -255,35 +299,164 @@
         if (val === null || val === undefined) return;
         values.push(val);
       });
-      const avg = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
-      results.push({ week: w, avg, n: values.length });
+      const n = values.length;
+      const avg = n > 0 ? values.reduce((a, b) => a + b, 0) / n : null;
+      let sd = null;
+      if (n > 1) {
+        const variance = values.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / n;
+        sd = Math.sqrt(variance);
+      }
+      results.push({ week: w, avg, sd, n });
     }
     return results;
   }
 
-  function renderNewSigScoreTrendChart(xLabels, series) {
+  // ％ile曲線(LMS法)用に、groupFilterを満たす人・週それぞれの生データ点{x:週, y:スコア}の一覧を作る
+  // (年齢別分布タブのcomputeLmsPercentileCurvesにそのまま渡せる形式)。
+  function computeNewSigRawPoints(users, maxWeeks, mode, groupFilter) {
+    const points = [];
+    for (let w = 1; w <= maxWeeks; w++) {
+      users.forEach(u => {
+        if (groupFilter && !groupFilter(u, w)) return;
+        const val = (w === 1) ? u.week1BaselineAvg : newSigTargetValueForWeek(u, w, mode);
+        if (val === null || val === undefined) return;
+        points.push({ x: w, y: val });
+      });
+    }
+    return points;
+  }
+
+  // 平均±SDモード用: 各点の上下にエラーバー(SDの範囲)を描画するカスタムプラグイン。
+  // データセットに付与した_sdValues配列(週ごとのSD)を使う。
+  const newSigErrorBarPlugin = {
+    id: 'newSigErrorBar',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.datasets.forEach((ds, di) => {
+        if (!ds._sdValues || !chart.isDatasetVisible(di)) return;
+        const meta = chart.getDatasetMeta(di);
+        const yScale = chart.scales[ds.yAxisID || 'y'];
+        if (!yScale) return;
+        ctx.save();
+        ctx.strokeStyle = ds.borderColor;
+        ctx.lineWidth = 1.5;
+        meta.data.forEach((point, idx) => {
+          const val = ds.data[idx] && ds.data[idx].y !== undefined ? ds.data[idx].y : ds.data[idx];
+          const sd = ds._sdValues[idx];
+          if (val === null || val === undefined || sd === null || sd === undefined) return;
+          const yTop = yScale.getPixelForValue(val + sd);
+          const yBottom = yScale.getPixelForValue(val - sd);
+          const x = point.x;
+          const capWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(x, yTop); ctx.lineTo(x, yBottom);
+          ctx.moveTo(x - capWidth, yTop); ctx.lineTo(x + capWidth, yTop);
+          ctx.moveTo(x - capWidth, yBottom); ctx.lineTo(x + capWidth, yBottom);
+          ctx.stroke();
+        });
+        ctx.restore();
+      });
+    }
+  };
+
+  const NEW_SIG_PCT_LABEL = { 3: '3%ile', 5: '5%ile', 10: '10%ile', 25: '25%ile', 50: '中央値', 75: '75%ile', 90: '90%ile', 95: '95%ile', 97: '97%ile' };
+
+  // 系列(group)ごとに、選んだ本数モードに応じたLMS法パーセンタイル曲線のdatasetを積み上げる
+  // (年齢別分布タブのロジックと同じ考え方・色の濃淡)。
+  function buildNewSigPercentileDatasets(series, pctMode) {
+    const datasets = [];
+    series.forEach(s => {
+      const pushPctLine = (label, points, width, opacity, fillTo, bgOpacity, order) => {
+        datasets.push({
+          type: 'line', label: `${s.label} ${label}`, data: points,
+          borderColor: width > 0 ? hexToRgba(s.color, opacity) : 'transparent',
+          backgroundColor: fillTo ? hexToRgba(s.color, bgOpacity) : 'transparent',
+          borderWidth: width, pointRadius: 0, fill: fillTo || false,
+          tension: 0.3, cubicInterpolationMode: 'monotone', pointStyle: 'line', order: order,
+          hidden: s.hidden || false
+        });
+      };
+      const dataArray = s.rawPoints;
+      if (pctMode === '5a') {
+        const curves = computeLmsPercentileCurves(dataArray, [5, 10, 50, 90, 95]);
+        [5, 10, 90, 95].forEach(p => { if (curves[p] && curves[p].length > 0) pushPctLine(NEW_SIG_PCT_LABEL[p], curves[p], 1.5, 0.65, false, 0, 0); });
+        if (curves[50] && curves[50].length > 0) pushPctLine(NEW_SIG_PCT_LABEL[50], curves[50], 3.5, 1, false, 0, -1);
+      } else if (pctMode === '5b') {
+        const curves = computeLmsPercentileCurves(dataArray, [3, 10, 50, 90, 97]);
+        const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50 = curves[50];
+        if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
+          pushPctLine(NEW_SIG_PCT_LABEL[97], p97, 1.5, 0.65, false, 0, 0);
+          pushPctLine(NEW_SIG_PCT_LABEL[90], p90, 1.5, 0.65, '-1', 0.12, 0);
+          pushPctLine(NEW_SIG_PCT_LABEL[10], p10, 1.5, 0.65, '-1', 0.28, 0);
+          pushPctLine(NEW_SIG_PCT_LABEL[3], p3, 1.5, 0.65, '-1', 0.12, 0);
+        }
+        if (p50 && p50.length > 0) pushPctLine(NEW_SIG_PCT_LABEL[50], p50, 3.5, 1, false, 0, -1);
+      } else if (pctMode === '7b') {
+        const curves = computeLmsPercentileCurves(dataArray, [3, 10, 25, 50, 75, 90, 97]);
+        const p97 = curves[97], p90 = curves[90], p10 = curves[10], p3 = curves[3], p50 = curves[50];
+        if (p97 && p97.length > 0 && p90 && p90.length > 0 && p10 && p10.length > 0 && p3 && p3.length > 0) {
+          pushPctLine(NEW_SIG_PCT_LABEL[97], p97, 1.5, 0.65, false, 0, 0);
+          pushPctLine(NEW_SIG_PCT_LABEL[90], p90, 1.5, 0.65, '-1', 0.12, 0);
+          pushPctLine(NEW_SIG_PCT_LABEL[10], p10, 1.5, 0.65, '-1', 0.28, 0);
+          pushPctLine(NEW_SIG_PCT_LABEL[3], p3, 1.5, 0.65, '-1', 0.12, 0);
+        }
+        [25, 75].forEach(p => { if (curves[p] && curves[p].length > 0) pushPctLine(NEW_SIG_PCT_LABEL[p], curves[p], 1.5, 0.65, false, 0, 0); });
+        if (p50 && p50.length > 0) pushPctLine(NEW_SIG_PCT_LABEL[50], p50, 3.5, 1, false, 0, -1);
+      } else if (pctMode === '2') {
+        const curves = computeLmsPercentileCurves(dataArray, [3, 50, 97]);
+        const p97 = curves[97], p3 = curves[3], p50 = curves[50];
+        if (p97 && p97.length > 0 && p3 && p3.length > 0) {
+          pushPctLine(NEW_SIG_PCT_LABEL[97], p97, 0, 0, false, 0, 1);
+          pushPctLine(NEW_SIG_PCT_LABEL[3], p3, 0, 0, '-1', 0.18, 1);
+        }
+        if (p50 && p50.length > 0) pushPctLine(NEW_SIG_PCT_LABEL[50], p50, 1.5, 1, false, 0, -1);
+      } else {
+        const PCT_LIST = [3, 10, 25, 50, 75, 90, 97];
+        const curves = computeLmsPercentileCurves(dataArray, PCT_LIST);
+        PCT_LIST.forEach(p => { if (curves[p] && curves[p].length > 0) pushPctLine(NEW_SIG_PCT_LABEL[p], curves[p], p === 50 ? 3.5 : 1.5, p === 50 ? 1 : 0.65, false, 0, p === 50 ? -1 : 0); });
+      }
+    });
+    return datasets;
+  }
+
+  function renderNewSigScoreTrendChart(weeksList, series, displayMode, pctMode, yRange) {
     const el = document.getElementById('newSigScoreTrendChart');
     if (!el) return;
-    const datasets = series.map(s => ({
-      label: s.label, data: s.values.map(v => v.avg), borderColor: s.color, backgroundColor: s.color,
-      borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0, fill: false, spanGaps: true, hidden: s.hidden || false
-    }));
+
+    const wrapEl = document.getElementById('newSigPctModeWrap');
+    if (wrapEl) wrapEl.classList.toggle('hidden', displayMode !== 'percentile');
+    if (wrapEl) wrapEl.classList.toggle('flex', displayMode === 'percentile');
+
+    let datasets;
+    if (displayMode === 'percentile') {
+      datasets = buildNewSigPercentileDatasets(series, pctMode);
+    } else {
+      datasets = series.map(s => ({
+        label: s.label, data: s.values.map(v => ({ x: v.week, y: v.avg })), borderColor: s.color, backgroundColor: s.color,
+        borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, tension: 0, fill: false, spanGaps: true, hidden: s.hidden || false,
+        _sdValues: s.values.map(v => v.sd)
+      }));
+    }
+
     if (charts.newSigScoreTrend) { charts.newSigScoreTrend.destroy(); charts.newSigScoreTrend = null; }
     charts.newSigScoreTrend = new Chart(el, {
       type: 'line',
-      data: { labels: xLabels, datasets },
+      data: { datasets },
+      plugins: displayMode === 'sd' ? [newSigErrorBarPlugin] : [],
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: true, position: 'top' },
+          legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 12,
+            filter: (item) => item.text && item.text !== '' } },
           tooltip: { callbacks: { label: (ctx) => {
+            if (displayMode === 'percentile') return `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}`;
             const v = series[ctx.datasetIndex].values[ctx.dataIndex];
-            return `${ctx.dataset.label}: ${v.avg === null ? 'データ不足' : v.avg.toFixed(2)} (n=${v.n})`;
+            return `${ctx.dataset.label}: ${v.avg === null ? 'データ不足' : v.avg.toFixed(2)}${v.sd !== null ? ` (SD=${v.sd.toFixed(2)})` : ''} (n=${v.n})`;
           } } }
         },
         scales: {
-          x: { offset: true, title: { display: true, text: '対象週' } },
-          y: { title: { display: true, text: '平均スコア(回/秒)' }, min: 0 }
+          x: { type: 'linear', offset: true, title: { display: true, text: '対象週' }, min: 0.5, max: weeksList.length + 0.5, ticks: { stepSize: 1, precision: 0 } },
+          y: { title: { display: true, text: '平均スコア(回/秒)' }, min: yRange.min !== undefined ? yRange.min : 0, max: yRange.max }
         }
       }
     });
@@ -335,12 +508,16 @@
         excludeFromTotal: g.key === 'total'
       }));
 
+      const scoreDisplayMode = getNewSigScoreDisplayMode();
+      const pctMode = getNewSigPctMode();
+      const scoreYRange = getNewSigScoreYRange();
       const scoreTrendSeries = groupDefs.map(g => ({
         label: g.label, color: g.color,
         values: computeNewSigScoreTrend(users, maxWeeks, targetMode, g.filter),
+        rawPoints: scoreDisplayMode === 'percentile' ? computeNewSigRawPoints(users, maxWeeks, targetMode, g.filter) : null,
         hidden: !visibleGroups.includes(g.key)
       }));
-      renderNewSigScoreTrendChart(xLabels, scoreTrendSeries);
+      renderNewSigScoreTrendChart(weeksList, scoreTrendSeries, scoreDisplayMode, pctMode, scoreYRange);
 
       const showCountBarsEl = document.getElementById('newSigShowCountBars');
       const showCountBars = !!(showCountBarsEl && showCountBarsEl.checked);
