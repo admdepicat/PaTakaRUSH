@@ -140,14 +140,7 @@
   </p>
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200 mb-3">
     <span class="text-gray-500">増加の定義:</span>
-    <label class="flex items-center gap-1 cursor-pointer">
-      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefStrict" value="strict" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
-      <span class="font-normal">完全な単調増加(一度も下がらない)</span>
-    </label>
-    <label class="flex items-center gap-1 cursor-pointer">
-      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefTrend" value="trend" onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
-      <span class="font-normal">回帰直線の傾きが正でR²が</span>
-    </label>
+    <span class="font-normal">回帰直線の傾きが正でR²が</span>
     <input type="text" inputmode="numeric" id="newSig3ContinuityR2" value="0.5" min="0" max="1" step="0.05" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
     <span class="font-normal text-gray-500">以上</span>
     <span id="newSig3ContinuitySummary" class="text-emerald-700"></span>
@@ -572,17 +565,6 @@
     return scores;
   }
 
-  // 完全な単調増加(データがある週同士を順に比べて、一度も下がらず、かつ最初より最後が高い)かどうか
-  function newSig3IsMonotonicIncreasing(scores) {
-    const pts = [];
-    scores.forEach((v, i) => { if (v !== null && v !== undefined) pts.push({ week: i + 1, value: v }); });
-    if (pts.length < 2) return false;
-    for (let i = 1; i < pts.length; i++) {
-      if (pts[i].value < pts[i - 1].value) return false;
-    }
-    return pts[pts.length - 1].value > pts[0].value;
-  }
-
   // 単純な最小二乗回帰。points: [{x,y}]。傾きと決定係数(R²)を返す(2点未満・x方向にばらつきが無ければnull)。
   function newSig3LinearRegression(points) {
     const n = points.length;
@@ -608,11 +590,6 @@
     const reg = newSig3LinearRegression(pts);
     if (!reg) return false;
     return reg.slope > 0 && reg.r2 >= r2Threshold;
-  }
-
-  function getNewSig3ContinuityDef() {
-    const el = document.querySelector('input[name="newSig3ContinuityDef"]:checked');
-    return el ? el.value : 'strict';
   }
 
   function getNewSig3ContinuityR2Threshold() {
@@ -735,9 +712,7 @@
   // 個別の折れ線グラフ・一覧・件数サマリーを表示する(意図的な抽出であり、統計的な検定ではない)。
   // tertilesは、renderNewSig3Chart側で計算済みの基準点3等分パーセンタイル境界(3群の色分け用)。
   function renderNewSig3ContinuitySection(users, maxWeeks, mode, tertiles) {
-    const def = getNewSig3ContinuityDef();
     const r2Threshold = getNewSig3ContinuityR2Threshold();
-    document.getElementById('newSig3ContinuityR2').disabled = (def !== 'trend');
 
     const scheme = getNewSig3ContinuityColorScheme();
     const scheme3Wrap = document.getElementById('newSig3ContinuityScheme3Wrap');
@@ -748,7 +723,7 @@
 
     const matched = users.filter(u => {
       const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
-      return def === 'trend' ? newSig3IsTrendIncreasing(scores, r2Threshold) : newSig3IsMonotonicIncreasing(scores);
+      return newSig3IsTrendIncreasing(scores, r2Threshold);
     }).sort((a, b) => String(a.uid).localeCompare(String(b.uid)));
 
     const summaryEl = document.getElementById('newSig3ContinuitySummary');
