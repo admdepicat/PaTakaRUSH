@@ -235,10 +235,10 @@
 
   <div id="ageBinRegressionSummary" class="text-sm mb-3"></div>
 
-  <h3 class="text-sm font-bold text-gray-700 mb-1">51〜90歳: 最初の年齢群(51〜55歳)との比較</h3>
+  <h3 class="text-sm font-bold text-gray-700 mb-1">51〜90歳: 最初の年齢群(51〜55歳)を基準としたダネット検定</h3>
   <div id="ageBinBaselineCompareTable" class="text-xs mb-2 overflow-x-auto"></div>
   <p class="text-xs text-gray-500 mb-2">
-    ※51〜90歳区分の最初のビン(51〜55歳、幅を変更した場合は先頭のビン)を基準とし、それ以降の各ビンとの間で対応のないt検定(Welch)を行い、有意差(p&lt;0.05)の有無を示しています。
+    ※51〜90歳区分の最初のビン(51〜55歳、幅を変更した場合は先頭のビン)を対照群とし、それ以降の各ビンとの間でダネット検定(全群共通のプールした分散を使用)を行っています。「p値(未補正)」は各比較を単独のt検定として見た場合のp値、「p値(Šidák補正)」は比較数で多重比較調整した後のp値で、判定(有意差あり/なし)はこちらに基づきます。なお、真のダネット分布による厳密な臨界値ではなく、Šidák補正による近似値です。
   </p>
 </div>
 
@@ -958,7 +958,48 @@
     el.innerHTML = lines.join('<br>');
   }
 
-  // 51〜90歳区分について、最初のビン(基準)とそれ以降の各ビンとの対応のないt検定(Welch)の結果を表で表示する
+  // ダネット検定: 1つの対照群(基準)と複数の処置群を比較する多重比較法。全群共通のプールした分散を使い、
+  // 比較数kに応じてŠidák補正で多重比較の家族単位error率を調整する(真のダネット分布による臨界値は
+  // 多変量t分布の数値積分が必要でこの環境では実装が難しいため、実用的な近似として採用している)。
+  // groupsValues[0]=対照群(基準)、groupsValues[1..]=各処置群。
+  function computeDunnettComparisons(groupsValues) {
+    const k = groupsValues.length - 1;
+    if (k < 1) return null;
+
+    let ssWithin = 0, dfWithin = 0;
+    const meansNs = groupsValues.map(values => {
+      const n = values.length;
+      if (n === 0) return { mean: null, n: 0 };
+      const mean = values.reduce((s, v) => s + v, 0) / n;
+      ssWithin += values.reduce((s, v) => s + (v - mean) * (v - mean), 0);
+      dfWithin += (n - 1);
+      return { mean, n };
+    });
+    if (dfWithin <= 0) return null;
+    const pooledVar = ssWithin / dfWithin;
+
+    const baseline = meansNs[0];
+    const results = meansNs.slice(1).map(g => {
+      if (g.n === 0 || baseline.n === 0) return null;
+      const se = Math.sqrt(pooledVar * (1 / g.n + 1 / baseline.n));
+      let pRaw;
+      let t;
+      if (se === 0) {
+        t = g.mean === baseline.mean ? 0 : (g.mean > baseline.mean ? Infinity : -Infinity);
+        pRaw = g.mean === baseline.mean ? 1 : 0;
+      } else {
+        t = (g.mean - baseline.mean) / se;
+        pRaw = churnTPValueFromT(t, dfWithin);
+      }
+      // Šidák補正: k個の比較すべてが偶然有意にならない確率を(1-pRaw)^kとみなし、その裾を補正後p値とする
+      const pAdj = pRaw === null ? null : Math.min(1, 1 - Math.pow(1 - pRaw, k));
+      return { t, pRaw, pAdj, n: g.n, mean: g.mean };
+    });
+
+    return { pooledVar, dfWithin, k, results };
+  }
+
+  // 51〜90歳区分について、最初のビン(基準)とそれ以降の各ビンとの間でダネット検定を行い、結果を表で表示する
   function renderAgeBinBaselineCompareTable(rangeBinInfos, labels, binValuesList) {
     const el = document.getElementById('ageBinBaselineCompareTable');
     if (!el) return;
@@ -968,24 +1009,41 @@
       return;
     }
     const baselineIdx = info.startIdx;
-    const baselineValues = binValuesList[baselineIdx];
     const baselineLabel = labels[baselineIdx];
+    const groupsValues = [];
+    for (let i = baselineIdx; i < info.endIdx; i++) groupsValues.push(binValuesList[i]);
+
+    const dunnett = computeDunnettComparisons(groupsValues);
+    if (!dunnett) {
+      el.innerHTML = '<span class="text-gray-500">データ不足(自由度不足)</span>';
+      return;
+    }
+
     let rows = '';
-    for (let i = baselineIdx + 1; i < info.endIdx; i++) {
-      const p = newSig3UnpairedTTestPValue(baselineValues, binValuesList[i]);
-      const pColor = churnPValueColor(p);
-      const isSig = p !== null && p < 0.05;
+    dunnett.results.forEach((res, idx) => {
+      const label = labels[baselineIdx + 1 + idx];
+      if (!res) {
+        rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${label}歳</td><td class="px-2 py-0.5 border-b border-gray-100" colspan="3">データ不足</td></tr>`;
+        return;
+      }
+      const pColor = churnPValueColor(res.pAdj);
+      const isSig = res.pAdj !== null && res.pAdj < 0.05;
       const sigMark = isSig
         ? '<span style="color:#dc2626; font-weight:bold;">有意差あり</span>'
         : '<span style="color:#6b7280;">有意差なし</span>';
-      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${labels[i]}歳</td>` +
-        `<td class="px-2 py-0.5 border-b border-gray-100" style="color:${pColor};">${churnFormatPValue(p)}</td>` +
+      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${label}歳</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${res.t.toFixed(2)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${churnFormatPValue(res.pRaw)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100" style="color:${pColor};">${churnFormatPValue(res.pAdj)}</td>` +
         `<td class="px-2 py-0.5 border-b border-gray-100">${sigMark}</td></tr>`;
-    }
+    });
     el.innerHTML = `<table class="border-collapse"><thead><tr>` +
       `<th class="px-2 py-1 text-left border-b border-gray-200">年齢群</th>` +
-      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(vs ${baselineLabel}歳)</th>` +
-      `<th class="px-2 py-1 text-left border-b border-gray-200">判定</th></tr></thead><tbody>${rows}</tbody></table>`;
+      `<th class="px-2 py-1 text-left border-b border-gray-200">t値</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(未補正)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(Šidák補正)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">判定</th></tr></thead><tbody>${rows}</tbody></table>` +
+      `<p class="text-xs text-gray-500 mt-1">基準群: ${baselineLabel}歳 / 比較数k=${dunnett.k} / プール分散の自由度=${dunnett.dfWithin}</p>`;
   }
 
   function updateAgeBinBarChart() {
