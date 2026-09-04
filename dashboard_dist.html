@@ -232,6 +232,14 @@
   <p class="text-sm text-gray-600 mb-2">
     ※対象=全体・期間=2週間で固定した生の散布データを、3つの年齢区分(3〜20歳/21〜50歳/51〜90歳)ごとに指定した幅でさらに分割し、各区間に該当する対象者の4文字平均値について、平均値(棒の高さ)と標準偏差(エラーバー・±1SD)を表示しています。
   </p>
+
+  <div id="ageBinRegressionSummary" class="text-sm mb-3"></div>
+
+  <h3 class="text-sm font-bold text-gray-700 mb-1">51〜90歳: 最初の年齢群(51〜55歳)との比較</h3>
+  <div id="ageBinBaselineCompareTable" class="text-xs mb-2 overflow-x-auto"></div>
+  <p class="text-xs text-gray-500 mb-2">
+    ※51〜90歳区分の最初のビン(51〜55歳、幅を変更した場合は先頭のビン)を基準とし、それ以降の各ビンとの間で対応のないt検定(Welch)を行い、有意差(p&lt;0.05)の有無を示しています。
+  </p>
 </div>
 
 <script>
@@ -909,6 +917,77 @@
     }
   };
 
+  // 単回帰(最小二乗法)の傾き・R²・傾きの有意性(両側t検定)を求める。points: [{x,y}]
+  function computeRegressionSlopeStats(points) {
+    const n = points.length;
+    if (n < 3) return null; // 自由度(n-2)が1以上必要
+    const xbar = points.reduce((s, p) => s + p.x, 0) / n;
+    const ybar = points.reduce((s, p) => s + p.y, 0) / n;
+    let sxx = 0, sxy = 0, syy = 0;
+    points.forEach(p => {
+      sxx += (p.x - xbar) * (p.x - xbar);
+      sxy += (p.x - xbar) * (p.y - ybar);
+      syy += (p.y - ybar) * (p.y - ybar);
+    });
+    if (sxx === 0) return null;
+    const slope = sxy / sxx;
+    const sse = Math.max(0, syy - slope * sxy);
+    const df = n - 2;
+    const mse = sse / df;
+    const seSlope = Math.sqrt(mse / sxx);
+    const p = seSlope === 0 ? (slope === 0 ? 1 : 0) : churnTPValueFromT(slope / seSlope, df);
+    const r2 = syy === 0 ? 0 : (sxy * sxy) / (sxx * syy);
+    return { slope, r2, p, n };
+  }
+
+  // 大区分ごとの回帰結果(傾き・R²・p値)をテキストで表示する
+  function renderAgeBinRegressionSummary(allScatterData) {
+    const el = document.getElementById('ageBinRegressionSummary');
+    if (!el) return;
+    const lines = AGE_BIN_RANGES.map(range => {
+      const rangeLabel = `${range.min}〜${range.max}歳`;
+      const points = allScatterData.filter(d => d && d.x !== undefined && d.x >= range.min && d.x <= range.max).map(d => ({ x: d.x, y: d.y }));
+      const reg = computeRegressionSlopeStats(points);
+      const labelSpan = `<span style="color:${range.color}; font-weight:bold;">${rangeLabel}</span>`;
+      if (!reg) return `${labelSpan}: データ不足`;
+      const direction = reg.slope > 0 ? '増加傾向' : (reg.slope < 0 ? '低下傾向' : '変化なし');
+      const isSig = reg.p !== null && reg.p < 0.05;
+      const pColor = churnPValueColor(reg.p);
+      return `${labelSpan}: 傾き=${reg.slope.toFixed(3)}, R²=${reg.r2.toFixed(3)}, <span style="color:${pColor};">p=${churnFormatPValue(reg.p)}</span> → ${direction}${isSig ? '(有意)' : '(非有意)'}`;
+    });
+    el.innerHTML = lines.join('<br>');
+  }
+
+  // 51〜90歳区分について、最初のビン(基準)とそれ以降の各ビンとの対応のないt検定(Welch)の結果を表で表示する
+  function renderAgeBinBaselineCompareTable(rangeBinInfos, labels, binValuesList) {
+    const el = document.getElementById('ageBinBaselineCompareTable');
+    if (!el) return;
+    const info = rangeBinInfos.find(r => r.range.min === 51);
+    if (!info || info.endIdx - info.startIdx < 2) {
+      el.innerHTML = '<span class="text-gray-500">データ不足</span>';
+      return;
+    }
+    const baselineIdx = info.startIdx;
+    const baselineValues = binValuesList[baselineIdx];
+    const baselineLabel = labels[baselineIdx];
+    let rows = '';
+    for (let i = baselineIdx + 1; i < info.endIdx; i++) {
+      const p = newSig3UnpairedTTestPValue(baselineValues, binValuesList[i]);
+      const pColor = churnPValueColor(p);
+      const isSig = p !== null && p < 0.05;
+      const sigMark = isSig
+        ? '<span style="color:#dc2626; font-weight:bold;">有意差あり</span>'
+        : '<span style="color:#6b7280;">有意差なし</span>';
+      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${labels[i]}歳</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100" style="color:${pColor};">${churnFormatPValue(p)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${sigMark}</td></tr>`;
+    }
+    el.innerHTML = `<table class="border-collapse"><thead><tr>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">年齢群</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(vs ${baselineLabel}歳)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">判定</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
   function updateAgeBinBarChart() {
     try {
       const el = document.getElementById('ageBinBarChart');
@@ -924,18 +1003,26 @@
       const labels = [];
       const stats = [];
       const barColors = [];
+      const binValuesList = [];
+      const rangeBinInfos = [];
       AGE_BIN_RANGES.forEach(range => {
         const widthEl = document.getElementById(range.widthId);
         const width = widthEl && widthEl.value ? Math.max(1, parseInt(widthEl.value, 10)) : 1;
         const bins = computeAgeBins(range.min, range.max, width);
+        const startIdx = labels.length;
         bins.forEach(bin => {
           const values = allScatterData.filter(d => d && d.x !== undefined && d.x >= bin.min && d.x <= bin.max).map(d => d.y);
           const stat = churnMeanSd(values);
           labels.push(bin.min === bin.max ? `${bin.min}` : `${bin.min}-${bin.max}`);
           stats.push(stat);
           barColors.push(range.color);
+          binValuesList.push(values);
         });
+        rangeBinInfos.push({ range, startIdx, endIdx: labels.length });
       });
+
+      renderAgeBinRegressionSummary(allScatterData);
+      renderAgeBinBaselineCompareTable(rangeBinInfos, labels, binValuesList);
 
       const dataset = {
         label: '4文字平均値(平均±1SD)',

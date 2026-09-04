@@ -1464,6 +1464,13 @@
     return 1 - bt * churnBetacf(1 - x, b, a) / b;
   }
 
+  // t統計量と自由度から両側p値を求める(t分布の裾確率、不完全ベータ関数による近似)
+  function churnTPValueFromT(t, df) {
+    if (df <= 0) return null;
+    const x = df / (df + t * t);
+    return churnIncompleteBeta(x, df / 2, 0.5);
+  }
+
   // 対応のある(paired)t検定の両側p値。差の配列を受け取る
   function churnPairedTTestPValue(diffs) {
     const n = diffs.length;
