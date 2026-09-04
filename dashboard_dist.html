@@ -199,6 +199,36 @@
     <span data-i18n="descAgeRangePoly1">※対象=全体・期間=2週間で固定した生の散布データのうち、選択した年齢範囲に該当するものに対して多項式近似式を表示しています。</span><br>
     <span data-i18n="descAgeRangePoly2">※次数は1(直線)がデフォルトです。「全年齢」を選択した場合のみ、50%ile(中央値)の曲線もあわせて表示します。</span>
   </p>
+
+  <hr class="my-8 border-gray-200">
+
+  <!-- ============================================== -->
+  <!-- パネル 1-top3: 年齢区分別 平均値±標準偏差 -->
+  <!-- ============================================== -->
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between mb-4 gap-4">
+    <h2 class="text-lg font-bold text-gray-800">年齢区分別 平均値±標準偏差</h2>
+    <div class="flex flex-wrap items-center gap-2 bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+      <span class="text-gray-500 text-sm font-bold">3〜20歳の幅:</span>
+      <input type="number" id="ageBinWidth1" value="3" min="1" max="18" step="1" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeBinBarChart()">
+      <span class="text-gray-500 text-sm">歳ごと</span>
+      <span class="text-gray-300 mx-1">|</span>
+      <span class="text-gray-500 text-sm font-bold">21〜50歳の幅:</span>
+      <input type="number" id="ageBinWidth2" value="5" min="1" max="30" step="1" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeBinBarChart()">
+      <span class="text-gray-500 text-sm">歳ごと</span>
+      <span class="text-gray-300 mx-1">|</span>
+      <span class="text-gray-500 text-sm font-bold">51〜90歳の幅:</span>
+      <input type="number" id="ageBinWidth3" value="5" min="1" max="40" step="1" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeBinBarChart()">
+      <span class="text-gray-500 text-sm">歳ごと</span>
+    </div>
+  </div>
+
+  <div class="chart-container max-w-5xl mx-auto mt-4 mb-4">
+    <canvas id="ageBinBarChart"></canvas>
+  </div>
+
+  <p class="text-sm text-gray-600 mb-2">
+    ※対象=全体・期間=2週間で固定した生の散布データを、3つの年齢区分(3〜20歳/21〜50歳/51〜90歳)ごとに指定した幅でさらに分割し、各区間に該当する対象者の4文字平均値について、平均値(棒の高さ)と標準偏差(エラーバー・±1SD)を表示しています。
+  </p>
 </div>
 
 <script>
@@ -358,6 +388,7 @@
       currentDistData = targetData;
       updateTopScatterChart();
       updateAgeRangePolyChart();
+      updateAgeBinBarChart();
 
     } catch (error) {
       console.error(error);
@@ -825,6 +856,124 @@
         chart.options.scales.y.title.text = t('axisScore');
         chart.update();
       }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  // ===== 年齢区分別 平均値±標準偏差(棒グラフ) =====
+  // 3つの大区分(3〜20/21〜50/51〜90歳)を、それぞれ指定した幅で整数刻みのビンに分割する。
+  // 端数が出た場合、最後のビンは大区分の上限に合わせて縮める。
+  function computeAgeBins(rangeMin, rangeMax, width) {
+    const bins = [];
+    let start = rangeMin;
+    while (start <= rangeMax) {
+      const end = Math.min(start + width - 1, rangeMax);
+      bins.push({ min: start, max: end });
+      start = end + 1;
+    }
+    return bins;
+  }
+
+  const AGE_BIN_RANGES = [
+    { min: 3, max: 20, widthId: 'ageBinWidth1', color: '#0ea5e9' },
+    { min: 21, max: 50, widthId: 'ageBinWidth2', color: '#8b5cf6' },
+    { min: 51, max: 90, widthId: 'ageBinWidth3', color: '#f97316' }
+  ];
+
+  const ageBinErrorBarPlugin = {
+    id: 'ageBinErrorBarPlugin',
+    afterDatasetsDraw(chart) {
+      const meta = chart._ageBinStats;
+      if (!meta) return;
+      const { ctx } = chart;
+      const xScale = chart.scales.x, yScale = chart.scales.y;
+      meta.forEach((stat, i) => {
+        if (!stat || stat.sd === undefined) return;
+        const xPix = xScale.getPixelForValue(i);
+        const yTop = yScale.getPixelForValue(stat.mean + stat.sd);
+        const yBottom = yScale.getPixelForValue(Math.max(0, stat.mean - stat.sd));
+        const capWidth = 8;
+        ctx.save();
+        ctx.strokeStyle = '#374151'; ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(xPix, yTop); ctx.lineTo(xPix, yBottom);
+        ctx.moveTo(xPix - capWidth / 2, yTop); ctx.lineTo(xPix + capWidth / 2, yTop);
+        ctx.moveTo(xPix - capWidth / 2, yBottom); ctx.lineTo(xPix + capWidth / 2, yBottom);
+        ctx.stroke();
+        ctx.restore();
+      });
+    }
+  };
+
+  function updateAgeBinBarChart() {
+    try {
+      const el = document.getElementById('ageBinBarChart');
+      if (!el) return;
+
+      const targetData = getTopEffectiveScatterData('2w');
+      const allScatterData = [...(targetData.male || []), ...(targetData.female || []), ...(targetData.other || [])];
+
+      const labels = [];
+      const stats = [];
+      const barColors = [];
+      AGE_BIN_RANGES.forEach(range => {
+        const widthEl = document.getElementById(range.widthId);
+        const width = widthEl && widthEl.value ? Math.max(1, parseInt(widthEl.value, 10)) : 1;
+        const bins = computeAgeBins(range.min, range.max, width);
+        bins.forEach(bin => {
+          const values = allScatterData.filter(d => d && d.x !== undefined && d.x >= bin.min && d.x <= bin.max).map(d => d.y);
+          const stat = churnMeanSd(values);
+          labels.push(bin.min === bin.max ? `${bin.min}` : `${bin.min}-${bin.max}`);
+          stats.push(stat);
+          barColors.push(range.color);
+        });
+      });
+
+      const dataset = {
+        label: '4文字平均値(平均±1SD)',
+        data: stats.map(s => s ? s.mean : 0),
+        backgroundColor: barColors.map(c => hexToRgba(c, 0.6)),
+        borderColor: barColors, borderWidth: 1
+      };
+
+      if (!charts.ageBinBar) {
+        charts.ageBinBar = new Chart(el, {
+          type: 'bar',
+          data: { labels, datasets: [dataset] },
+          plugins: [ageBinErrorBarPlugin],
+          options: {
+            responsive: true, maintainAspectRatio: true, aspectRatio: typeof getGlobalAspectRatio === 'function' ? getGlobalAspectRatio() : 16 / 9,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => {
+                    const s = stats[ctx.dataIndex];
+                    if (!s) return t('noData');
+                    return `平均: ${s.mean.toFixed(2)} ± ${s.sd.toFixed(2)} (n=${s.n})`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { title: { display: true, text: t('axisAge') } },
+              y: { title: { display: true, text: t('axisScore') }, min: 0 }
+            }
+          }
+        });
+      } else {
+        const chart = charts.ageBinBar;
+        chart.data.labels = labels;
+        chart.data.datasets = [dataset];
+        chart._ageBinStats = stats;
+        chart.options.scales.x.title.text = t('axisAge');
+        chart.options.scales.y.title.text = t('axisScore');
+        chart.update();
+        return;
+      }
+      charts.ageBinBar._ageBinStats = stats;
+      charts.ageBinBar.update();
     } catch (error) {
       console.error(error);
     }
