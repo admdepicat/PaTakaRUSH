@@ -235,6 +235,13 @@
 
   <div id="ageBinRegressionSummary" class="text-sm mb-3"></div>
 
+  <h3 class="text-sm font-bold text-gray-700 mb-1">21〜50歳: 各年齢群間の比較(一元配置分散分析 + Bonferroni多重比較)</h3>
+  <div id="ageBinAnovaSummary" class="text-sm mb-2"></div>
+  <div id="ageBinPostHocTable" class="text-xs mb-2 overflow-x-auto"></div>
+  <p class="text-xs text-gray-500 mb-3">
+    ※21〜50歳区分の各年齢群(ビン)について、まず一元配置分散分析(ANOVA)で群間に差があるかを検定し、続いて全ての2群間の組み合わせについてBonferroni補正した多重比較(t検定、ANOVAで求めたプール分散を使用)を行っています。
+  </p>
+
   <h3 class="text-sm font-bold text-gray-700 mb-1">51〜90歳: 最初の年齢群(51〜55歳)を基準としたダネット検定</h3>
   <div id="ageBinBaselineCompareTable" class="text-xs mb-2 overflow-x-auto"></div>
   <p class="text-xs text-gray-500 mb-2">
@@ -962,6 +969,127 @@
   // 比較数kに応じてŠidák補正で多重比較の家族単位error率を調整する(真のダネット分布による臨界値は
   // 多変量t分布の数値積分が必要でこの環境では実装が難しいため、実用的な近似として採用している)。
   // groupsValues[0]=対照群(基準)、groupsValues[1..]=各処置群。
+  // 一元配置分散分析(ANOVA)。groupsValuesは各群の値配列のリスト。群間・群内の平方和からF値とp値を求める。
+  function computeOneWayAnova(groupsValues) {
+    const k = groupsValues.length;
+    if (k < 2) return null;
+    const allValues = [].concat(...groupsValues);
+    const N = allValues.length;
+    if (N === 0) return null;
+    const grandMean = allValues.reduce((s, v) => s + v, 0) / N;
+
+    let ssBetween = 0, ssWithin = 0;
+    const groupStats = groupsValues.map(values => {
+      const n = values.length;
+      if (n === 0) return { mean: null, n: 0 };
+      const mean = values.reduce((s, v) => s + v, 0) / n;
+      ssBetween += n * (mean - grandMean) * (mean - grandMean);
+      ssWithin += values.reduce((s, v) => s + (v - mean) * (v - mean), 0);
+      return { mean, n };
+    });
+
+    const dfBetween = k - 1;
+    const dfWithin = N - k;
+    if (dfWithin <= 0) return null;
+    const msBetween = ssBetween / dfBetween;
+    const msWithin = ssWithin / dfWithin;
+    let f, p;
+    if (msWithin === 0) {
+      f = msBetween === 0 ? 0 : Infinity;
+      p = msBetween === 0 ? 1 : 0;
+    } else {
+      f = msBetween / msWithin;
+      p = churnFPValueFromF(f, dfBetween, dfWithin);
+    }
+    return { f, p, dfBetween, dfWithin, msBetween, msWithin, groupStats };
+  }
+
+  // ANOVAで求めたプールした群内分散(msWithin)を使い、全てのペアについてt検定を行い、
+  // Bonferroni補正(生のp値 × 比較数)で多重比較を調整する。
+  function computeBonferroniPostHoc(groupsValues) {
+    const anova = computeOneWayAnova(groupsValues);
+    if (!anova) return null;
+    const k = groupsValues.length;
+    const numPairs = k * (k - 1) / 2;
+    const pairs = [];
+    for (let i = 0; i < k; i++) {
+      for (let j = i + 1; j < k; j++) {
+        const gi = anova.groupStats[i], gj = anova.groupStats[j];
+        if (gi.n === 0 || gj.n === 0) { pairs.push({ i, j, t: null, pRaw: null, pAdj: null }); continue; }
+        const se = Math.sqrt(anova.msWithin * (1 / gi.n + 1 / gj.n));
+        let t, pRaw;
+        if (se === 0) {
+          t = gi.mean === gj.mean ? 0 : (gi.mean > gj.mean ? Infinity : -Infinity);
+          pRaw = gi.mean === gj.mean ? 1 : 0;
+        } else {
+          t = (gi.mean - gj.mean) / se;
+          pRaw = churnTPValueFromT(t, anova.dfWithin);
+        }
+        const pAdj = pRaw === null ? null : Math.min(1, pRaw * numPairs);
+        pairs.push({ i, j, t, pRaw, pAdj });
+      }
+    }
+    return { anova, numPairs, pairs };
+  }
+
+  // 21〜50歳区分について、一元配置分散分析(全体差の有無)とBonferroni補正した全ペア比較を表示する
+  function renderAgeBinAnovaSection(rangeBinInfos, labels, binValuesList) {
+    const summaryEl = document.getElementById('ageBinAnovaSummary');
+    const tableEl = document.getElementById('ageBinPostHocTable');
+    if (!summaryEl || !tableEl) return;
+
+    const info = rangeBinInfos.find(r => r.range.min === 21);
+    if (!info || info.endIdx - info.startIdx < 2) {
+      summaryEl.innerHTML = '<span class="text-gray-500">データ不足</span>';
+      tableEl.innerHTML = '';
+      return;
+    }
+
+    const groupsValues = [];
+    for (let i = info.startIdx; i < info.endIdx; i++) groupsValues.push(binValuesList[i]);
+    const groupLabels = labels.slice(info.startIdx, info.endIdx);
+
+    const postHoc = computeBonferroniPostHoc(groupsValues);
+    if (!postHoc) {
+      summaryEl.innerHTML = '<span class="text-gray-500">データ不足(自由度不足)</span>';
+      tableEl.innerHTML = '';
+      return;
+    }
+
+    const anova = postHoc.anova;
+    const pColor = churnPValueColor(anova.p);
+    const isSig = anova.p !== null && anova.p < 0.05;
+    summaryEl.innerHTML = `一元配置分散分析: F(${anova.dfBetween}, ${anova.dfWithin}) = ${anova.f.toFixed(2)}, ` +
+      `<span style="color:${pColor};">p=${churnFormatPValue(anova.p)}</span> → ` +
+      (isSig ? '<span style="color:#dc2626; font-weight:bold;">群間に有意差あり</span>' : '<span style="color:#6b7280;">群間に有意差なし</span>');
+
+    let rows = '';
+    postHoc.pairs.forEach(pair => {
+      const labelI = groupLabels[pair.i], labelJ = groupLabels[pair.j];
+      if (pair.t === null) {
+        rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${labelI}歳 vs ${labelJ}歳</td><td class="px-2 py-0.5 border-b border-gray-100" colspan="3">データ不足</td></tr>`;
+        return;
+      }
+      const pc = churnPValueColor(pair.pAdj);
+      const isSigPair = pair.pAdj !== null && pair.pAdj < 0.05;
+      const sigMark = isSigPair
+        ? '<span style="color:#dc2626; font-weight:bold;">有意差あり</span>'
+        : '<span style="color:#6b7280;">有意差なし</span>';
+      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${labelI}歳 vs ${labelJ}歳</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${pair.t.toFixed(2)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${churnFormatPValue(pair.pRaw)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100" style="color:${pc};">${churnFormatPValue(pair.pAdj)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${sigMark}</td></tr>`;
+    });
+    tableEl.innerHTML = `<table class="border-collapse"><thead><tr>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">比較</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">t値</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(未補正)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(Bonferroni補正)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">判定</th></tr></thead><tbody>${rows}</tbody></table>` +
+      `<p class="text-xs text-gray-500 mt-1">比較数=${postHoc.numPairs}組 / プール分散の自由度=${anova.dfWithin}</p>`;
+  }
+
   function computeDunnettComparisons(groupsValues) {
     const k = groupsValues.length - 1;
     if (k < 1) return null;
@@ -1080,6 +1208,7 @@
       });
 
       renderAgeBinRegressionSummary(allScatterData);
+      renderAgeBinAnovaSection(rangeBinInfos, labels, binValuesList);
       renderAgeBinBaselineCompareTable(rangeBinInfos, labels, binValuesList);
 
       const dataset = {

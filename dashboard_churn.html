@@ -1471,6 +1471,14 @@
     return churnIncompleteBeta(x, df / 2, 0.5);
   }
 
+  // F統計量と2つの自由度から片側(上側)p値を求める(F分布の裾確率、不完全ベータ関数による近似)
+  function churnFPValueFromF(f, df1, df2) {
+    if (df1 <= 0 || df2 <= 0) return null;
+    if (f <= 0) return 1;
+    const x = df1 * f / (df1 * f + df2);
+    return 1 - churnIncompleteBeta(x, df1 / 2, df2 / 2);
+  }
+
   // 対応のある(paired)t検定の両側p値。差の配列を受け取る
   function churnPairedTTestPValue(diffs) {
     const n = diffs.length;
