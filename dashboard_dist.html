@@ -1,7 +1,7 @@
 <!-- ============================================== -->
 <!-- パネル 1: 年齢別分布 -->
 <!-- ============================================== -->
-<div id="panel-dist" class="hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+<div id="panel-dist" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
   
   <!-- テスト用：言語切り替えボタンスペース -->
   <div class="flex justify-end mb-2">
@@ -1150,8 +1150,10 @@
     let rows = '';
     postHoc.pairs.forEach(pair => {
       const labelI = groupLabels[pair.i], labelJ = groupLabels[pair.j];
+      const nI = anova.groupStats[pair.i].n, nJ = anova.groupStats[pair.j].n;
+      const compareLabel = `${labelI}歳(n=${nI}) vs ${labelJ}歳(n=${nJ})`;
       if (pair.t === null) {
-        rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${labelI}歳 vs ${labelJ}歳</td><td class="px-2 py-0.5 border-b border-gray-100" colspan="3">データ不足</td></tr>`;
+        rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${compareLabel}</td><td class="px-2 py-0.5 border-b border-gray-100" colspan="3">データ不足</td></tr>`;
         return;
       }
       const pc = churnPValueColor(pair.pAdj);
@@ -1159,7 +1161,7 @@
       const sigMark = isSigPair
         ? '<span style="color:#dc2626; font-weight:bold;">有意差あり</span>'
         : '<span style="color:#6b7280;">有意差なし</span>';
-      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${labelI}歳 vs ${labelJ}歳</td>` +
+      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${compareLabel}</td>` +
         `<td class="px-2 py-0.5 border-b border-gray-100">${pair.t.toFixed(2)}</td>` +
         `<td class="px-2 py-0.5 border-b border-gray-100">${churnFormatPValue(pair.pRaw)}</td>` +
         `<td class="px-2 py-0.5 border-b border-gray-100" style="color:${pc};">${churnFormatPValue(pair.pAdj)}</td>` +
