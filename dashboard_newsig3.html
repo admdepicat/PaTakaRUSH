@@ -527,9 +527,15 @@
           onLegendClick: NEW_SIG3_LINKED_TIER_KEYS.includes(t.key) ? newSig3TierLegendOnClick(t.key) : undefined,
           onPointClick: (datasetIndex, pointIndex) => {
             const g = allDefsForTier[datasetIndex];
-            if (!g || g.isCompare) return; // 群間比較の点は「対応のある」箱ひげ図では表現できないためクリック無効
+            if (!g) return;
             const week = weeksList[pointIndex];
-            renderNewSig3Boxplot(boxIds, g, week, users, targetMode);
+            if (g.isCompare) {
+              // 群間比較(低日数群 vs 高日数群)は対応のある箱ひげ図では表現できないため、
+              // 対応のない(別人同士の)2群のスコア分布を並べた箱ひげ図を表示する。
+              renderNewSig3UnpairedBoxplot(boxIds, week, users, targetMode, groupDefsForTier[0], groupDefsForTier[1]);
+            } else {
+              renderNewSig3Boxplot(boxIds, g, week, users, targetMode);
+            }
           }
         });
       });
@@ -557,6 +563,125 @@
     if (captionEl) captionEl.textContent = `${group.label} 基準点 → ${week}週目 (対象: ${pairs.length}人)`;
 
     renderChurnPairedBoxplot(boxIds.chart, boxIds.key, boxIds.sig, pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
+  }
+
+  // クリックされた「低日数群 vs 高日数群」(黒い点)・対象週について、対応のない2群
+  // (低日数群の人たち/高日数群の人たちは別人)の対象週時点でのスコア分布を、並べた箱ひげ図で表示する。
+  function renderNewSig3UnpairedBoxplot(boxIds, week, users, mode, lowGroup, highGroup) {
+    const valuesLow = [], valuesHigh = [];
+    users.forEach(u => {
+      const v = newSig3TargetValueForWeek(u, week, mode);
+      if (v === null || v === undefined) return;
+      if (lowGroup.filter(u, week)) valuesLow.push(v);
+      if (highGroup.filter(u, week)) valuesHigh.push(v);
+    });
+
+    const captionEl = document.getElementById(boxIds.caption);
+    if (captionEl) captionEl.textContent = `${lowGroup.label} vs ${highGroup.label}(対応なし) ${week}週目 (${lowGroup.label}: ${valuesLow.length}人 / ${highGroup.label}: ${valuesHigh.length}人)`;
+
+    renderNewSig3UnpairedBoxplotChart(boxIds.chart, boxIds.key, boxIds.sig, valuesLow, valuesHigh, 0, 10, [lowGroup.label, highGroup.label], 0.8);
+  }
+
+  // 対応のない2群のスコア分布を、箱ひげ図(中央値・四分位範囲・最小最大)+個々の値の散布点で並べて表示する。
+  // renderChurnPairedBoxplotと異なり、同じ人を結ぶ線は描かない(2群は別人の集合のため)。
+  function renderNewSig3UnpairedBoxplotChart(canvasId, chartKey, sigElementId, valuesLow, valuesHigh, yMin, yMax, xLabels, xPad) {
+    xPad = xPad !== undefined ? xPad : 0.5;
+    const el = document.getElementById(canvasId);
+    const sigEl = document.getElementById(sigElementId);
+    if (!el) return;
+
+    if (charts[chartKey]) { charts[chartKey].destroy(); charts[chartKey] = null; }
+    if (sigEl) sigEl.textContent = '';
+    if ((!valuesLow || valuesLow.length === 0) && (!valuesHigh || valuesHigh.length === 0)) return;
+
+    const statsLow = churnComputeBoxStats(valuesLow);
+    const statsHigh = churnComputeBoxStats(valuesHigh);
+    const pValue = newSig3UnpairedTTestPValue(valuesLow, valuesHigh);
+    const pValueText = churnFormatPValue(pValue);
+    const isSignificant = pValue !== null && pValue < 0.05;
+    const pColor = churnPValueColor(pValue);
+    if (sigEl) {
+      sigEl.textContent = isSignificant ? '' : `有意差なし (${pValueText})`;
+      sigEl.style.color = pColor;
+    }
+    const COLOR_LOW = '#2563eb', COLOR_HIGH = '#be185d';
+
+    // 個々の値を横方向にわずかにジッターさせた散布点として表示する(対応なしのため、線で結ばない)
+    const jitter = (i) => ((i % 7) - 3) * 0.05;
+    const scatterLow = {
+      type: 'scatter', label: xLabels[0], data: valuesLow.map((v, i) => ({ x: 1 + jitter(i), y: v })),
+      backgroundColor: 'rgba(37, 99, 235, 0.5)', pointRadius: 3, pointHoverRadius: 5
+    };
+    const scatterHigh = {
+      type: 'scatter', label: xLabels[1], data: valuesHigh.map((v, i) => ({ x: 2 + jitter(i), y: v })),
+      backgroundColor: 'rgba(190, 24, 93, 0.5)', pointRadius: 3, pointHoverRadius: 5
+    };
+
+    const boxPlugin = {
+      id: `newSig3UnpairedBoxPlugin_${canvasId}`,
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea } = chart;
+        const xScale = chart.scales.x, yScale = chart.scales.y;
+        const boxWidth = 44;
+        const drawBox = (x, stats, color) => {
+          if (!stats) return;
+          const xPix = xScale.getPixelForValue(x);
+          const yQ1 = yScale.getPixelForValue(stats.q1);
+          const yQ3 = yScale.getPixelForValue(stats.q3);
+          const yMed = yScale.getPixelForValue(stats.median);
+          const yMinPix = yScale.getPixelForValue(stats.min);
+          const yMaxPix = yScale.getPixelForValue(stats.max);
+          ctx.save();
+          ctx.strokeStyle = color; ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(xPix, yMaxPix); ctx.lineTo(xPix, yQ3);
+          ctx.moveTo(xPix, yQ1); ctx.lineTo(xPix, yMinPix);
+          ctx.stroke();
+          ctx.strokeRect(xPix - boxWidth / 2, yQ3, boxWidth, yQ1 - yQ3);
+          ctx.beginPath();
+          ctx.moveTo(xPix - boxWidth / 2, yMed); ctx.lineTo(xPix + boxWidth / 2, yMed);
+          ctx.stroke();
+          ctx.restore();
+        };
+        drawBox(1, statsLow, COLOR_LOW);
+        drawBox(2, statsHigh, COLOR_HIGH);
+
+        // 対応のないt検定(Welch)のp値をブラケット付きで表示(有意差がある場合のみ)
+        if (isSignificant) {
+          const x1 = xScale.getPixelForValue(1), x2 = xScale.getPixelForValue(2);
+          const yBracket = chartArea.top + 18;
+          ctx.save();
+          ctx.strokeStyle = pColor; ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(x1, yBracket + 8); ctx.lineTo(x1, yBracket);
+          ctx.lineTo(x2, yBracket); ctx.lineTo(x2, yBracket + 8);
+          ctx.stroke();
+          ctx.fillStyle = pColor;
+          ctx.font = 'bold 12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(pValueText, (x1 + x2) / 2, yBracket - 4);
+          ctx.restore();
+        }
+      }
+    };
+
+    charts[chartKey] = new Chart(el, {
+      type: 'scatter',
+      data: { datasets: [scatterLow, scatterHigh] },
+      plugins: [boxPlugin],
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { top: 28 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
+        },
+        scales: {
+          x: { type: 'linear', min: 1 - xPad, max: 2 + xPad, ticks: { stepSize: 1, callback: (v) => v === 1 ? xLabels[0] : (v === 2 ? xLabels[1] : '') } },
+          y: { title: { display: true, text: 'スコア(回/秒)' }, min: yMin, max: yMax, ticks: { stepSize: 1, precision: 0 } }
+        }
+      }
+    });
   }
 
   // ===== 有意差3タブ: 「継続は力なり」セクション(徐々に伸びた人のピックアップ) =====
