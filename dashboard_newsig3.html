@@ -272,6 +272,14 @@
   <h5 class="text-sm font-bold text-gray-700 mt-2 mb-1">利用日数のヒートマップ</h5>
   <div id="newSig3NoEffectHeatmap" class="mt-1" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
+  <hr class="my-6 border-gray-200">
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">2つのグループの比較(伸びた人 vs 伸びていない人)</h4>
+  <p class="text-xs text-gray-500 mb-2">
+    ※上の「継続は力なり」(伸びた人)と「頑張っているのに、あまり伸びていない人」の2グループについて、年齢・基準点(初期スコア)・利用日数の傾向を比較します(平均値±標準偏差)。あくまで参考値であり、統計的な検定は行っていません。
+  </p>
+  <div id="newSig3GroupComparisonTable" class="text-xs overflow-x-auto"></div>
+
 </div>
 
 <script>
@@ -582,6 +590,7 @@
 
       renderNewSig3ContinuitySection(users, maxWeeks, targetMode, tertiles);
       renderNewSig3NoEffectSection(users, maxWeeks, targetMode);
+      renderNewSig3GroupComparison(maxWeeks);
     } catch (error) {
       console.error(error);
     }
@@ -727,6 +736,7 @@
 
   // ===== 有意差3タブ: 「継続は力なり」セクション(徐々に伸びた人のピックアップ) =====
   let newSig3ContinuitySelectedUid = null; // 折れ線グラフでクリックして選択中のuid(このセクション専用)
+  let newSig3ContinuityMatchedUsers = []; // 直近の該当者(グループ比較パネルで参照する)
 
   // 週1〜maxWeeksについて、1週目は基準点、それ以降はnewSig3TargetValueForWeekを使った
   // そのユーザーのスコア推移(null=その週データなし)を返す。
@@ -916,6 +926,7 @@
       const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
       return def === 'trend' ? newSig3IsTrendIncreasing(scores, r2Threshold) : newSig3IsMonotonicIncreasing(scores);
     }).sort((a, b) => String(a.uid).localeCompare(String(b.uid)));
+    newSig3ContinuityMatchedUsers = matched; // グループ比較パネル用に保持
 
     const summaryEl = document.getElementById('newSig3ContinuitySummary');
     if (summaryEl) {
@@ -1046,6 +1057,7 @@
   // 「継続は力なり」セクション(伸びた人)とは逆の条件だが、構造(スコア推移・利用日数推移・ヒートマップ・
   // クリックでの黒太線強調)は共通なので同じパターンで実装している。
   let newSig3NoEffectSelectedUid = null;
+  let newSig3NoEffectMatchedUsers = []; // 直近の該当者(グループ比較パネルで参照する)
 
   function getNewSig3NoEffectMaxZeroWeeks() {
     const el = document.getElementById('newSig3NoEffectMaxZeroWeeks');
@@ -1092,6 +1104,7 @@
       if (!reg) return false;
       return reg.slope <= slopeMax;
     }).sort((a, b) => String(a.uid).localeCompare(String(b.uid)));
+    newSig3NoEffectMatchedUsers = matched; // グループ比較パネル用に保持
 
     const summaryEl = document.getElementById('newSig3NoEffectSummary');
     if (summaryEl) {
@@ -1235,5 +1248,55 @@
       });
       container._clickBound = true;
     }
+  }
+
+  // ===== 有意差3タブ: 2グループ比較パネル(伸びた人 vs 伸びていない人) =====
+  // 「継続は力なり」(newSig3ContinuityMatchedUsers)と「頑張っているのに伸びていない人」
+  // (newSig3NoEffectMatchedUsers)、それぞれ直近の該当者について、年齢・基準点・利用日数を
+  // 平均値±標準偏差で比較する(統計的な検定ではなく、傾向を見るための参考値)。
+  function newSig3TotalUsageDays(user, maxWeeks) {
+    let sum = 0;
+    for (let w = 0; w < maxWeeks; w++) sum += (user.data && user.data[w]) ? user.data[w] : 0;
+    return sum;
+  }
+
+  function newSig3FormatMeanSd(stats, unit, digits) {
+    if (!stats) return 'データなし';
+    return `${stats.mean.toFixed(digits)}${unit} ± ${stats.sd.toFixed(digits)}`;
+  }
+
+  function renderNewSig3GroupComparison(maxWeeks) {
+    const el = document.getElementById('newSig3GroupComparisonTable');
+    if (!el) return;
+
+    const groups = [
+      { label: '継続は力なり(伸びた人)', color: '#059669', users: newSig3ContinuityMatchedUsers },
+      { label: '頑張っているのに伸びていない人', color: '#c2410c', users: newSig3NoEffectMatchedUsers }
+    ];
+
+    const rows = groups.map(g => {
+      const ages = g.users.map(u => u.age).filter(v => v !== null && v !== undefined);
+      const baselines = g.users.map(u => u.week1BaselineAvg).filter(v => v !== null && v !== undefined);
+      const totalDays = g.users.map(u => newSig3TotalUsageDays(u, maxWeeks));
+      return {
+        label: g.label, color: g.color, n: g.users.length,
+        age: churnMeanSd(ages), baseline: churnMeanSd(baselines), totalDays: churnMeanSd(totalDays)
+      };
+    });
+
+    let html = '<table class="border-collapse"><thead><tr>' +
+      '<th class="px-3 py-1 text-left border-b border-gray-200"></th>' +
+      rows.map(r => `<th class="px-3 py-1 text-left border-b border-gray-200 font-bold" style="color:${r.color};">${r.label}</th>`).join('') +
+      '</tr></thead><tbody>';
+    html += '<tr><td class="px-3 py-1 text-gray-500 border-b border-gray-100">人数</td>' +
+      rows.map(r => `<td class="px-3 py-1 border-b border-gray-100">${r.n.toLocaleString()}人</td>`).join('') + '</tr>';
+    html += '<tr><td class="px-3 py-1 text-gray-500 border-b border-gray-100">年齢</td>' +
+      rows.map(r => `<td class="px-3 py-1 border-b border-gray-100">${newSig3FormatMeanSd(r.age, '歳', 1)}</td>`).join('') + '</tr>';
+    html += '<tr><td class="px-3 py-1 text-gray-500 border-b border-gray-100">基準点(初期スコア)</td>' +
+      rows.map(r => `<td class="px-3 py-1 border-b border-gray-100">${newSig3FormatMeanSd(r.baseline, '回/秒', 2)}</td>`).join('') + '</tr>';
+    html += '<tr><td class="px-3 py-1 text-gray-500">利用日数(対象期間合計)</td>' +
+      rows.map(r => `<td class="px-3 py-1">${newSig3FormatMeanSd(r.totalDays, '日', 1)}</td>`).join('') + '</tr>';
+    html += '</tbody></table>';
+    el.innerHTML = html;
   }
 </script>
