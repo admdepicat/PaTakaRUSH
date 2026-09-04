@@ -235,6 +235,12 @@
 
   <div id="ageBinRegressionSummary" class="text-sm mb-3"></div>
 
+  <h3 class="text-sm font-bold text-gray-700 mb-1">3〜20歳: 増加傾向の検定(ANOVA線形トレンド検定)</h3>
+  <div id="ageBinTrendSummary" class="text-sm mb-3"></div>
+  <p class="text-xs text-gray-500 mb-3">
+    ※3〜20歳区分の各年齢群(ビン)の平均値について、一元配置分散分析で求めたプール分散を用いた線形トレンド検定(順序のある群間で直線的な増加/低下があるかを見る検定)を行っています。単純な傾き(上の回帰直線)は生データ全体の単回帰、こちらはビンごとの平均値に基づく検定という違いがあります。
+  </p>
+
   <h3 class="text-sm font-bold text-gray-700 mb-1">21〜50歳: 各年齢群間の比較(一元配置分散分析 + Bonferroni多重比較)</h3>
   <div id="ageBinAnovaSummary" class="text-sm mb-2"></div>
   <div id="ageBinPostHocTable" class="text-xs mb-2 overflow-x-auto"></div>
@@ -1033,6 +1039,77 @@
   }
 
   // 21〜50歳区分について、一元配置分散分析(全体差の有無)とBonferroni補正した全ペア比較を表示する
+  // ANOVA線形トレンド検定: 順序のある群(年齢ビン)の平均値が、群のx座標(ビン中央値の年齢)に対して
+  // 直線的に増加/低下しているかを検定する。ANOVAで求めたプール分散(msWithin)を使い、群平均を
+  // n_iで重み付けした加重回帰の傾きの有意性をt検定で判定する(自由度はANOVAの群内自由度と同じ)。
+  function computeAnovaLinearTrendTest(groupsValues, groupXValues) {
+    const anova = computeOneWayAnova(groupsValues);
+    if (!anova) return null;
+    const ns = anova.groupStats.map(g => g.n);
+    const means = anova.groupStats.map(g => g.mean);
+    const totalN = ns.reduce((s, n) => s + n, 0);
+    if (totalN === 0) return null;
+
+    const xbar = groupXValues.reduce((s, x, i) => s + x * ns[i], 0) / totalN;
+    const grandMean = ns.reduce((s, n, i) => s + n * (means[i] || 0), 0) / totalN;
+
+    let sxxW = 0, sxyW = 0;
+    for (let i = 0; i < groupXValues.length; i++) {
+      if (ns[i] === 0 || means[i] === null) continue;
+      const dx = groupXValues[i] - xbar;
+      sxxW += ns[i] * dx * dx;
+      sxyW += ns[i] * dx * (means[i] - grandMean);
+    }
+    if (sxxW === 0) return null;
+
+    const slope = sxyW / sxxW;
+    const seSlope = Math.sqrt(anova.msWithin / sxxW);
+    let t, p;
+    if (seSlope === 0) {
+      t = slope === 0 ? 0 : (slope > 0 ? Infinity : -Infinity);
+      p = slope === 0 ? 1 : 0;
+    } else {
+      t = slope / seSlope;
+      p = churnTPValueFromT(t, anova.dfWithin);
+    }
+    return { slope, t, p, df: anova.dfWithin, anova };
+  }
+
+  // 3〜20歳区分について、ビン平均値に基づく線形トレンド検定(増加/低下傾向の有意性)を表示する
+  function renderAgeBinTrendSection(rangeBinInfos, labels, binValuesList, binBoundsList) {
+    const summaryEl = document.getElementById('ageBinTrendSummary');
+    if (!summaryEl) return;
+
+    const info = rangeBinInfos.find(r => r.range.min === 3);
+    if (!info || info.endIdx - info.startIdx < 2) {
+      summaryEl.innerHTML = '<span class="text-gray-500">データ不足</span>';
+      return;
+    }
+
+    const groupsValues = [];
+    const groupX = [];
+    for (let i = info.startIdx; i < info.endIdx; i++) {
+      groupsValues.push(binValuesList[i]);
+      const b = binBoundsList[i];
+      groupX.push((b.min + b.max) / 2);
+    }
+
+    const trend = computeAnovaLinearTrendTest(groupsValues, groupX);
+    if (!trend) {
+      summaryEl.innerHTML = '<span class="text-gray-500">データ不足(自由度不足)</span>';
+      return;
+    }
+
+    const pColor = churnPValueColor(trend.p);
+    const isSig = trend.p !== null && trend.p < 0.05;
+    const direction = trend.slope > 0 ? '増加傾向' : (trend.slope < 0 ? '低下傾向' : '変化なし');
+    summaryEl.innerHTML = `ANOVA線形トレンド検定: 傾き=${trend.slope.toFixed(3)}, t(${trend.df})=${trend.t.toFixed(2)}, ` +
+      `<span style="color:${pColor};">p=${churnFormatPValue(trend.p)}</span> → ` +
+      (isSig
+        ? `<span style="color:#059669; font-weight:bold;">${direction}(有意)</span>`
+        : `<span style="color:#6b7280;">${direction}(非有意)</span>`);
+  }
+
   function renderAgeBinAnovaSection(rangeBinInfos, labels, binValuesList) {
     const summaryEl = document.getElementById('ageBinAnovaSummary');
     const tableEl = document.getElementById('ageBinPostHocTable');
@@ -1190,6 +1267,7 @@
       const stats = [];
       const barColors = [];
       const binValuesList = [];
+      const binBoundsList = [];
       const rangeBinInfos = [];
       AGE_BIN_RANGES.forEach(range => {
         const widthEl = document.getElementById(range.widthId);
@@ -1203,11 +1281,13 @@
           stats.push(stat);
           barColors.push(range.color);
           binValuesList.push(values);
+          binBoundsList.push(bin);
         });
         rangeBinInfos.push({ range, startIdx, endIdx: labels.length });
       });
 
       renderAgeBinRegressionSummary(allScatterData);
+      renderAgeBinTrendSection(rangeBinInfos, labels, binValuesList, binBoundsList);
       renderAgeBinAnovaSection(rangeBinInfos, labels, binValuesList);
       renderAgeBinBaselineCompareTable(rangeBinInfos, labels, binValuesList);
 
