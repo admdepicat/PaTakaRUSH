@@ -268,6 +268,12 @@
   <p class="text-xs text-gray-500 mb-2">
     ※3つの年齢区分(3〜20歳/21〜50歳/51〜90歳)と性別(男性/女性、未回答は対象外)を因子とする二元配置分散分析です。年齢の主効果・性別の主効果・年齢×性別の交互作用それぞれの有意性を、一般線形モデルによるネストしたF検定(Type II平方和相当)で検定しています。対象=全体・期間=2週間で固定した生データを使用しています。
   </p>
+
+  <h4 class="text-sm font-bold text-gray-700 mb-1">年齢区分ごとの男女比較(単純主効果)</h4>
+  <div id="ageGenderSimpleEffectsTable" class="text-xs mb-2 overflow-x-auto"></div>
+  <p class="text-xs text-gray-500 mb-2">
+    ※性別の主効果がどの年齢層で生じているかを見るため、各年齢区分内で男女を比較しています(対応のないt検定、Welch)。3区分の比較を行うため、Bonferroni補正(生のp値×3)を適用した上で判定しています。上の交互作用が有意な場合、年齢区分によって男女差の大きさが異なることを意味するため、この表と合わせて確認してください。
+  </p>
 </div>
 
 <script>
@@ -1418,6 +1424,62 @@
     ].join('<br>');
   }
 
+  const AGE_GROUP_LABELS = ['3〜20歳', '21〜50歳', '51〜90歳'];
+
+  // 性別の主効果がどの年齢区分で生じているかを見るため、各年齢区分内で男女を比較する(単純主効果)。
+  // 対応のないt検定(Welch)を3区分それぞれで行い、比較数(3)でBonferroni補正する。
+  function renderAgeGenderSimpleEffects(targetData) {
+    const el = document.getElementById('ageGenderSimpleEffectsTable');
+    if (!el) return;
+
+    const maleByGroup = [[], [], []];
+    const femaleByGroup = [[], [], []];
+    (targetData.male || []).forEach(d => {
+      if (!d || d.x === undefined) return;
+      const ag = classifyAgeBigRangeIndex(d.x);
+      if (ag < 0) return;
+      maleByGroup[ag].push(d.y);
+    });
+    (targetData.female || []).forEach(d => {
+      if (!d || d.x === undefined) return;
+      const ag = classifyAgeBigRangeIndex(d.x);
+      if (ag < 0) return;
+      femaleByGroup[ag].push(d.y);
+    });
+
+    const numComparisons = 3;
+    let rows = '';
+    for (let i = 0; i < 3; i++) {
+      const mVals = maleByGroup[i], fVals = femaleByGroup[i];
+      const mStat = churnMeanSd(mVals), fStat = churnMeanSd(fVals);
+      if (!mStat || !fStat) {
+        rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${AGE_GROUP_LABELS[i]}</td><td class="px-2 py-0.5 border-b border-gray-100" colspan="4">データ不足</td></tr>`;
+        continue;
+      }
+      const pRaw = newSig3UnpairedTTestPValue(mVals, fVals);
+      const pAdj = pRaw === null ? null : Math.min(1, pRaw * numComparisons);
+      const pc = churnPValueColor(pAdj);
+      const isSig = pAdj !== null && pAdj < 0.05;
+      const sigMark = isSig
+        ? '<span style="color:#dc2626; font-weight:bold;">有意差あり</span>'
+        : '<span style="color:#6b7280;">有意差なし</span>';
+      rows += `<tr><td class="px-2 py-0.5 border-b border-gray-100">${AGE_GROUP_LABELS[i]}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">男性: ${mStat.mean.toFixed(2)}±${mStat.sd.toFixed(2)}(n=${mStat.n})</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">女性: ${fStat.mean.toFixed(2)}±${fStat.sd.toFixed(2)}(n=${fStat.n})</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${churnFormatPValue(pRaw)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100" style="color:${pc};">${churnFormatPValue(pAdj)}</td>` +
+        `<td class="px-2 py-0.5 border-b border-gray-100">${sigMark}</td></tr>`;
+    }
+
+    el.innerHTML = `<table class="border-collapse"><thead><tr>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">年齢区分</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">男性</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">女性</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(未補正)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">p値(Bonferroni補正)</th>` +
+      `<th class="px-2 py-1 text-left border-b border-gray-200">判定</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
   function updateAgeBinBarChart() {
     try {
       const el = document.getElementById('ageBinBarChart');
@@ -1427,6 +1489,7 @@
       const allScatterData = [...(targetData.male || []), ...(targetData.female || []), ...(targetData.other || [])];
 
       renderAgeGenderTwoWayAnova(targetData);
+      renderAgeGenderSimpleEffects(targetData);
 
       const yMaxEl = document.getElementById('ageBinBarYMax');
       const yMaxStr = yMaxEl ? yMaxEl.value : '';
