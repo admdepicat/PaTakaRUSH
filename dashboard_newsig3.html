@@ -21,7 +21,7 @@
 
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 mb-4">
     <span class="text-gray-500">期間: 1〜</span>
-    <input type="text" inputmode="numeric" id="newSig3MaxWeeks" value="12" min="2" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <input type="text" inputmode="numeric" id="newSig3MaxWeeks" value="24" min="2" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週</span>
     <span class="text-gray-300 mx-1">|</span>
     <span id="newSig3PopulationCount" class="text-cyan-700"></span>
@@ -78,7 +78,7 @@
     <div class="w-full"></div>
 
     <span class="text-gray-500">0回/週を</span>
-    <input type="text" inputmode="numeric" id="newSig3MaxZeroWeeks" value="0" min="0" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <input type="text" inputmode="numeric" id="newSig3MaxZeroWeeks" value="4" min="0" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">週まで許容(対象週から遡って連続、低日数群/高日数群共通)</span>
 
     <div class="w-full"></div>
@@ -93,7 +93,7 @@
       <span class="text-rose-600">高日数群</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="newSig3ShowTransition" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-purple-600" checked>
+      <input type="checkbox" id="newSig3ShowTransition" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-purple-600">
       <span class="text-purple-600">群間移動</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
@@ -121,7 +121,7 @@
 
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 mb-4">
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" id="newSig3ShowCountBars" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-gray-500" checked>
+      <input type="checkbox" id="newSig3ShowCountBars" onchange="renderNewSig3Chart()" class="w-4 h-4 cursor-pointer accent-gray-500">
       <span class="text-gray-700">人数(背景棒)</span>
     </label>
     <span class="text-gray-300 mx-1">|</span>
@@ -141,11 +141,11 @@
   <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-200 mb-3">
     <span class="text-gray-500">増加の定義:</span>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefStrict" value="strict" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
+      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefStrict" value="strict" onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
       <span class="font-normal">完全な単調増加(一度も下がらない)</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefTrend" value="trend" onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
+      <input type="radio" name="newSig3ContinuityDef" id="newSig3ContinuityDefTrend" value="trend" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-emerald-600">
       <span class="font-normal">回帰直線の傾きが正でR²が</span>
     </label>
     <input type="text" inputmode="numeric" id="newSig3ContinuityR2" value="0.5" min="0" max="1" step="0.05" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
@@ -737,7 +737,7 @@
 
   function getNewSig3ContinuityDef() {
     const el = document.querySelector('input[name="newSig3ContinuityDef"]:checked');
-    return el ? el.value : 'strict';
+    return el ? el.value : 'trend';
   }
 
   function getNewSig3ContinuityR2Threshold() {
