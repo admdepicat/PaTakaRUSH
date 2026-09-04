@@ -260,6 +260,14 @@
   <p class="text-xs text-gray-500 mb-2">
     ※51〜90歳区分の最初のビン(51〜55歳、幅を変更した場合は先頭のビン)を対照群とし、それ以降の各ビンとの間でダネット検定(全群共通のプールした分散を使用)を行っています。「p値(未補正)」は各比較を単独のt検定として見た場合のp値、「p値(Šidák補正)」は比較数で多重比較調整した後のp値で、判定(有意差あり/なし)はこちらに基づきます。なお、真のダネット分布による厳密な臨界値ではなく、Šidák補正による近似値です。
   </p>
+
+  <hr class="my-6 border-gray-200">
+
+  <h3 class="text-sm font-bold text-gray-700 mb-1">全体: 二元配置分散分析(年齢×性別)</h3>
+  <div id="ageGenderTwoWayAnovaSummary" class="text-sm mb-2"></div>
+  <p class="text-xs text-gray-500 mb-2">
+    ※3つの年齢区分(3〜20歳/21〜50歳/51〜90歳)と性別(男性/女性、未回答は対象外)を因子とする二元配置分散分析です。年齢の主効果・性別の主効果・年齢×性別の交互作用それぞれの有意性を、一般線形モデルによるネストしたF検定(Type II平方和相当)で検定しています。対象=全体・期間=2週間で固定した生データを使用しています。
+  </p>
 </div>
 
 <script>
@@ -1260,6 +1268,156 @@
       `<p class="text-xs text-gray-500 mt-1">基準群: ${baselineLabel}歳 / 比較数k=${dunnett.k} / プール分散の自由度=${dunnett.dfWithin}</p>`;
   }
 
+  // ===== 二元配置分散分析(年齢×性別)用の小さな最小二乗回帰(OLS)基盤 =====
+  // 正規方程式(X^T X)β = X^T y をガウスの消去法(部分ピボット選択)で解く。特異な場合はnullを返す。
+  function distSolveLinearSystem(A, b) {
+    const n = A.length;
+    const M = A.map((row, i) => row.concat([b[i]]));
+    for (let col = 0; col < n; col++) {
+      let maxRow = col;
+      for (let r = col + 1; r < n; r++) {
+        if (Math.abs(M[r][col]) > Math.abs(M[maxRow][col])) maxRow = r;
+      }
+      if (Math.abs(M[maxRow][col]) < 1e-9) return null;
+      const tmp = M[col]; M[col] = M[maxRow]; M[maxRow] = tmp;
+      const pivot = M[col][col];
+      for (let c = col; c <= n; c++) M[col][c] /= pivot;
+      for (let r = 0; r < n; r++) {
+        if (r === col) continue;
+        const factor = M[r][col];
+        if (factor === 0) continue;
+        for (let c = col; c <= n; c++) M[r][c] -= factor * M[col][c];
+      }
+    }
+    return M.map(row => row[n]);
+  }
+
+  // X: 各行が説明変数(ダミー変数含む)の配列、y: 目的変数の配列。最小二乗法で係数と残差平方和(RSS)を返す。
+  function distOlsFit(X, y) {
+    const n = X.length;
+    if (n === 0) return null;
+    const p = X[0].length;
+    const XtX = Array.from({ length: p }, () => new Array(p).fill(0));
+    const Xty = new Array(p).fill(0);
+    for (let i = 0; i < n; i++) {
+      for (let a = 0; a < p; a++) {
+        Xty[a] += X[i][a] * y[i];
+        for (let b = 0; b < p; b++) XtX[a][b] += X[i][a] * X[i][b];
+      }
+    }
+    const beta = distSolveLinearSystem(XtX, Xty);
+    if (!beta) return null;
+    let rss = 0;
+    for (let i = 0; i < n; i++) {
+      let yhat = 0;
+      for (let a = 0; a < p; a++) yhat += X[i][a] * beta[a];
+      rss += (y[i] - yhat) * (y[i] - yhat);
+    }
+    return { beta, rss, n, p };
+  }
+
+  // 入れ子になった2つのモデル(reducedがnumeratorFitの部分集合)の残差平方和の差を分子(効果のSS)とし、
+  // 分母には交互作用を含む飽和モデル(denomFit)の残差分散(誤差項)を使う。これにより年齢・性別・
+  // 交互作用のすべての検定が共通の誤差分散を分母とする、標準的な二元配置分散分析のF検定になる
+  // (分母をそれぞれの縮小モデル自身の残差にしてしまうと、交互作用が残差に混入し誤ったF値になるため注意)。
+  function distNestedFTest(reducedFit, numeratorFullFit, denomFit, n) {
+    const df1 = numeratorFullFit.p - reducedFit.p;
+    const df2 = n - denomFit.p;
+    if (df1 <= 0 || df2 <= 0) return null;
+    const msDiff = Math.max(0, reducedFit.rss - numeratorFullFit.rss) / df1;
+    const msError = denomFit.rss / df2;
+    let f, p;
+    if (msError === 0) {
+      f = msDiff === 0 ? 0 : Infinity;
+      p = msDiff === 0 ? 1 : 0;
+    } else {
+      f = msDiff / msError;
+      p = churnFPValueFromF(f, df1, df2);
+    }
+    return { f, p, df1, df2 };
+  }
+
+  // 二元配置分散分析(年齢区分×性別)。rows: [{ageGroup: 0/1/2, gender: 0(男性)/1(女性), y}]。
+  // ダミー変数(基準: 年齢=3〜20歳区分、性別=男性)による回帰モデルを複数当てはめ、
+  // ネストしたF検定で年齢の主効果・性別の主効果・交互作用それぞれの有意性を求める(Type II平方和相当)。
+  function computeTwoWayAnova(rows) {
+    const n = rows.length;
+    if (n === 0) return null;
+    const X_full = [], X_noInt = [], X_genderOnly = [], X_ageOnly = [], y = [];
+    rows.forEach(r => {
+      const d1 = r.ageGroup === 1 ? 1 : 0;
+      const d2 = r.ageGroup === 2 ? 1 : 0;
+      const g = r.gender === 1 ? 1 : 0;
+      X_full.push([1, d1, d2, g, d1 * g, d2 * g]);
+      X_noInt.push([1, d1, d2, g]);
+      X_genderOnly.push([1, g]);
+      X_ageOnly.push([1, d1, d2]);
+      y.push(r.y);
+    });
+
+    const fitFull = distOlsFit(X_full, y);
+    const fitNoInt = distOlsFit(X_noInt, y);
+    const fitGenderOnly = distOlsFit(X_genderOnly, y);
+    const fitAgeOnly = distOlsFit(X_ageOnly, y);
+    if (!fitFull || !fitNoInt || !fitGenderOnly || !fitAgeOnly) return null;
+
+    const interaction = distNestedFTest(fitNoInt, fitFull, fitFull, n);
+    const ageEffect = distNestedFTest(fitGenderOnly, fitNoInt, fitFull, n);
+    const genderEffect = distNestedFTest(fitAgeOnly, fitNoInt, fitFull, n);
+    if (!interaction || !ageEffect || !genderEffect) return null;
+
+    return { n, interaction, ageEffect, genderEffect };
+  }
+
+  function classifyAgeBigRangeIndex(age) {
+    if (age >= 3 && age <= 20) return 0;
+    if (age >= 21 && age <= 50) return 1;
+    if (age >= 51 && age <= 90) return 2;
+    return -1;
+  }
+
+  // 全体(対象=全体・期間=2週間固定)を、年齢区分(3水準)×性別(男性/女性、未回答は対象外)で
+  // 二元配置分散分析にかけ、年齢の主効果・性別の主効果・交互作用の有意性を表示する
+  function renderAgeGenderTwoWayAnova(targetData) {
+    const el = document.getElementById('ageGenderTwoWayAnovaSummary');
+    if (!el) return;
+
+    const rows = [];
+    (targetData.male || []).forEach(d => {
+      if (!d || d.x === undefined) return;
+      const ag = classifyAgeBigRangeIndex(d.x);
+      if (ag < 0) return;
+      rows.push({ ageGroup: ag, gender: 0, y: d.y });
+    });
+    (targetData.female || []).forEach(d => {
+      if (!d || d.x === undefined) return;
+      const ag = classifyAgeBigRangeIndex(d.x);
+      if (ag < 0) return;
+      rows.push({ ageGroup: ag, gender: 1, y: d.y });
+    });
+
+    const result = computeTwoWayAnova(rows);
+    if (!result) {
+      el.innerHTML = '<span class="text-gray-500">データ不足</span>';
+      return;
+    }
+
+    const fmtEffect = (label, eff) => {
+      const pColor = churnPValueColor(eff.p);
+      const isSig = eff.p !== null && eff.p < 0.05;
+      return `${label}: F(${eff.df1}, ${eff.df2}) = ${eff.f.toFixed(2)}, ` +
+        `<span style="color:${pColor};">p=${churnFormatPValue(eff.p)}</span> → ` +
+        (isSig ? '<span style="color:#dc2626; font-weight:bold;">有意</span>' : '<span style="color:#6b7280;">非有意</span>');
+    };
+
+    el.innerHTML = [
+      `対象データ数: n=${result.n.toLocaleString()}`,
+      fmtEffect('年齢の主効果', result.ageEffect),
+      fmtEffect('性別の主効果', result.genderEffect),
+      fmtEffect('年齢×性別の交互作用', result.interaction)
+    ].join('<br>');
+  }
+
   function updateAgeBinBarChart() {
     try {
       const el = document.getElementById('ageBinBarChart');
@@ -1267,6 +1425,8 @@
 
       const targetData = getTopEffectiveScatterData('2w');
       const allScatterData = [...(targetData.male || []), ...(targetData.female || []), ...(targetData.other || [])];
+
+      renderAgeGenderTwoWayAnova(targetData);
 
       const yMaxEl = document.getElementById('ageBinBarYMax');
       const yMaxStr = yMaxEl ? yMaxEl.value : '';
