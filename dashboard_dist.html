@@ -219,6 +219,9 @@
       <span class="text-gray-500 text-sm font-bold">51〜90歳の幅:</span>
       <input type="number" id="ageBinWidth3" value="5" min="1" max="40" step="1" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeBinBarChart()">
       <span class="text-gray-500 text-sm">歳ごと</span>
+      <span class="text-gray-300 mx-1">|</span>
+      <span class="text-gray-500 text-sm font-bold" data-i18n="yMax">Y軸最大値:</span>
+      <input type="number" id="ageBinBarYMax" data-i18n-ph="auto" placeholder="自動" value="10" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal" onchange="updateAgeBinBarChart()" min="1" step="1">
     </div>
   </div>
 
@@ -914,6 +917,10 @@
       const targetData = getTopEffectiveScatterData('2w');
       const allScatterData = [...(targetData.male || []), ...(targetData.female || []), ...(targetData.other || [])];
 
+      const yMaxEl = document.getElementById('ageBinBarYMax');
+      const yMaxStr = yMaxEl ? yMaxEl.value : '';
+      const yMax = yMaxStr ? parseInt(yMaxStr, 10) : undefined;
+
       const labels = [];
       const stats = [];
       const barColors = [];
@@ -958,7 +965,7 @@
             },
             scales: {
               x: { title: { display: true, text: t('axisAge') } },
-              y: { title: { display: true, text: t('axisScore') }, min: 0 }
+              y: { title: { display: true, text: t('axisScore') }, min: 0, max: yMax }
             }
           }
         });
@@ -969,6 +976,7 @@
         chart._ageBinStats = stats;
         chart.options.scales.x.title.text = t('axisAge');
         chart.options.scales.y.title.text = t('axisScore');
+        chart.options.scales.y.max = yMax;
         chart.update();
         return;
       }
