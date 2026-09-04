@@ -232,6 +232,46 @@
   <h5 class="text-sm font-bold text-gray-700 mt-2 mb-1">利用日数のヒートマップ</h5>
   <div id="newSig3ContinuityHeatmap" class="mt-1" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
 
+  <hr class="my-6 border-gray-200">
+
+  <h4 class="text-sm font-bold text-gray-700 mb-2">頑張っているのに、あまり伸びていない人のピックアップ</h4>
+  <p class="text-xs text-gray-500 mb-2">
+    ※利用を続けている(0回の週が少ない)にもかかわらず、基準点(1週目)から対象週までのスコアの回帰直線の傾きがほぼ0以下(伸びていない)人だけを条件で拾い出して個別に見る、意図的な抽出です(統計的な証明ではなく、実例の可視化を目的としています)。対象は「期間」「年齢」「対象週」の設定(上の日数群セクションと共通)に従います。
+  </p>
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-bold text-gray-700 bg-orange-50 px-4 py-2 rounded-lg border border-orange-200 mb-3">
+    <span class="text-gray-500">長続きの条件:</span>
+    <span class="font-normal">0回の週が</span>
+    <input type="text" inputmode="numeric" id="newSig3NoEffectMaxZeroWeeks" value="2" min="0" max="104" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="font-normal text-gray-500">週以下</span>
+
+    <div class="w-full"></div>
+
+    <span class="text-gray-500">効果なしの条件:</span>
+    <span class="font-normal">回帰直線の傾きが</span>
+    <input type="text" inputmode="numeric" id="newSig3NoEffectSlopeMax" value="0.1" min="-10" max="10" step="0.05" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-16 p-1 border border-gray-300 rounded outline-none text-center font-normal">
+    <span class="font-normal text-gray-500">以下(ほぼ0またはマイナス)</span>
+    <span id="newSig3NoEffectSummary" class="text-orange-700"></span>
+  </div>
+  <div class="flex flex-col lg:flex-row gap-6 mb-2">
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="newSig3NoEffectChart"></canvas>
+      </div>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="chart-container" style="height: 320px;">
+        <canvas id="newSig3NoEffectDayChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <p class="text-xs text-gray-500 mb-1">※スコア推移(左)・利用日数の推移(右)は連動しています。下のヒートマップのニックネームをクリックすると、両方のグラフでその人の線を黒太線で強調表示します(もう一度クリックで解除)。</p>
+  <div class="flex items-center gap-2 mb-1">
+    <span id="newSig3NoEffectSelectCaption" class="text-sm text-gray-600"></span>
+    <button type="button" onclick="clearNewSig3NoEffectSelection()" class="text-xs font-normal text-gray-400 hover:text-gray-600 underline">選択解除</button>
+  </div>
+  <h5 class="text-sm font-bold text-gray-700 mt-2 mb-1">利用日数のヒートマップ</h5>
+  <div id="newSig3NoEffectHeatmap" class="mt-1" style="max-height: 600px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 0.5rem;"></div>
+
 </div>
 
 <script>
@@ -541,6 +581,7 @@
       });
 
       renderNewSig3ContinuitySection(users, maxWeeks, targetMode, tertiles);
+      renderNewSig3NoEffectSection(users, maxWeeks, targetMode);
     } catch (error) {
       console.error(error);
     }
@@ -995,6 +1036,202 @@
         const cell = evt.target.closest('.newsig3-continuity-heatmap-uid');
         if (!cell) return;
         selectNewSig3ContinuityUid(cell.getAttribute('data-uid'));
+      });
+      container._clickBound = true;
+    }
+  }
+
+  // ===== 有意差3タブ: 「頑張っているのに、あまり伸びていない人」セクション =====
+  // 長続きしている(0回の週が少ない)にもかかわらず、回帰直線の傾きがほぼ0以下(伸びていない)人を拾い出す。
+  // 「継続は力なり」セクション(伸びた人)とは逆の条件だが、構造(スコア推移・利用日数推移・ヒートマップ・
+  // クリックでの黒太線強調)は共通なので同じパターンで実装している。
+  let newSig3NoEffectSelectedUid = null;
+
+  function getNewSig3NoEffectMaxZeroWeeks() {
+    const el = document.getElementById('newSig3NoEffectMaxZeroWeeks');
+    const v = el && el.value !== '' ? parseInt(el.value, 10) : 2;
+    return isNaN(v) ? 2 : Math.max(0, v);
+  }
+
+  function getNewSig3NoEffectSlopeMax() {
+    const el = document.getElementById('newSig3NoEffectSlopeMax');
+    const v = el && el.value !== '' ? parseFloat(el.value) : 0.1;
+    return isNaN(v) ? 0.1 : v;
+  }
+
+  // 対象週1〜maxWeeksのうち、その週の利用日数が0(またはデータなし)の週の数を数える
+  function newSig3CountZeroWeeks(user, maxWeeks) {
+    let count = 0;
+    for (let w = 0; w < maxWeeks; w++) {
+      const days = (user.data && user.data[w] !== null && user.data[w] !== undefined) ? user.data[w] : 0;
+      if (days === 0) count++;
+    }
+    return count;
+  }
+
+  function selectNewSig3NoEffectUid(uid) {
+    newSig3NoEffectSelectedUid = (newSig3NoEffectSelectedUid === uid) ? null : uid;
+    renderNewSig3Chart();
+  }
+
+  function clearNewSig3NoEffectSelection() {
+    newSig3NoEffectSelectedUid = null;
+    renderNewSig3Chart();
+  }
+
+  function renderNewSig3NoEffectSection(users, maxWeeks, mode) {
+    const maxZeroWeeks = getNewSig3NoEffectMaxZeroWeeks();
+    const slopeMax = getNewSig3NoEffectSlopeMax();
+
+    const matched = users.filter(u => {
+      if (newSig3CountZeroWeeks(u, maxWeeks) > maxZeroWeeks) return false;
+      const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
+      const pts = [];
+      scores.forEach((v, i) => { if (v !== null && v !== undefined) pts.push({ x: i + 1, y: v }); });
+      const reg = newSig3LinearRegression(pts);
+      if (!reg) return false;
+      return reg.slope <= slopeMax;
+    }).sort((a, b) => String(a.uid).localeCompare(String(b.uid)));
+
+    const summaryEl = document.getElementById('newSig3NoEffectSummary');
+    if (summaryEl) {
+      const pct = users.length > 0 ? (matched.length / users.length * 100).toFixed(1) : '0.0';
+      summaryEl.textContent = `該当: ${matched.length.toLocaleString()}人 / 対象${users.length.toLocaleString()}人(${pct}%)`;
+    }
+
+    if (newSig3NoEffectSelectedUid !== null && !matched.some(u => u.uid === newSig3NoEffectSelectedUid)) {
+      newSig3NoEffectSelectedUid = null;
+    }
+
+    const captionEl = document.getElementById('newSig3NoEffectSelectCaption');
+    if (captionEl) captionEl.textContent = newSig3NoEffectSelectedUid ? `選択中: ${newSig3NoEffectSelectedUid}` : 'ヒートマップのニックネームをクリックしてください';
+
+    renderNewSig3NoEffectChart(matched, maxWeeks, mode);
+    renderNewSig3NoEffectDayChart(matched, maxWeeks);
+    renderNewSig3NoEffectHeatmap(matched, maxWeeks);
+  }
+
+  const NEW_SIG3_NOEFFECT_COLOR = '#f97316';
+
+  function renderNewSig3NoEffectChart(users, maxWeeks, mode) {
+    const el = document.getElementById('newSig3NoEffectChart');
+    if (!el) return;
+    const datasets = users.map(u => {
+      const scores = newSig3UserWeeklyScores(u, maxWeeks, mode);
+      const points = [];
+      scores.forEach((v, i) => { if (v !== null && v !== undefined) points.push({ x: i + 1, y: v }); });
+      const isSelected = newSig3NoEffectSelectedUid !== null && u.uid === newSig3NoEffectSelectedUid;
+      return {
+        label: u.uid, data: points,
+        borderColor: isSelected ? '#111827' : hexToRgba(NEW_SIG3_NOEFFECT_COLOR, 0.3),
+        backgroundColor: 'transparent',
+        borderWidth: isSelected ? 4 : 1, pointRadius: 0, fill: false, tension: 0.2,
+        order: isSelected ? -1 : 0
+      };
+    });
+    if (newSig3NoEffectSelectedUid !== null) {
+      const idx = datasets.findIndex(ds => ds.label === newSig3NoEffectSelectedUid);
+      if (idx >= 0) datasets.push(datasets.splice(idx, 1)[0]);
+    }
+
+    if (charts.newSig3NoEffect) { charts.newSig3NoEffect.destroy(); charts.newSig3NoEffect = null; }
+    charts.newSig3NoEffect = new Chart(el, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        onClick: (evt, elements, chart) => {
+          if (elements.length > 0) selectNewSig3NoEffectUid(chart.data.datasets[elements[0].datasetIndex].label);
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y.toFixed(2)}` } }
+        },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: '対象週' }, min: 0.5, max: maxWeeks + 0.5, ticks: { stepSize: 1, precision: 0 } },
+          y: { title: { display: true, text: 'スコア(回/秒)' }, min: 0 }
+        }
+      }
+    });
+  }
+
+  function renderNewSig3NoEffectDayChart(users, maxWeeks) {
+    const el = document.getElementById('newSig3NoEffectDayChart');
+    if (!el) return;
+    const datasets = users.map(u => {
+      const points = [];
+      for (let w = 0; w < maxWeeks; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        points.push({ x: w + 1, y: days });
+      }
+      const isSelected = newSig3NoEffectSelectedUid !== null && u.uid === newSig3NoEffectSelectedUid;
+      return {
+        label: u.uid, data: points,
+        borderColor: isSelected ? '#111827' : hexToRgba(NEW_SIG3_NOEFFECT_COLOR, 0.3),
+        backgroundColor: 'transparent',
+        borderWidth: isSelected ? 4 : 1, pointRadius: 0, fill: false, tension: 0.2,
+        order: isSelected ? -1 : 0
+      };
+    });
+    if (newSig3NoEffectSelectedUid !== null) {
+      const idx = datasets.findIndex(ds => ds.label === newSig3NoEffectSelectedUid);
+      if (idx >= 0) datasets.push(datasets.splice(idx, 1)[0]);
+    }
+
+    if (charts.newSig3NoEffectDay) { charts.newSig3NoEffectDay.destroy(); charts.newSig3NoEffectDay = null; }
+    charts.newSig3NoEffectDay = new Chart(el, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.raw.y}日` } }
+        },
+        scales: {
+          x: { type: 'linear', title: { display: true, text: '対象週' }, min: 0.5, max: maxWeeks + 0.5, ticks: { stepSize: 1, precision: 0 } },
+          y: { title: { display: true, text: '利用日数 (日/週)' }, min: 0, max: 7, ticks: { stepSize: 1, precision: 0 } }
+        }
+      }
+    });
+  }
+
+  function renderNewSig3NoEffectHeatmap(users, maxWeeks) {
+    const container = document.getElementById('newSig3NoEffectHeatmap');
+    if (!container) return;
+
+    const totalDaysOf = (u) => {
+      let sum = 0;
+      for (let w = 0; w < maxWeeks; w++) sum += (u.data && u.data[w]) ? u.data[w] : 0;
+      return sum;
+    };
+    const sortedUsers = [...users].sort((a, b) => totalDaysOf(b) - totalDaysOf(a));
+
+    let html = '<table class="text-xs border-collapse"><thead><tr>' +
+      '<th class="sticky left-0 top-0 bg-white px-2 py-1 text-left border-b border-r border-gray-200 z-10">uid</th>';
+    for (let w = 1; w <= maxWeeks; w++) {
+      html += `<th class="sticky top-0 bg-white px-1 py-1 text-center border-b border-gray-200" style="min-width:22px;">${w}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+    sortedUsers.forEach(u => {
+      const isSelected = newSig3NoEffectSelectedUid !== null && u.uid === newSig3NoEffectSelectedUid;
+      const uidEscaped = String(u.uid).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+      const rowCellClass = isSelected ? 'bg-gray-200 text-gray-900' : 'bg-white';
+      html += `<tr><td class="newsig3-noeffect-heatmap-uid sticky left-0 ${rowCellClass} px-2 py-0.5 whitespace-nowrap border-b border-r border-gray-100 z-10 cursor-pointer hover:underline font-bold" data-uid="${uidEscaped}">${u.uid}</td>`;
+      for (let w = 0; w < maxWeeks; w++) {
+        const days = (u.data && u.data[w] !== null && u.data[w] !== undefined) ? u.data[w] : 0;
+        html += `<td class="text-center border-b border-gray-100" style="background-color:${newSig3DayCellColor(days, NEW_SIG3_NOEFFECT_COLOR)}; min-width:22px; height:18px;" title="${u.uid} ${w + 1}週目: ${days}日">${days > 0 ? days : ''}</td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    if (!container._clickBound) {
+      container.addEventListener('click', (evt) => {
+        const cell = evt.target.closest('.newsig3-noeffect-heatmap-uid');
+        if (!cell) return;
+        selectNewSig3NoEffectUid(cell.getAttribute('data-uid'));
       });
       container._clickBound = true;
     }
