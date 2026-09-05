@@ -491,6 +491,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
         var week1TestCount = week1Scores.length;
         var week1BaselineAvg = week1TestCount >= 3 ? (week1Scores[1] + week1Scores[2]) / 2 : null;
         var scoresLast2Arr = [];
+        var scoresLast1Arr = [];
         var weekTestCountArr = [];
         for (var w3 = 0; w3 < MAX_CHURN_WEEKS; w3++) {
           if (accountAgeDays >= w3 * 7) {
@@ -499,12 +500,15 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
             weekTestCountArr.push(wCount3);
             if (wCount3 >= 2) {
               scoresLast2Arr.push((wScores3[wCount3 - 1] + wScores3[wCount3 - 2]) / 2);
+              scoresLast1Arr.push(wScores3[wCount3 - 1]);
             } else if (wCount3 === 1) {
               scoresLast2Arr.push(wScores3[0]);
+              scoresLast1Arr.push(wScores3[0]);
             } else {
               scoresLast2Arr.push(null);
+              scoresLast1Arr.push(null);
             }
-          } else { scoresLast2Arr.push(null); weekTestCountArr.push(null); }
+          } else { scoresLast2Arr.push(null); scoresLast1Arr.push(null); weekTestCountArr.push(null); }
         }
 
         // 「新・年齢と4文字平均の相関」の1週間/2週間用：週で区切って平均するのではなく、
@@ -534,7 +538,7 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
         var avgRaw2wK = avgOf(rawRecords2wK);
         var avgRaw2wR = avgOf(rawRecords2wR);
 
-        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, week1BaselineAvg: week1BaselineAvg, week1TestCount: week1TestCount, scoresLast2: scoresLast2Arr, weekTestCounts: weekTestCountArr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
+        result.usersChurn.push({ uid: user.uid, groupType: user.groupType, groupName: user.groupName, age: user.age, gender: user.gender, data: dataArr, scores: scoresArr, week1BaselineAvg: week1BaselineAvg, week1TestCount: week1TestCount, scoresLast2: scoresLast2Arr, scoresLast1: scoresLast1Arr, weekTestCounts: weekTestCountArr, avgRaw1w: avgRaw1w, avgRaw2w: avgRaw2w, avgRaw2wA3: avgRaw2wA3, avgRaw2wP: avgRaw2wP, avgRaw2wT: avgRaw2wT, avgRaw2wK: avgRaw2wK, avgRaw2wR: avgRaw2wR, accountAgeDays: accountAgeDays, activeDaysSet: Array.from(new Set(user.records.map(function(r) { return Math.round((new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate()).getTime() - firstMidnight) / (1000 * 60 * 60 * 24)); }))) });
       }
     });
 

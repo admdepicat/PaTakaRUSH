@@ -47,6 +47,17 @@
       <span class="font-normal">2回以上必須</span>
     </label>
 
+    <span class="text-gray-300 mx-1">|</span>
+    <span class="text-gray-500">検査回数の定義:</span>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeLast2" value="last2" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
+      <span class="font-normal">2回分平均</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeLast1" value="last1" onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
+      <span class="font-normal">1回分</span>
+    </label>
+
     <div class="w-full"></div>
     <span id="newSig3ExclusionNote" class="text-gray-600 font-normal"></span>
 
@@ -299,6 +310,12 @@
     return el ? el.value : 'allow1';
   }
 
+  // 対象週の比較値として、その週最後2回の平均(scoresLast2)を使うか、最後1回のみ(scoresLast1)を使うか
+  function getNewSig3ValueMode() {
+    const el = document.querySelector('input[name="newSig3ValueMode"]:checked');
+    return el ? el.value : 'last2';
+  }
+
   function getNewSig3VisibleGroups() {
     const groups = [];
     if (document.getElementById('newSig3ShowTotal') && document.getElementById('newSig3ShowTotal').checked) groups.push('total');
@@ -332,11 +349,14 @@
     };
   }
 
-  // 対象週w(1始まり)の1人分の比較値を取得する。scoresLast2[w-1]は「2回以上→最後2回平均、1回のみ→その1回、
-  // 0回→null」というコード.gs側の計算結果。mode==='strict2'の場合は、その週の検査回数(weekTestCounts)が
-  // 2回未満(0回または1回)ならnull扱いにする(1回だけの人もその週は除外)。
+  // 対象週w(1始まり)の1人分の比較値を取得する。「検査回数の定義」で選んだ方に応じて、
+  // scoresLast2(2回以上→最後2回平均、1回のみ→その1回、0回→null)か、
+  // scoresLast1(1回以上→最後1回のみ、0回→null)のいずれかを使う(どちらもコード.gs側で算出済み)。
+  // mode==='strict2'の場合は、その週の検査回数(weekTestCounts)が2回未満(0回または1回)ならnull扱いにする
+  // (1回だけの人もその週は除外、検査回数の定義がどちらでも共通)。
   function newSig3TargetValueForWeek(user, w, mode) {
-    const target = (user.scoresLast2 && (w - 1) < user.scoresLast2.length) ? user.scoresLast2[w - 1] : null;
+    const scoresArr = getNewSig3ValueMode() === 'last1' ? user.scoresLast1 : user.scoresLast2;
+    const target = (scoresArr && (w - 1) < scoresArr.length) ? scoresArr[w - 1] : null;
     if (target === null || target === undefined) return null;
     if (mode === 'strict2') {
       const count = (user.weekTestCounts && (w - 1) < user.weekTestCounts.length) ? user.weekTestCounts[w - 1] : null;
@@ -612,7 +632,8 @@
     const captionEl = document.getElementById(boxIds.caption);
     if (captionEl) captionEl.textContent = `${group.label} 基準点 → ${week}週目 (対象: ${pairs.length}人)`;
 
-    renderChurnPairedBoxplot(boxIds.chart, boxIds.key, boxIds.sig, pairs, 0, 10, ['基準点(1週目2-3回目)', `${week}週目(最後2回)`], 0.8);
+    const targetLabelSuffix = getNewSig3ValueMode() === 'last1' ? '1回' : '2回平均';
+    renderChurnPairedBoxplot(boxIds.chart, boxIds.key, boxIds.sig, pairs, 0, 10, ['検査開始時', `${week}週目(${targetLabelSuffix})`], 0.8);
   }
 
   // クリックされた「低日数群 vs 高日数群」(黒い点)・対象週について、対応のない2群
