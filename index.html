@@ -72,7 +72,7 @@
         for (var i = 0; i < tabs.length; i++) {
           tabs[i].classList.remove('active');
         }
-        btn.classList.add('active');
+        if (btn) btn.classList.add('active');
       }
       
       // 画面読み込み時に「データ分析（dashboard）」を初期表示

@@ -115,7 +115,7 @@
         <h3>2. 年齢の除外</h3>
         <p class="desc">指定した年齢範囲のデータを【除外】します。（空白の場合は無視）</p>
         <div class="inline-input">
-          <input type="number" id="ageMinVal" placeholder="例: 3"> 歳
+          <input type="number" id="ageMinVal" value="3" placeholder="例: 3"> 歳
           <select id="ageMinType">
             <option value="lessThan">未満 (指定した年齢を含まない)</option>
             <option value="lessThanOrEqual">以下 (指定した年齢を含む)</option>
@@ -123,7 +123,7 @@
           を除外
         </div>
         <div class="inline-input">
-          <input type="number" id="ageMaxVal" placeholder="例: 100"> 歳
+          <input type="number" id="ageMaxVal" value="80" placeholder="例: 100"> 歳
           <select id="ageMaxType">
             <option value="greaterThanOrEqual">以上 (指定した年齢を含む)</option>
             <option value="greaterThan">より上 (指定した年齢を含まない)</option>
@@ -151,7 +151,7 @@
 
           <div class="inline-input" style="margin-bottom: 12px;">
             <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">下限値による除外:</span>
-            <input type="number" step="0.1" id="masterMinVal" placeholder="例: 0.2" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
+            <input type="number" step="0.1" id="masterMinVal" value="0.2" placeholder="例: 0.2" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
             <select id="masterMinType" style="font-weight: bold; color: #475569;">
               <option value="lessThan" selected>未満 (指定値を含まない)</option>
               <option value="lessThanOrEqual">以下 (指定値を含む)</option>
@@ -161,7 +161,7 @@
 
           <div class="inline-input" style="margin-bottom: 16px;">
             <span style="width: 135px; font-weight: bold; color: #475569; display: inline-block;">上限値による除外:</span>
-            <input type="number" step="0.1" id="masterMaxVal" placeholder="例: 10.0" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
+            <input type="number" step="0.1" id="masterMaxVal" value="10.0" placeholder="例: 10.0" style="background-color: #fff; font-weight: bold; color: #1e293b;"> 回/秒
             <select id="masterMaxType" style="font-weight: bold; color: #475569;">
               <option value="greaterThanOrEqual" selected>以上 (指定値を含む)</option>
               <option value="greaterThan">より上 (指定値を含まない)</option>
@@ -175,12 +175,13 @@
             <div class="metric-selection-grid">
               <label><input type="checkbox" id="chkA4" checked> 4文字平均</label>
               <label><input type="checkbox" id="chkA3" checked> 3文字平均</label>
-              <label><input type="checkbox" id="chkP"> パ</label>
-              <label><input type="checkbox" id="chkT"> タ</label>
-              <label><input type="checkbox" id="chkK"> カ</label>
-              <label><input type="checkbox" id="chkR"> ラ</label>
+              <label><input type="checkbox" id="chkP" checked> パ</label>
+              <label><input type="checkbox" id="chkT" checked> タ</label>
+              <label><input type="checkbox" id="chkK" checked> カ</label>
+              <label><input type="checkbox" id="chkR" checked> ラ</label>
             </div>
-            <p class="desc" style="margin-top: 8px; margin-bottom: 0; font-size: 11px;">※データ激減を防ぐため、デフォルトでは「4文字平均」と「3文字平均」のみ選択されています。必要に応じて「パ・タ・カ・ラ」もオンにしてください。</p>
+            <p class="desc" style="margin-top: 8px; margin-bottom: 0; font-size: 11px;">※デフォルトで全指標が選択されています。データ激減を避けたい場合は、不要な指標のチェックを外してください。</p>
+            <button type="button" id="runBtn" onclick="document.getElementById('submitBtn').click();" style="margin-top: 12px;">実行</button>
           </div>
         </div>
       </div>
@@ -289,8 +290,26 @@
              if (result.error) { status.innerHTML = result.error; status.style.color = '#d32f2f'; btn.disabled = false; return; }
              status.innerHTML = result.message + '<div style="margin-top: 15px;"><a href="' + result.url + '" target="_blank" style="color: #1a73e8; font-weight: bold; text-decoration: none;">🔗 スプレッドシートを開く</a></div>';
              status.style.color = '#0f9d58'; btn.innerHTML = '完了';
+             switchParentToDashboard();
           }).withFailureHandler(function(error) { status.innerHTML = 'エラー: ' + error.message; status.style.color = '#d32f2f'; btn.disabled = false; })
           .processUploadedData(formObject);
+      }
+
+      // 処理完了後、この画面(データ整理)を埋め込んでいる親ウィンドウ(index.html)の
+      // 「データ分析」タブに自動で切り替える。iframeとして開かれていない場合や、
+      // 親が想定と違う構造の場合は何もしない(単独タブで開いている場合など)。
+      function switchParentToDashboard() {
+        try {
+          if (!window.parent || window.parent === window) return;
+          if (typeof window.parent.changeTab !== 'function') return;
+          var btns = window.parent.document.getElementsByClassName('tab-button');
+          var dashboardBtn = null;
+          for (var i = 0; i < btns.length; i++) {
+            var onclickAttr = btns[i].getAttribute('onclick') || '';
+            if (onclickAttr.indexOf('dashboard') !== -1) { dashboardBtn = btns[i]; break; }
+          }
+          window.parent.changeTab('dashboard', dashboardBtn);
+        } catch (e) { /* クロスオリジン等で失敗しても無視 */ }
       }
     </script>
   </body>
