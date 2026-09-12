@@ -181,7 +181,8 @@
               <label><input type="checkbox" id="chkR" checked> ラ</label>
             </div>
             <p class="desc" style="margin-top: 8px; margin-bottom: 0; font-size: 11px;">※デフォルトで全指標が選択されています。データ激減を避けたい場合は、不要な指標のチェックを外してください。</p>
-            <button type="button" id="runBtn" onclick="document.getElementById('submitBtn').click();" style="margin-top: 12px;">実行</button>
+            <button type="button" id="runBtn" onclick="runFiltering();" style="margin-top: 12px;">実行</button>
+            <div id="runStatus" style="margin-top: 8px; font-size: 13px; font-weight: bold;"></div>
           </div>
         </div>
       </div>
@@ -267,9 +268,23 @@
         var btn = document.getElementById("copyBtn"); if (btn) { btn.innerHTML = "✅ コピーしました"; setTimeout(function() { btn.innerHTML = "📋 URLをコピー"; }, 2500); }
       }
 
+      // 「実行」ボタン(ファイル未アップロードで送信ボタンが無効な場合も、その場で理由を表示する)
+      function runFiltering() {
+        var submitBtn = document.getElementById('submitBtn');
+        var runStatus = document.getElementById('runStatus');
+        if (submitBtn.disabled) {
+          if (runStatus) { runStatus.textContent = '先にファイルをアップロードしてください。'; runStatus.style.color = '#d32f2f'; }
+          return;
+        }
+        if (runStatus) { runStatus.textContent = '絞り込み中…'; runStatus.style.color = '#1a73e8'; }
+        submitBtn.click();
+      }
+
       function submitForm() {
         var btn = document.getElementById('submitBtn'); var status = document.getElementById('status');
+        var runStatus = document.getElementById('runStatus');
         btn.disabled = true; status.innerHTML = '抽出DBを作成中...'; status.style.color = '#1a73e8';
+        if (runStatus) { runStatus.textContent = '絞り込み中…'; runStatus.style.color = '#1a73e8'; }
         var minVal = document.getElementById('masterMinVal').value; var minType = document.getElementById('masterMinType').value;
         var maxVal = document.getElementById('masterMaxVal').value; var maxType = document.getElementById('masterMaxType').value;
         var formObject = {
@@ -287,11 +302,19 @@
         var checkboxes = document.getElementsByName('excludeGroups');
         for (var i = 0; i < checkboxes.length; i++) { if (checkboxes[i].checked) formObject.excludeGroups.push(checkboxes[i].value); }
         google.script.run.withSuccessHandler(function(result) {
-             if (result.error) { status.innerHTML = result.error; status.style.color = '#d32f2f'; btn.disabled = false; return; }
+             if (result.error) {
+               status.innerHTML = result.error; status.style.color = '#d32f2f'; btn.disabled = false;
+               if (runStatus) { runStatus.textContent = 'エラーが発生しました。'; runStatus.style.color = '#d32f2f'; }
+               return;
+             }
              status.innerHTML = result.message + '<div style="margin-top: 15px;"><a href="' + result.url + '" target="_blank" style="color: #1a73e8; font-weight: bold; text-decoration: none;">🔗 スプレッドシートを開く</a></div>';
              status.style.color = '#0f9d58'; btn.innerHTML = '完了';
+             if (runStatus) { runStatus.textContent = '完了しました。データ分析タブに切り替えます…'; runStatus.style.color = '#0f9d58'; }
              switchParentToDashboard();
-          }).withFailureHandler(function(error) { status.innerHTML = 'エラー: ' + error.message; status.style.color = '#d32f2f'; btn.disabled = false; })
+          }).withFailureHandler(function(error) {
+             status.innerHTML = 'エラー: ' + error.message; status.style.color = '#d32f2f'; btn.disabled = false;
+             if (runStatus) { runStatus.textContent = 'エラーが発生しました: ' + error.message; runStatus.style.color = '#d32f2f'; }
+          })
           .processUploadedData(formObject);
       }
 
