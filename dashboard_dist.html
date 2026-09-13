@@ -225,6 +225,8 @@
     </div>
   </div>
 
+  <div id="ageBinRangeCounts" class="text-sm text-gray-600 mb-3"></div>
+
   <div class="chart-container max-w-5xl mx-auto mt-4 mb-4">
     <canvas id="ageBinBarChart"></canvas>
   </div>
@@ -926,6 +928,18 @@
     { min: 51, max: 90, widthId: 'ageBinWidth3', color: '#f97316' }
   ];
 
+  // 3つの年齢大区分それぞれの対象人数(該当ビンの人数を合計したもの)を表示する
+  function renderAgeBinRangeCounts(rangeBinInfos, binValuesList) {
+    const el = document.getElementById('ageBinRangeCounts');
+    if (!el) return;
+    const parts = rangeBinInfos.map(info => {
+      let n = 0;
+      for (let i = info.startIdx; i < info.endIdx; i++) n += binValuesList[i].length;
+      return `<span style="color:${info.range.color}; font-weight:bold;">${info.range.min}〜${info.range.max}歳: ${n.toLocaleString()}人</span>`;
+    });
+    el.innerHTML = parts.join('　|　');
+  }
+
   const ageBinErrorBarPlugin = {
     id: 'ageBinErrorBarPlugin',
     afterDatasetsDraw(chart) {
@@ -1518,6 +1532,7 @@
         rangeBinInfos.push({ range, startIdx, endIdx: labels.length });
       });
 
+      renderAgeBinRangeCounts(rangeBinInfos, binValuesList);
       renderAgeBinRegressionSummary(allScatterData);
       renderAgeBinTrendSection(rangeBinInfos, labels, binValuesList, binBoundsList);
       renderAgeBinAnovaSection(rangeBinInfos, labels, binValuesList, 3, 'ageBinPostHocSummary3_20', 'ageBinPostHocTable3_20');
