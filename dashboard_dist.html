@@ -433,9 +433,13 @@
       if (!targetData) return;
       
       currentDistData = targetData;
+      // この呼び出し内の3つのグラフ更新だけでgetTopEffectiveScatterData()の結果を使い回すための
+      // 一時キャッシュを開始し、呼び出し終了後は必ず破棄する(古いデータの使い回しを防ぐため)。
+      topEffectiveScatterCache = null;
       updateTopScatterChart();
       updateAgeRangePolyChart();
       updateAgeBinBarChart();
+      topEffectiveScatterCache = null;
 
     } catch (error) {
       console.error(error);
@@ -1595,19 +1599,30 @@
     downloadCSV(charts.topScatter, `Age_Score_Median_${groupName}_${getTopPeriod()}`);
   }
 
+  // renderDistChart()の1回の呼び出し内でのみ有効なキャッシュ(呼び出しの前後でnullにリセットする)。
+  // 「新・年齢と4文字平均の相関」「年齢範囲別 多項式近似」「年齢区分別 平均値±標準偏差」の3つの
+  // グラフが同じ条件(対象グループ・期間)で全ユーザーを繰り返しループする無駄を防ぐためのもの。
+  let topEffectiveScatterCache = null;
+
   // 「新・年齢と4文字平均の相関」専用：1週間/2週間は「週で区切って平均→週平均を平均」ではなく、
   // 期間内の生の検査記録を週で区切らず同じ重みで直接単純平均した値（1人1データ）を使う
   function getTopEffectiveScatterData(period) {
     const groupSelect = document.getElementById('groupSelect');
     const groupKey = groupSelect ? groupSelect.value : 'total';
+    const cacheKey = groupKey + '|' + period;
+    if (topEffectiveScatterCache && topEffectiveScatterCache.key === cacheKey) {
+      return topEffectiveScatterCache.data;
+    }
 
     if (period === 'all') {
       const targetData = rawData ? rawData[groupKey] : null;
-      return targetData && targetData.scatter ? targetData.scatter : { male: [], female: [], other: [] };
+      const allData = targetData && targetData.scatter ? targetData.scatter : { male: [], female: [], other: [] };
+      topEffectiveScatterCache = { key: cacheKey, data: allData };
+      return allData;
     }
 
     const result = { male: [], female: [], other: [] };
-    if (!rawData || !rawData.usersChurn) return result;
+    if (!rawData || !rawData.usersChurn) { topEffectiveScatterCache = { key: cacheKey, data: result }; return result; }
     const rawKey = period === '1w' ? 'avgRaw1w' : 'avgRaw2w';
 
     rawData.usersChurn.forEach(u => {
@@ -1628,6 +1643,7 @@
       else if (u.gender === '女性' || u.gender === '女' || u.gender === 'F') genderKey = 'female';
       result[genderKey].push(pt);
     });
+    topEffectiveScatterCache = { key: cacheKey, data: result };
     return result;
   }
 
