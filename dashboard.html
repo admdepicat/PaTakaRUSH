@@ -219,6 +219,20 @@
         .getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge);
     }
 
+    // タブごとの重い描画処理を1か所にまとめたディスパッチャ。renderCharts()(初回読み込み時)と
+    // showTab()(タブ切り替え時)の両方から、"今表示するタブだけ" を描画するために使う。
+    // パネルがhiddenの間にグラフを初期描画すると、canvasのサイズが0のままChart.jsが内部の
+    // chartArea等を計算してしまい、グラフ直下の人数表(chartAreaの座標を使って列幅を決めている)が
+    // 壊れたままになることがあるため、パネルを表示状態にしてから描画する必要がある。
+    function renderTabCharts(tabId, targetData) {
+      if (tabId === 'dist' && typeof renderDistChart === 'function') renderDistChart(targetData);
+      else if (tabId === 'pataka' && typeof renderPatakaChart === 'function') renderPatakaChart();
+      else if (tabId === 'churn' && typeof renderChurnChart === 'function') renderChurnChart();
+      else if (tabId === 'sig' && typeof renderSigChart === 'function') renderSigChart();
+      else if (tabId === 'newsig' && typeof renderNewSigChart === 'function') renderNewSigChart();
+      else if (tabId === 'newsig3' && typeof renderNewSig3Chart === 'function') renderNewSig3Chart();
+    }
+
     function showTab(tabId) {
       ['dist', 'pataka', 'churn', 'sig', 'newsig', 'newsig3'].forEach(id => {
         const btn = document.getElementById('tab-' + id);
@@ -231,13 +245,11 @@
       if(tgtBtn) tgtBtn.classList.add('tab-active');
       if(tgtPnl) tgtPnl.classList.remove('hidden');
 
-      // タブ切り替え時に対象タブのグラフを再描画する。パネルがhiddenの間にグラフを初期描画すると、
-      // canvasのサイズが0のままChart.jsが内部のchartArea等を計算してしまい、グラフ直下の人数表
-      // (chartAreaの座標を使って列幅を決めている)が壊れたままになることがあるため。
-      if (tabId === 'sig' && typeof renderSigChart === 'function') renderSigChart();
-      if (tabId === 'newsig' && typeof renderNewSigChart === 'function') renderNewSigChart();
-      if (tabId === 'newsig3' && typeof renderNewSig3Chart === 'function') renderNewSig3Chart();
-      if (tabId === 'churn' && typeof renderChurnChart === 'function') renderChurnChart();
+      // このタブをまだ描画していなければ(遅延読み込み)、ここで初めて計算する。
+      if (!rawData) return;
+      const groupSelect = document.getElementById('groupSelect');
+      const targetData = groupSelect ? rawData[groupSelect.value] : null;
+      if (targetData) renderTabCharts(tabId, targetData);
     }
 
     function renderCharts() {
@@ -301,12 +313,11 @@
       document.getElementById('dataCountManaged').innerText = mDataCount.toLocaleString();
       document.getElementById('dataCountUnmanaged').innerText = uDataCount.toLocaleString();
 
-      if (typeof renderDistChart === 'function') renderDistChart(targetData);
-      if (typeof renderPatakaChart === 'function') renderPatakaChart(); // パタカラ分析描画
-      if (typeof renderChurnChart === 'function') renderChurnChart();
-      if (typeof renderSigChart === 'function') renderSigChart();
-      if (typeof renderNewSigChart === 'function') renderNewSigChart();
-      if (typeof renderNewSig3Chart === 'function') renderNewSig3Chart();
+      // 初期表示の高速化のため、6タブ全てを計算するのではなく、今表示しているタブだけを描画する。
+      // 他のタブは、実際にクリックして切り替えたとき(showTab内)に初めて計算される(遅延読み込み)。
+      const activeTabBtn = document.querySelector('.tab-btn.tab-active');
+      const activeTabId = activeTabBtn ? activeTabBtn.id.replace('tab-', '') : 'dist';
+      renderTabCharts(activeTabId, targetData);
     }
   </script>
 </body>
