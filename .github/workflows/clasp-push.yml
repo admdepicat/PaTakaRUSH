@@ -25,3 +25,6 @@ jobs:
 
       - name: Push to Apps Script
         run: clasp push --force
+
+      - name: Deploy Web App
+        run: clasp deploy --deploymentId AKfycbzk04KW1dxDu0gdzumgP8dRqZvJ5M0e8ef-3sJkT0jUQQJrHY3m4e2Cu73UKUvJQcUVpQ --description "GitHub Actions: ${{ github.sha }}"
