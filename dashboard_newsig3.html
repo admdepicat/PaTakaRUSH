@@ -48,14 +48,18 @@
     </label>
 
     <span class="text-gray-300 mx-1">|</span>
-    <span class="text-gray-500">検査回数の定義:</span>
+    <span class="text-gray-500">比較する日:</span>
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeLast2" value="last2" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
-      <span class="font-normal">2回分平均</span>
+      <span class="font-normal">最後の2回分平均</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
       <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeLast1" value="last1" onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
-      <span class="font-normal">1回分</span>
+      <span class="font-normal">最後の1回分</span>
+    </label>
+    <label class="flex items-center gap-1 cursor-pointer">
+      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeFirst1" value="first1" onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
+      <span class="font-normal">対象週の最初の1回分</span>
     </label>
 
     <div class="w-full"></div>
@@ -355,7 +359,8 @@
   // mode==='strict2'の場合は、その週の検査回数(weekTestCounts)が2回未満(0回または1回)ならnull扱いにする
   // (1回だけの人もその週は除外、検査回数の定義がどちらでも共通)。
   function newSig3TargetValueForWeek(user, w, mode) {
-    const scoresArr = getNewSig3ValueMode() === 'last1' ? user.scoresLast1 : user.scoresLast2;
+    const valueMode = getNewSig3ValueMode();
+    const scoresArr = valueMode === 'last1' ? user.scoresLast1 : valueMode === 'first1' ? user.scoresFirst1 : user.scoresLast2;
     const target = (scoresArr && (w - 1) < scoresArr.length) ? scoresArr[w - 1] : null;
     if (target === null || target === undefined) return null;
     if (mode === 'strict2') {
@@ -632,7 +637,10 @@
     const captionEl = document.getElementById(boxIds.caption);
     if (captionEl) captionEl.textContent = `${group.label} 基準点 → ${week}週目 (対象: ${pairs.length}人)`;
 
-    const targetLabelSuffix = getNewSig3ValueMode() === 'last1' ? '1回' : '2回平均';
+    const valueModeForLabel = getNewSig3ValueMode();
+    const targetLabelSuffix = valueModeForLabel === 'last1' ? '最後の1回'
+      : valueModeForLabel === 'first1' ? '最初の1回'
+      : '最後の2回平均';
     renderChurnPairedBoxplot(boxIds.chart, boxIds.key, boxIds.sig, pairs, 0, 10, ['検査開始時', `${week}週目(${targetLabelSuffix})`], 0.8);
   }
 
