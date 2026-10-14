@@ -133,7 +133,7 @@
     window.onload = function() {
       google.script.run.withSuccessHandler(function(names) {
         const select = document.getElementById('sheetSelect');
-        select.innerHTML = '<option value="">分析対象の抽出DBシートを選択...</option>';
+        select.innerHTML = '<option value="" style="color:#9ca3af;">分析対象の抽出DBデータ選択してください</option>';
 
         names.forEach(name => {
           const opt = document.createElement('option');
