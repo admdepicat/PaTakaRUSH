@@ -200,6 +200,52 @@
       var UPLOAD_CHUNK_ROWS = 3000;
       var dropZone = document.getElementById('dropZone');
 
+      // ===== 処理の経過時間・予測時間の表示 =====
+      // ファイル選択〜アップロード完了まで、進行中であることが分かるよう経過時間を毎秒更新する。
+      // 予測時間はファイルサイズからの大まかな目安(実測: 約11.7MBのExcelファイルで概ね5分程度)であり、
+      // 回線速度やスプレッドシートの状態によって実際の所要時間は変動する。
+      var progressState = { container: null, startTime: null, predictedSec: 0, stageText: '', intervalId: null };
+
+      function formatMMSS(totalSec) {
+        var s = Math.max(0, Math.round(totalSec));
+        var m = Math.floor(s / 60);
+        var sec = s % 60;
+        return m + ':' + (sec < 10 ? '0' : '') + sec;
+      }
+
+      function estimateProcessingSeconds(fileSizeBytes) {
+        var mb = fileSizeBytes / (1024 * 1024);
+        return Math.max(15, Math.round(mb * 26));
+      }
+
+      function startProgressTimer(container, file, initialStageText) {
+        stopProgressTimer();
+        progressState.container = container;
+        progressState.startTime = Date.now();
+        progressState.predictedSec = estimateProcessingSeconds(file.size);
+        progressState.stageText = initialStageText;
+        renderProgress();
+        progressState.intervalId = setInterval(renderProgress, 1000);
+      }
+
+      function setProgressStage(text) {
+        progressState.stageText = text;
+        renderProgress();
+      }
+
+      function renderProgress() {
+        if (!progressState.container || !progressState.startTime) return;
+        var elapsedSec = (Date.now() - progressState.startTime) / 1000;
+        progressState.container.innerHTML = progressState.stageText + '...<br>' +
+          '<span style="color:#64748b; font-size: 12px;">予測時間(目安): ' + formatMMSS(progressState.predictedSec) +
+          '　経過時間: ' + formatMMSS(elapsedSec) + '</span>';
+      }
+
+      function stopProgressTimer() {
+        if (progressState.intervalId) { clearInterval(progressState.intervalId); progressState.intervalId = null; }
+        progressState.startTime = null;
+      }
+
       dropZone.addEventListener('dragover', function(e) { e.stopPropagation(); e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; dropZone.classList.add('dragover'); }, false);
       dropZone.addEventListener('dragleave', function(e) { e.stopPropagation(); e.preventDefault(); dropZone.classList.remove('dragover'); }, false);
       dropZone.addEventListener('drop', function(e) { e.stopPropagation(); e.preventDefault(); dropZone.classList.remove('dragover'); var files = e.dataTransfer.files; if(files.length > 0) handleFileSelect(files); }, false);
@@ -209,21 +255,30 @@
         var btn = document.getElementById('submitBtn');
         var container = document.getElementById('groupList');
         var nameDisplay = document.getElementById('fileNameDisplay');
-        if (!files || files.length === 0) { btn.disabled = true; container.innerHTML = 'ファイルを選択すると、ここにグループが表示されます。'; nameDisplay.innerText = ''; return; }
+        if (!files || files.length === 0) { stopProgressTimer(); btn.disabled = true; container.innerHTML = 'ファイルを選択すると、ここにグループが表示されます。'; nameDisplay.innerText = ''; return; }
         var file = files[0];
         currentFileName = file.name;
         nameDisplay.innerText = '選択中のファイル: ' + currentFileName;
-        btn.disabled = true; container.innerHTML = 'ファイルを読み込み中...';
+        btn.disabled = true;
+        startProgressTimer(container, file, 'ファイルを読み込み中');
         var ext = currentFileName.split('.').pop().toLowerCase();
         var reader = new FileReader();
         reader.onload = function(e) {
           try {
             var data = new Uint8Array(e.target.result);
-            var workbook = XLSX.read(data, {type: 'array'});
-            var targetSheetName = workbook.SheetNames[0];
+            var workbook, targetSheetName;
             if (ext === 'xlsx' || ext === 'xls') {
                 targetSheetName = "検査履歴";
-                if (!workbook.SheetNames.includes(targetSheetName)) { container.innerHTML = '<span style="color:#d32f2f;">エラー: エクセルファイル内に「検査履歴」シートが見つかりません。</span>'; return; }
+                // まずシート名一覧だけを軽量に読み取り、「検査履歴」タブの存在を確認する
+                // (この時点ではシートの中身は解析しないため高速)
+                var nameCheckWb = XLSX.read(data, {type: 'array', bookSheets: true});
+                if (!nameCheckWb.SheetNames.includes(targetSheetName)) { stopProgressTimer(); container.innerHTML = '<span style="color:#d32f2f;">エラー: エクセルファイル内に「検査履歴」シートが見つかりません。</span>'; return; }
+                // 他のタブ(パタカラ連打・パタカラ乱れうち等)は解析せず、対象タブだけを読み込むことで
+                // 大幅に高速化する(他のタブが大きいと、全タブ読み込みでは非常に時間がかかるため)
+                workbook = XLSX.read(data, {type: 'array', sheets: [targetSheetName]});
+            } else {
+                workbook = XLSX.read(data, {type: 'array'});
+                targetSheetName = workbook.SheetNames[0];
             }
             var worksheet = workbook.Sheets[targetSheetName];
             var jsonArray = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: "", raw: false, dateNF: 'yyyy/mm/dd hh:mm:ss'});
@@ -235,7 +290,7 @@
               while (jsonArray[ri2].length < maxCols) jsonArray[ri2].push("");
             }
             uploadFileInChunks(jsonArray, container, btn);
-          } catch (err) { container.innerHTML = '<span style="color:#d32f2f;">失敗: ' + err.message + '</span>'; }
+          } catch (err) { stopProgressTimer(); container.innerHTML = '<span style="color:#d32f2f;">失敗: ' + err.message + '</span>'; }
         };
         reader.readAsArrayBuffer(file);
       }
@@ -249,20 +304,20 @@
 
         function sendNext() {
           if (pos >= jsonArray.length) {
-            container.innerHTML = 'グループ情報を読み込み中...';
+            setProgressStage('グループ情報を読み込み中');
             google.script.run
-              .withSuccessHandler(function(data) { populateGroups(data); if (!data.error) btn.disabled = false; })
-              .withFailureHandler(function(err) { container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + (err && err.message ? err.message : '不明なエラー') + '</span>'; })
+              .withSuccessHandler(function(data) { stopProgressTimer(); populateGroups(data); if (!data.error) btn.disabled = false; })
+              .withFailureHandler(function(err) { stopProgressTimer(); container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + (err && err.message ? err.message : '不明なエラー') + '</span>'; })
               .finishFileUpload();
             return;
           }
           var isFirstChunk = (pos === 0);
           var chunk = jsonArray.slice(pos, pos + UPLOAD_CHUNK_ROWS);
           var doneRows = Math.max(0, Math.min(pos + chunk.length, jsonArray.length) - 1);
-          container.innerHTML = 'アップロード中... (' + doneRows.toLocaleString() + ' / ' + totalDataRows.toLocaleString() + '行)';
+          setProgressStage('アップロード中... (' + doneRows.toLocaleString() + ' / ' + totalDataRows.toLocaleString() + '行)');
           google.script.run
             .withSuccessHandler(function() { pos += chunk.length; sendNext(); })
-            .withFailureHandler(function(err) { container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + (err && err.message ? err.message : '不明なエラー') + '</span>'; })
+            .withFailureHandler(function(err) { stopProgressTimer(); container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + (err && err.message ? err.message : '不明なエラー') + '</span>'; })
             .uploadFileChunk(chunk, isFirstChunk);
         }
         sendNext();
