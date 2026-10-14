@@ -29,17 +29,55 @@ function getScriptUrl() {
   return ScriptApp.getService().getUrl();
 }
 
-function parseUploadedData(fileData) {
-  if (typeof fileData === 'string' && fileData.indexOf('[') === 0) {
-    return JSON.parse(fileData);
+// アップロードされたファイルを、1回のgoogle.script.run呼び出しで送れるサイズに
+// 分割(チャンク)して一時シートへ書き込むための名前。行数が多い(数万行規模の)ファイルだと
+// JSON文字列を一括送信する方式ではブラウザ⇔GAS間の通信上限に引っかかって失敗するため、
+// 行の範囲ごとに複数回に分けてこのシートへ追記していく方式に変更した。
+var UPLOAD_TMP_SHEET_NAME = "_アップロード一時データ";
+
+// チャンク(行の配列)を一時シートに追記する。isFirstChunkがtrueのときは、
+// 既存の一時シートを作り直してから書き込む(新しいファイルのアップロード開始)。
+function uploadFileChunk(rows, isFirstChunk) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(UPLOAD_TMP_SHEET_NAME);
+  if (isFirstChunk) {
+    if (sheet) ss.deleteSheet(sheet);
+    sheet = ss.insertSheet(UPLOAD_TMP_SHEET_NAME);
+    try { sheet.hideSheet(); } catch (e) {}
   }
-  var base64 = fileData.split(',')[1];
-  var blob = Utilities.newBlob(Utilities.base64Decode(base64), MimeType.CSV);
-  var text = blob.getDataAsString("UTF-8");
-  if (text.indexOf("\uFFFD") !== -1 || text.indexOf("ï¿½") !== -1) {
-      text = blob.getDataAsString("Shift_JIS");
+  if (!sheet) throw new Error("一時データシートが見つかりません。もう一度ファイルを選択してください。");
+  if (!rows || rows.length === 0) return { ok: true };
+  var startRow = sheet.getLastRow() + 1;
+  var range = sheet.getRange(startRow, 1, rows.length, rows[0].length);
+  // Googleスプレッドシートが日付や数値として自動変換してしまわないよう、
+  // 書き込み前にプレーンテキスト形式を強制する(元のアップロードデータの文字列をそのまま保持するため)
+  range.setNumberFormat("@");
+  range.setValues(rows);
+  return { ok: true };
+}
+
+// 全チャンクの送信が完了した後に呼ぶ。一時シートから「連携グループ」列を読み取り、
+// 除外グループ選択チェックボックス用の一覧を返す(従来のgetFilterDataFromUploadedFileと同じ内容)。
+function finishFileUpload() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(UPLOAD_TMP_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() === 0) return { error: "アップロードデータが見つかりません。もう一度ファイルを選択してください。" };
+  var data = sheet.getDataRange().getValues();
+  if (!data || data.length === 0) return { error: "アップロードデータが空です。" };
+  var headers = data[0];
+  var cleanHeaders = headers.map(cleanText);
+  var idxGroup = cleanHeaders.findIndex(function(h) { return h.indexOf('連携グループ') !== -1 || h.indexOf('連携済みグループ') !== -1; });
+  if (idxGroup === -1) return { error: "連携グループ列が見つかりません" };
+  var groups = [];
+  for (var i = 1; i < data.length; i++) {
+    var g = data[i][idxGroup];
+    var gClean = cleanText(g);
+    // 空欄、"-"、"未設定"、"未登録" はデータ整理の除外対象リストに表示させない
+    if (g && gClean !== "" && gClean !== "-" && gClean !== "未設定" && gClean !== "未登録" && groups.indexOf(g) === -1) {
+      groups.push(g);
+    }
   }
-  return Utilities.parseCsv(text);
+  return { groups: groups };
 }
 
 function cleanText(text) {
@@ -58,25 +96,6 @@ function normalizeDataArray(dataArray) {
     }
     return newRow;
   });
-}
-
-function getFilterDataFromUploadedFile(dataUrl) {
-  var data = parseUploadedData(dataUrl);
-  if (!data || data.length === 0) return null;
-  var headers = data[0];
-  var cleanHeaders = headers.map(cleanText);
-  var idxGroup = cleanHeaders.findIndex(function(h) { return h.indexOf('連携グループ') !== -1 || h.indexOf('連携済みグループ') !== -1; });
-  if (idxGroup === -1) return { error: "連携グループ of 列が見つかりません" };
-  var groups = [];
-  for (var i = 1; i < data.length; i++) {
-    var g = data[i][idxGroup];
-    var gClean = cleanText(g);
-    // 空欄、"-"、"未設定"、"未登録" はデータ整理の除外対象リストに表示させない
-    if (g && gClean !== "" && gClean !== "-" && gClean !== "未設定" && gClean !== "未登録" && groups.indexOf(g) === -1) {
-      groups.push(g);
-    }
-  }
-  return { groups: groups };
 }
 
 function savePinnedCharts(pinned) {
@@ -104,7 +123,9 @@ function loadExcludedGroups() {
 function getSheetList() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) return [];
-  return ss.getSheets().map(function(s) { return s.getName(); }).reverse();
+  return ss.getSheets().map(function(s) { return s.getName(); })
+      .filter(function(name) { return name !== UPLOAD_TMP_SHEET_NAME; })
+      .reverse();
 }
 
 /**
@@ -134,9 +155,12 @@ function findPatakaIndex(headers, char) {
  */
 function processUploadedData(formObject) {
   try {
-    var rawData = parseUploadedData(formObject.fileData);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var tmpSheet = ss.getSheetByName(UPLOAD_TMP_SHEET_NAME);
+    if (!tmpSheet || tmpSheet.getLastRow() === 0) return { error: "アップロードデータが見つかりません。先にファイルを選択してください。" };
+    var rawData = tmpSheet.getDataRange().getValues();
     if (!rawData || rawData.length === 0) return { error: "アップロードデータのパースに失敗しました。" };
-    
+
     var rawHeaders = rawData[0];
     
     // ゴースト空白列（右側に無限に広がる空セル）の徹底切り落とし
@@ -242,9 +266,7 @@ function processUploadedData(formObject) {
       if (isExcluded) excludedCount++;
       else filteredRows.push(row);
     }
-    
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    
+
     // 蓄積した古い「抽出DB_xxxx」シートを自動整理 (ローテーション消去)
     // シート名の "抽出DB_MMdd_HHmm" から日時を読み取って新旧を判定する
     // (タブの並び順に依存すると、手動で並べ替えられていた場合などに誤って
@@ -296,7 +318,10 @@ function processUploadedData(formObject) {
     if (maxCols > dataCols) {
       newSheet.deleteColumns(dataCols + 1, maxCols - dataCols);
     }
-    
+
+    // 処理が成功したので、アップロード用の一時シートは不要になり削除する
+    try { ss.deleteSheet(tmpSheet); } catch (e) {}
+
     return {
       message: "データのクレンジングが成功しました。<br>抽出DBシート「" + newSheetName + "」に保存されました。<br>(除外レコード数: " + excludedCount.toLocaleString() + "件)",
       url: ss.getUrl() + "#gid=" + newSheet.getSheetId()

@@ -194,8 +194,10 @@
     </form>
 
     <script>
-      var currentFileData = null;
       var currentFileName = "";
+      // 一度にgoogle.script.runへ送る行数(ヘッダー行含む)。行数の多いファイルでも
+      // ブラウザ⇔GAS間の通信上限に引っかからないよう、この単位で分割して順番にアップロードする。
+      var UPLOAD_CHUNK_ROWS = 3000;
       var dropZone = document.getElementById('dropZone');
 
       dropZone.addEventListener('dragover', function(e) { e.stopPropagation(); e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; dropZone.classList.add('dragover'); }, false);
@@ -225,18 +227,45 @@
             }
             var worksheet = workbook.Sheets[targetSheetName];
             var jsonArray = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: "", raw: false, dateNF: 'yyyy/mm/dd hh:mm:ss'});
-            currentFileData = JSON.stringify(jsonArray);
-            sendDataToGAS(container, btn);
+            // チャンクに分けてシートへ追記する際、全チャンクが同じ列数でないと書き込みエラーになるため、
+            // 送信前に全行を(ヘッダー行も含めた)最大列数に揃えておく
+            var maxCols = 0;
+            for (var ri = 0; ri < jsonArray.length; ri++) { if (jsonArray[ri].length > maxCols) maxCols = jsonArray[ri].length; }
+            for (var ri2 = 0; ri2 < jsonArray.length; ri2++) {
+              while (jsonArray[ri2].length < maxCols) jsonArray[ri2].push("");
+            }
+            uploadFileInChunks(jsonArray, container, btn);
           } catch (err) { container.innerHTML = '<span style="color:#d32f2f;">失敗: ' + err.message + '</span>'; }
         };
         reader.readAsArrayBuffer(file);
       }
 
-      function sendDataToGAS(container, btn) {
-        google.script.run
-          .withSuccessHandler(function(data) { populateGroups(data); if (!data.error) btn.disabled = false; })
-          .withFailureHandler(function(err) { container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + err.message + '</span>'; })
-          .getFilterDataFromUploadedFile(currentFileData);
+      // ファイルの全行(ヘッダー含む)をUPLOAD_CHUNK_ROWS行ずつに分割し、1チャンクずつ順番に
+      // google.script.runでGAS側の一時シートへ追記していく。1回の通信量を抑えることで、
+      // 数万行規模の大きいファイルでも「エラー: undefined」のような通信上限エラーを避けられる。
+      function uploadFileInChunks(jsonArray, container, btn) {
+        var totalDataRows = Math.max(0, jsonArray.length - 1); // ヘッダー行を除いた件数
+        var pos = 0;
+
+        function sendNext() {
+          if (pos >= jsonArray.length) {
+            container.innerHTML = 'グループ情報を読み込み中...';
+            google.script.run
+              .withSuccessHandler(function(data) { populateGroups(data); if (!data.error) btn.disabled = false; })
+              .withFailureHandler(function(err) { container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + (err && err.message ? err.message : '不明なエラー') + '</span>'; })
+              .finishFileUpload();
+            return;
+          }
+          var isFirstChunk = (pos === 0);
+          var chunk = jsonArray.slice(pos, pos + UPLOAD_CHUNK_ROWS);
+          var doneRows = Math.max(0, Math.min(pos + chunk.length, jsonArray.length) - 1);
+          container.innerHTML = 'アップロード中... (' + doneRows.toLocaleString() + ' / ' + totalDataRows.toLocaleString() + '行)';
+          google.script.run
+            .withSuccessHandler(function() { pos += chunk.length; sendNext(); })
+            .withFailureHandler(function(err) { container.innerHTML = '<span style="color:#d32f2f;">エラー: ' + (err && err.message ? err.message : '不明なエラー') + '</span>'; })
+            .uploadFileChunk(chunk, isFirstChunk);
+        }
+        sendNext();
       }
 
       function populateGroups(data) {
@@ -288,7 +317,7 @@
         var minVal = document.getElementById('masterMinVal').value; var minType = document.getElementById('masterMinType').value;
         var maxVal = document.getElementById('masterMaxVal').value; var maxType = document.getElementById('masterMaxType').value;
         var formObject = {
-          fileData: currentFileData, fileName: currentFileName, excludeGroups: [],
+          fileName: currentFileName, excludeGroups: [],
           ageMinVal: document.getElementById('ageMinVal').value, ageMinType: document.getElementById('ageMinType').value,
           ageMaxVal: document.getElementById('ageMaxVal').value, ageMaxType: document.getElementById('ageMaxType').value,
           excludeEmptyAge: document.getElementById('chkExcludeEmptyAge').checked,
