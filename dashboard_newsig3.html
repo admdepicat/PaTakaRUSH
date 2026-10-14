@@ -50,7 +50,7 @@
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-gray-500">比較する日:</span>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeLast2" value="last2" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
+      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeLast2" value="last2" onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
       <span class="font-normal">最後の2回分平均</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
@@ -58,7 +58,7 @@
       <span class="font-normal">最後の1回分</span>
     </label>
     <label class="flex items-center gap-1 cursor-pointer">
-      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeFirst1" value="first1" onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
+      <input type="radio" name="newSig3ValueMode" id="newSig3ValueModeFirst1" value="first1" checked onchange="renderNewSig3Chart()" class="cursor-pointer accent-cyan-600">
       <span class="font-normal">対象週の最初の1回分</span>
     </label>
 
@@ -127,7 +127,7 @@
 
     <span class="text-gray-300 mx-1">|</span>
     <span class="text-rose-600">高日数群:</span>
-    <input type="text" inputmode="numeric" id="newSig3HighMin" value="4" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
+    <input type="text" inputmode="numeric" id="newSig3HighMin" value="5" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">〜</span>
     <input type="text" inputmode="numeric" id="newSig3HighMax" value="7" min="0" max="7" step="1" oninput="churnNormalizeNumberInput(this); renderNewSig3Chart()" class="w-14 p-1 border border-gray-300 rounded outline-none text-center font-normal"><span class="inline-flex flex-col leading-none align-middle -ml-1 mr-1"><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, 1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 border-b-0 rounded-t-sm bg-white">&#9650;</button><button type="button" tabindex="-1" onclick="churnStepNumberInput(this.parentElement.previousElementSibling, -1)" class="px-1 text-[9px] leading-[9px] text-gray-500 hover:text-gray-800 border border-gray-300 rounded-b-sm bg-white">&#9660;</button></span>
     <span class="text-gray-500">日</span>
