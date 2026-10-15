@@ -150,6 +150,28 @@ function findPatakaIndex(headers, char) {
   return idx;
 }
 
+// 「パ」「タ」「カ」「ラ」の生の回数列(秒数表記を含まない、ヘッダーがちょうどその1文字の列)の
+// インデックスを特定する。findPatakaIndex()が優先して拾う「(回/秒)」列が、PaTaKaRUSH側の出力で
+// 数式のみで計算結果(キャッシュ値)が保存されていない状態の場合のフォールバック計算に使う。
+function findPatakaRawCountIndex(headers, char) {
+  return headers.findIndex(function(h) { return h === char; });
+}
+
+// 検査は5秒間で行われる前提(PaTaKaRUSH側のExcelテンプレートの数式 =パ/5 等と同じ)。
+// 「(回/秒)」列の値が読み取れない場合、生の回数列をこの秒数で割って代わりに算出する。
+var PATAKA_TEST_DURATION_SEC = 5;
+
+// 「(回/秒)」列の値(rateStr)が有効な数値であればそれを使い、無効(空文字・数式のみでキャッシュ値が
+// 無い等)であれば生の回数列(rawStr)をPATAKA_TEST_DURATION_SECで割った値にフォールバックする。
+// どちらも無効であれば0を返す。
+function parsePatakaRate(rateStr, rawStr) {
+  var rateVal = parseFloat(rateStr);
+  if (!isNaN(rateVal)) return rateVal;
+  var rawVal = parseFloat(rawStr);
+  if (!isNaN(rawVal)) return rawVal / PATAKA_TEST_DURATION_SEC;
+  return 0;
+}
+
 /**
  * データ整理：インポートデータを各除外条件に基づいて加工し、新規シートとして出力する
  */
@@ -181,11 +203,15 @@ function processUploadedData(formObject) {
     var idxGroup = cleanHeaders.findIndex(function(h) { return h.indexOf('連携グループ') !== -1 || h.indexOf('連携済みグループ') !== -1; });
     var idxA4 = cleanHeaders.findIndex(function(h) { return h.indexOf('4文字平均') !== -1; });
     var idxA3 = cleanHeaders.findIndex(function(h) { return h.indexOf('3文字平均') !== -1; });
-    
+
     var idxP = findPatakaIndex(cleanHeaders, 'パ');
     var idxT = findPatakaIndex(cleanHeaders, 'タ');
     var idxK = findPatakaIndex(cleanHeaders, 'カ');
     var idxR = findPatakaIndex(cleanHeaders, 'ラ');
+    var idxPRaw = findPatakaRawCountIndex(cleanHeaders, 'パ');
+    var idxTRaw = findPatakaRawCountIndex(cleanHeaders, 'タ');
+    var idxKRaw = findPatakaRawCountIndex(cleanHeaders, 'カ');
+    var idxRRaw = findPatakaRawCountIndex(cleanHeaders, 'ラ');
 
     var excludeGroups = formObject.excludeGroups || [];
     
@@ -238,29 +264,40 @@ function processUploadedData(formObject) {
       }
       
       // 口腔機能指標除外
-      if (!isExcluded && idxA4 !== -1 && formObject.a4MinVal !== "") {
-        if (shouldExcludeMetric(row[idxA4], formObject.a4MinVal, formObject.a4MinType)) isExcluded = true;
-        if (shouldExcludeMetric(row[idxA4], formObject.a4MaxVal, formObject.a4MaxType)) isExcluded = true;
+      // 「(回/秒)」列が数式のみでキャッシュ値が保存されていない(空)場合に備え、生の回数列から
+      // フォールバック計算した実効値(pRate等)で判定する(表示される値と除外判定を一致させるため)。
+      var pRate = parsePatakaRate(idxP !== -1 ? row[idxP] : '', idxPRaw !== -1 ? row[idxPRaw] : '');
+      var tRate = parsePatakaRate(idxT !== -1 ? row[idxT] : '', idxTRaw !== -1 ? row[idxTRaw] : '');
+      var kRate = parsePatakaRate(idxK !== -1 ? row[idxK] : '', idxKRaw !== -1 ? row[idxKRaw] : '');
+      var rRate = parsePatakaRate(idxR !== -1 ? row[idxR] : '', idxRRaw !== -1 ? row[idxRRaw] : '');
+      var a4Rate = parseFloat(idxA4 !== -1 ? row[idxA4] : '');
+      if (isNaN(a4Rate)) a4Rate = (pRate + tRate + kRate + rRate) / 4;
+      var a3Rate = parseFloat(idxA3 !== -1 ? row[idxA3] : '');
+      if (isNaN(a3Rate)) a3Rate = (pRate + tRate + kRate) / 3;
+
+      if (!isExcluded && formObject.a4MinVal !== "") {
+        if (shouldExcludeMetric(a4Rate, formObject.a4MinVal, formObject.a4MinType)) isExcluded = true;
+        if (shouldExcludeMetric(a4Rate, formObject.a4MaxVal, formObject.a4MaxType)) isExcluded = true;
       }
-      if (!isExcluded && idxA3 !== -1 && formObject.a3MinVal !== "") {
-        if (shouldExcludeMetric(row[idxA3], formObject.a3MinVal, formObject.a3MinType)) isExcluded = true;
-        if (shouldExcludeMetric(row[idxA3], formObject.a3MaxVal, formObject.a3MaxType)) isExcluded = true;
+      if (!isExcluded && formObject.a3MinVal !== "") {
+        if (shouldExcludeMetric(a3Rate, formObject.a3MinVal, formObject.a3MinType)) isExcluded = true;
+        if (shouldExcludeMetric(a3Rate, formObject.a3MaxVal, formObject.a3MaxType)) isExcluded = true;
       }
-      if (!isExcluded && idxP !== -1 && formObject.pMinVal !== "") {
-        if (shouldExcludeMetric(row[idxP], formObject.pMinVal, formObject.pMinType)) isExcluded = true;
-        if (shouldExcludeMetric(row[idxP], formObject.pMaxVal, formObject.pMaxType)) isExcluded = true;
+      if (!isExcluded && formObject.pMinVal !== "") {
+        if (shouldExcludeMetric(pRate, formObject.pMinVal, formObject.pMinType)) isExcluded = true;
+        if (shouldExcludeMetric(pRate, formObject.pMaxVal, formObject.pMaxType)) isExcluded = true;
       }
-      if (!isExcluded && idxT !== -1 && formObject.tMinVal !== "") {
-        if (shouldExcludeMetric(row[idxT], formObject.tMinVal, formObject.tMinType)) isExcluded = true;
-        if (shouldExcludeMetric(row[idxT], formObject.tMaxVal, formObject.tMaxType)) isExcluded = true;
+      if (!isExcluded && formObject.tMinVal !== "") {
+        if (shouldExcludeMetric(tRate, formObject.tMinVal, formObject.tMinType)) isExcluded = true;
+        if (shouldExcludeMetric(tRate, formObject.tMaxVal, formObject.tMaxType)) isExcluded = true;
       }
-      if (!isExcluded && idxK !== -1 && formObject.kMinVal !== "") {
-        if (shouldExcludeMetric(row[idxK], formObject.kMinVal, formObject.kMinType)) isExcluded = true;
-        if (shouldExcludeMetric(row[idxK], formObject.kMaxVal, formObject.kMaxType)) isExcluded = true;
+      if (!isExcluded && formObject.kMinVal !== "") {
+        if (shouldExcludeMetric(kRate, formObject.kMinVal, formObject.kMinType)) isExcluded = true;
+        if (shouldExcludeMetric(kRate, formObject.kMaxVal, formObject.kMaxType)) isExcluded = true;
       }
-      if (!isExcluded && idxR !== -1 && formObject.rMinVal !== "") {
-        if (shouldExcludeMetric(row[idxR], formObject.rMinVal, formObject.rMinType)) isExcluded = true;
-        if (shouldExcludeMetric(row[idxR], formObject.rMaxVal, formObject.rMaxType)) isExcluded = true;
+      if (!isExcluded && formObject.rMinVal !== "") {
+        if (shouldExcludeMetric(rRate, formObject.rMinVal, formObject.rMinType)) isExcluded = true;
+        if (shouldExcludeMetric(rRate, formObject.rMaxVal, formObject.rMaxType)) isExcluded = true;
       }
       
       if (isExcluded) excludedCount++;
@@ -364,6 +401,10 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
     var idxT = findPatakaIndex(cleanHeaders, 'タ');
     var idxK = findPatakaIndex(cleanHeaders, 'カ');
     var idxR = findPatakaIndex(cleanHeaders, 'ラ');
+    var idxPRaw = findPatakaRawCountIndex(cleanHeaders, 'パ');
+    var idxTRaw = findPatakaRawCountIndex(cleanHeaders, 'タ');
+    var idxKRaw = findPatakaRawCountIndex(cleanHeaders, 'カ');
+    var idxRRaw = findPatakaRawCountIndex(cleanHeaders, 'ラ');
 
     var userMap = {};
     // 「集計条件」の名寄せOFF時に使う、行単位（そのままの数）の対象者数・データ件数カウンター
@@ -387,11 +428,15 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
       var birth = idxBirth !== -1 ? row[idxBirth] : '';
       var pref = idxPref !== -1 ? row[idxPref] : '';
       
-      var pVal = idxP !== -1 ? parseFloat(row[idxP]) || 0 : 0;
-      var tVal = idxT !== -1 ? parseFloat(row[idxT]) || 0 : 0;
-      var kVal = idxK !== -1 ? parseFloat(row[idxK]) || 0 : 0;
-      var rVal = idxR !== -1 ? parseFloat(row[idxR]) || 0 : 0;
-      var a4Val = idxA4 !== -1 ? parseFloat(row[idxA4]) || 0 : 0;
+      // 「(回/秒)」列が数式のみでキャッシュ値が保存されていない(空)場合に備え、生の回数列から
+      // フォールバック計算する(parsePatakaRate: 「(回/秒)」列が有効ならそれを優先、無効なら
+      // 生の回数列÷5秒で代用)。4文字平均・3文字平均も同様に、列が無効ならp/t/k/rから計算する。
+      var pVal = parsePatakaRate(idxP !== -1 ? row[idxP] : '', idxPRaw !== -1 ? row[idxPRaw] : '');
+      var tVal = parsePatakaRate(idxT !== -1 ? row[idxT] : '', idxTRaw !== -1 ? row[idxTRaw] : '');
+      var kVal = parsePatakaRate(idxK !== -1 ? row[idxK] : '', idxKRaw !== -1 ? row[idxKRaw] : '');
+      var rVal = parsePatakaRate(idxR !== -1 ? row[idxR] : '', idxRRaw !== -1 ? row[idxRRaw] : '');
+      var calculatedA4 = (pVal + tVal + kVal + rVal) / 4;
+      var a4Val = idxA4 !== -1 ? (parseFloat(row[idxA4]) || calculatedA4) : calculatedA4;
       var calculatedA3 = (pVal + tVal + kVal) / 3;
       var a3Val = idxA3 !== -1 ? parseFloat(row[idxA3]) || calculatedA3 : calculatedA3;
       
