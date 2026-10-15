@@ -71,6 +71,9 @@
 
       <!-- 共通: ユーザー数およびデータ件数表示 -->
       <div class="bg-white px-6 py-2 rounded-xl shadow-sm border border-gray-200 mb-4 overflow-x-auto">
+        <div id="dataDateRangeDisplay" class="pt-3 pb-1 text-sm font-bold text-gray-600 hidden">
+          <span class="text-xl align-middle">🗓️</span> データ期間: <span id="dataDateRangeText" class="text-gray-800"></span>
+        </div>
         <table class="w-full text-left whitespace-nowrap min-w-max">
           <tbody>
             <tr class="border-b border-gray-100">
@@ -244,6 +247,18 @@
       if (!rawData) return;
       const groupKey = document.getElementById('groupSelect').value;
       const targetData = rawData[groupKey];
+
+      // アップロードデータに含まれる検査日の範囲(最古〜最新)を最上部に表示する
+      const dateRangeEl = document.getElementById('dataDateRangeDisplay');
+      const dateRangeTextEl = document.getElementById('dataDateRangeText');
+      if (dateRangeEl && dateRangeTextEl) {
+        if (rawData.dateRange) {
+          dateRangeTextEl.textContent = rawData.dateRange.min + ' 〜 ' + rawData.dateRange.max;
+          dateRangeEl.classList.remove('hidden');
+        } else {
+          dateRangeEl.classList.add('hidden');
+        }
+      }
 
       const countM = targetData.scatter.male.length;
       const countF = targetData.scatter.female.length;

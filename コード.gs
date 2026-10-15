@@ -413,13 +413,20 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
       managed: { male: 0, female: 0, other: 0 },
       unmanaged: { male: 0, female: 0, other: 0 }
     };
+    // ダッシュボード最上部に表示する、アップロードデータに含まれる検査日の最古〜最新
+    var minDate = null, maxDate = null;
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
       var name = idxName !== -1 ? row[idxName] : '';
       if (!name) continue;
       var dateVal = idxDate !== -1 ? row[idxDate] : '';
       if (!dateVal) continue;
-      
+      var recDate = new Date(dateVal);
+      if (!isNaN(recDate.getTime())) {
+        if (!minDate || recDate < minDate) minDate = recDate;
+        if (!maxDate || recDate > maxDate) maxDate = recDate;
+      }
+
       var age = idxAge !== -1 ? parseFloat(row[idxAge]) : null;
       var gender = idxGender !== -1 ? row[idxGender] : '';
       var group = idxGroup !== -1 ? row[idxGroup] : '';
@@ -660,6 +667,12 @@ function getAdvancedAnalyticsData(sheetName, enableDedup, excludeEmptyAge) {
         result[key].recordCounts = { male: counts.male, female: counts.female, other: counts.other };
       });
     }
+
+    // ダッシュボード最上部に、アップロードデータに含まれる検査日の範囲(最古〜最新)を表示するため
+    result.dateRange = (minDate && maxDate) ? {
+      min: Utilities.formatDate(minDate, 'JST', 'yyyy/MM/dd'),
+      max: Utilities.formatDate(maxDate, 'JST', 'yyyy/MM/dd')
+    } : null;
 
     return JSON.stringify(result);
   } catch (err) { return { error: "GAS実行エラー: " + err.toString() }; }
